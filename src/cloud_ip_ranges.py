@@ -19,10 +19,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 def validate_ip(ip: str) -> Optional[str]:
     """Validate an IP address or subnet."""
     try:
-        # Try to create a network object first (works for both IPs and subnets)
         network = ipaddress.ip_network(ip, strict=False)
 
-        # Skip private, loopback, link-local, and multicast networks
         if network.is_private or network.is_loopback or network.is_link_local or network.is_multicast:
             return None
 
@@ -33,42 +31,43 @@ def validate_ip(ip: str) -> Optional[str]:
 
 
 class CloudIPRanges:
+    sources = {
+        "aws": ["https://ip-ranges.amazonaws.com/ip-ranges.json"],
+        "cloudflare": ["https://www.cloudflare.com/ips-v4", "https://www.cloudflare.com/ips-v6"],
+        "digitalocean": ["https://digitalocean.com/geo/google.csv"],
+        "google_cloud": ["https://www.gstatic.com/ipranges/cloud.json"],
+        "google_bot": ["https://developers.google.com/static/search/apis/ipranges/googlebot.json"],
+        "oracle_cloud": ["https://docs.oracle.com/iaas/tools/public_ip_ranges.json"],
+        "linode": ["https://geoip.linode.com/"],
+        "vultr": ["https://geofeed.constant.com/?json"],
+        "openai": ["https://openai.com/chatgpt-user.json", "https://openai.com/gptbot.json"],
+        "perplexity": ["https://www.perplexity.ai/perplexitybot.json", "https://www.perplexity.ai/perplexity-user.json"],
+        "github": ["https://api.github.com/meta"],
+        "apple_icloud": ["https://mask-api.icloud.com/egress-ip-ranges.csv"],
+        "starlink": ["https://geoip.starlinkisp.net/feed.csv"],
+        "akamai": ["https://techdocs.akamai.com/property-manager/pdfs/akamai_ipv4_ipv6_CIDRs-txt.zip"],
+        "zscaler": [
+            "https://config.zscaler.com/api/zscaler.net/hubs/cidr/json/required",
+            "https://config.zscaler.com/api/zscaler.net/hubs/cidr/json/recommended",
+        ],
+        "fastly": ["https://api.fastly.com/public-ip-list"],
+        "microsoft_azure": ["https://azservicetags.azurewebsites.net/"],
+        "softlayer_ibm": ["AS36351"],
+        "vercel_aws": ["AS15169"],
+        "heroku_aws": ["AS14618"],
+        "a2hosting": ["AS55293"],
+        "godaddy": ["AS26496", "AS30083"],
+        "dreamhost": ["AS26347"],
+        "alibaba": ["AS45102", "AS134963"],
+        "tencent": ["AS45090", "AS133478", "AS132591", "AS132203"],
+        "ucloud": ["AS135377", "AS59077"],
+        "meta_crawler": ["AS32934"],
+    }
+
     def __init__(self, output_formats: Set[str], only_if_changed: bool = False) -> None:
         self.base_url = Path.cwd()
         self.session = requests.Session()
         self.only_if_changed = only_if_changed
-        self.sources = {
-            "aws": ["https://ip-ranges.amazonaws.com/ip-ranges.json"],
-            "cloudflare": ["https://www.cloudflare.com/ips-v4", "https://www.cloudflare.com/ips-v6"],
-            "digitalocean": ["https://digitalocean.com/geo/google.csv"],
-            "google_cloud": ["https://www.gstatic.com/ipranges/cloud.json"],
-            "google_bot": ["https://developers.google.com/static/search/apis/ipranges/googlebot.json"],
-            "oracle_cloud": ["https://docs.oracle.com/iaas/tools/public_ip_ranges.json"],
-            "linode": ["https://geoip.linode.com/"],
-            "vultr": ["https://geofeed.constant.com/?json"],
-            "openai": ["https://openai.com/chatgpt-user.json", "https://openai.com/gptbot.json"],
-            "perplexity": ["https://www.perplexity.ai/perplexitybot.json", "https://www.perplexity.ai/perplexity-user.json"],
-            "github": ["https://api.github.com/meta"],
-            "apple_icloud": ["https://mask-api.icloud.com/egress-ip-ranges.csv"],
-            "akamai": ["https://techdocs.akamai.com/property-manager/pdfs/akamai_ipv4_ipv6_CIDRs-txt.zip"],
-            "zscaler": [
-                "https://config.zscaler.com/api/zscaler.net/hubs/cidr/json/required",
-                "https://config.zscaler.com/api/zscaler.net/hubs/cidr/json/recommended",
-            ],
-            "fastly": ["https://api.fastly.com/public-ip-list"],
-            "microsoft_azure": ["https://azservicetags.azurewebsites.net/"],
-            "softlayer_ibm": ["AS36351"],
-            "vercel_aws": ["AS15169"],
-            "heroku_aws": ["AS14618"],
-            "a2hosting": ["AS55293"],
-            "godaddy": ["AS26496", "AS30083"],
-            "dreamhost": ["AS26347"],
-            "alibaba": ["AS45102", "AS134963"],
-            "tencent": ["AS45090", "AS133478", "AS132591", "AS132203"],
-            "ucloud": ["AS135377", "AS59077"],
-            "meta_crawler": ["AS32934"],
-        }
-
         self.output_formats = output_formats
 
     def _transform_base(self, source_key: str, source_url: Optional[Union[str, list]] = None) -> Dict[str, Any]:
@@ -175,6 +174,10 @@ class CloudIPRanges:
         """Transform Apple iCloud data to unified format."""
         return self._transform_csv_format(response, "apple_icloud")
 
+    def _transform_starlink(self, response: List[requests.Response]) -> Dict[str, Any]:
+        """Transform Starlink ISP data to unified format."""
+        return self._transform_csv_format(response, "starlink")
+
     def _transform_zscaler(self, response: List[requests.Response]) -> Dict[str, Any]:
         """Transform Zscaler data to unified format."""
         result = self._transform_base("zscaler")
@@ -203,7 +206,6 @@ class CloudIPRanges:
         """Transform Google-style JSON files (Google Bot, OpenAI, Google Cloud) to unified format."""
         result = self._transform_base(source_key)
 
-        # Process multiple responses if needed (like for OpenAI which has two URLs)
         for r in response:
             data = r.json()
             result["last_update"] = data["creationTime"]
@@ -255,7 +257,6 @@ class CloudIPRanges:
         data = response[0].json()
 
         if isinstance(data, dict) and "value" in data:
-            # Process all service tags
             for service in data["value"]:
                 if "properties" in service and "addressPrefixes" in service["properties"]:
                     for prefix in service["properties"]["addressPrefixes"]:
@@ -386,24 +387,20 @@ class CloudIPRanges:
         return result
 
     def _transform_response(self, response: List[requests.Response], source_key: str, is_asn: bool) -> Dict[str, Any]:
-        # Dynamically get the transformation method
         if is_asn:
             transformed_data = self._transform_hackertarget(response, source_key)
         else:
             transform_method = getattr(self, f"_transform_{source_key}")
             transformed_data = transform_method(response)
 
-        # Validate and deduplicate IPs
         ipv4 = set()
         ipv6 = set()
 
-        # Process IPv4 addresses
         for ip in transformed_data["ipv4"]:
             validated_ip = validate_ip(ip)
             if validated_ip:
                 ipv4.add(validated_ip)
 
-        # Process IPv6 addresses
         for ip in transformed_data["ipv6"]:
             validated_ip = validate_ip(ip)
             if validated_ip:
@@ -412,7 +409,6 @@ class CloudIPRanges:
         if not ipv4 and not ipv6:
             raise RuntimeError(f"Failed to parse {source_key}")
 
-        # Update the transformed data with validated IPs
         transformed_data["ipv4"] = sorted(ipv4)
         transformed_data["ipv6"] = sorted(ipv6)
 
@@ -433,7 +429,6 @@ class CloudIPRanges:
 
         transformed_data = self._transform_response(response, source_key, url[0].startswith("AS"))
 
-        # Check if there are any changes only if --only-if-changed is specified
         if self.only_if_changed:
             json_filename = "{}.json".format(source_key.replace("_", "-"))
             json_path = self.base_url / json_filename
@@ -442,20 +437,17 @@ class CloudIPRanges:
                 with open(json_path, "r") as f:
                     existing_data = json.load(f)
 
-                # Compare existing data with new data (excluding last_update timestamp)
                 existing_data.pop("last_update", None)
                 new_data = transformed_data.copy()
                 new_data.pop("last_update", None)
 
                 if existing_data == new_data:
                     logging.debug("No changes found for %s, skipping other formats", source_key)
-                    return  # Return early if no changes found
+                    return
 
-        # Save in all requested formats
         self._save_result(transformed_data, source_key)
 
     def _save_result(self, transformed_data: Dict[str, Any], source_key: str):
-        # Save in all requested formats
         for x, output_format in enumerate(self.output_formats):
             filename = "{}.{}".format(source_key.replace("_", "-"), output_format)
 
@@ -509,12 +501,15 @@ class CloudIPRanges:
 def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Collect IP ranges from cloud providers")
-    parser.add_argument("--sources", nargs="+", help="Specific sources to update (e.g., aws google_cloud)")
+    parser.add_argument("--sources", nargs="+", choices=CloudIPRanges.sources.keys(), help="Specific sources to update (e.g., aws google_cloud)")
     parser.add_argument("--only-if-changed", action="store_true", help="Only write files if there are changes (only works with JSON format)")
     parser.add_argument(
         "--output-format", nargs="+", choices=["json", "csv", "txt"], default=["json"], help="Output format(s) to save the data in (default: json)"
     )
     args = parser.parse_args()
+
+    # Convert sources to set if specified, otherwise None
+    sources = set(args.sources) if args.sources else None
 
     # Convert sources to set if specified, otherwise None
     sources = set(args.sources) if args.sources else None
