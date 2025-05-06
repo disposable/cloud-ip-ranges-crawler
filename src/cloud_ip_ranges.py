@@ -74,7 +74,7 @@ class CloudIPRanges:
 
         result = self._transform_base(source_key, ", ".join(sources))
         data = response[0].text
-        if 'API count exceeded' in data:
+        if "API count exceeded" in data:
             raise RuntimeError("API request count exceeded")
 
         for x, line in enumerate(data.split("\n")):
