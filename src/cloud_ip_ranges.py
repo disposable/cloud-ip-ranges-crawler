@@ -16,9 +16,10 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 
 
 class CloudIPRanges:
-    def __init__(self, output_formats: Set[str]) -> None:
+    def __init__(self, output_formats: Set[str], only_if_changed: bool = False) -> None:
         self.base_url = Path.cwd()
         self.session = requests.Session()
+        self.only_if_changed = only_if_changed
         self.sources = {
             "aws": ["https://ip-ranges.amazonaws.com/ip-ranges.json"],
             "cloudflare": ["https://www.cloudflare.com/ips-v4", "https://www.cloudflare.com/ips-v6"],
@@ -62,7 +63,7 @@ class CloudIPRanges:
         if isinstance(source_url, list):
             source_url = ", ".join(source_url)
 
-        result = {"provider": source_key.replace("_", " ").title(), "source": source_url, "last_updated": datetime.now().isoformat(), "ipv4": [], "ipv6": []}
+        result = {"provider": source_key.replace("_", " ").title(), "source": source_url, "last_update": datetime.now().isoformat(), "ipv4": [], "ipv6": []}
         return result
 
     def _transform_hackertarget(self, response: List[requests.Response], source_key: str) -> Dict[str, Any]:
@@ -92,7 +93,7 @@ class CloudIPRanges:
         """Transform AWS data to unified format."""
         result = self._transform_base("aws")
         data = response[0].json()
-        result["last_updated"] = data["createDate"]
+        result["last_update"] = data["createDate"]
 
         if "prefixes" in data:
             for prefix in data["prefixes"]:
@@ -420,6 +421,24 @@ class CloudIPRanges:
         transformed_data["ipv4"] = sorted(ipv4)
         transformed_data["ipv6"] = sorted(ipv6)
 
+        # Check if there are any changes only if --only-if-changed is specified
+        if self.only_if_changed:
+            json_filename = "{}.json".format(source_key.replace("_", "-"))
+            json_path = self.base_url / json_filename
+
+            if json_path.exists():
+                with open(json_path, "r") as f:
+                    existing_data = json.load(f)
+
+                # Compare existing data with new data (excluding last_update timestamp)
+                existing_data.pop("last_update", None)
+                new_data = transformed_data.copy()
+                new_data.pop("last_update", None)
+
+                if existing_data == new_data:
+                    logging.debug("No changes found for %s, skipping other formats", source_key)
+                    return  # Return early if no changes found
+
         # Save in all requested formats
         for x, output_format in enumerate(self.output_formats):
             filename = "{}.{}".format(source_key.replace("_", "-"), output_format)
@@ -435,7 +454,7 @@ class CloudIPRanges:
                     for ip in transformed_data["ipv6"]:
                         writer.writerow(["IPv6", ip])
                 elif output_format == "txt":
-                    for k in ("provider", "source", "last_updated"):
+                    for k in ("provider", "source", "last_update"):
                         f.write("# {}: {}\n".format(k, transformed_data[k]))
 
                     f.write("\n")
@@ -470,6 +489,7 @@ def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Collect IP ranges from cloud providers")
     parser.add_argument("--sources", nargs="+", help="Specific sources to update (e.g., aws google_cloud)")
+    parser.add_argument("--only-if-changed", action="store_true", help="Only write files if there are changes (only works with JSON format)")
     parser.add_argument(
         "--output-format", nargs="+", choices=["json", "csv", "txt"], default=["json"], help="Output format(s) to save the data in (default: json)"
     )
@@ -477,9 +497,9 @@ def main() -> None:
 
     # Convert sources to set if specified, otherwise None
     sources = set(args.sources) if args.sources else None
-
-    ip_ranges = CloudIPRanges(args.output_format)
-    ip_ranges.fetch_all(sources)
+    output_formats = set(args.output_format)
+    cloud_ip_ranges = CloudIPRanges(output_formats, args.only_if_changed)
+    cloud_ip_ranges.fetch_all(sources)
 
 
 if __name__ == "__main__":
