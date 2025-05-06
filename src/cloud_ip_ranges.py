@@ -25,6 +25,7 @@ class CloudIPRanges:
             "cloudflare": ["https://www.cloudflare.com/ips-v4", "https://www.cloudflare.com/ips-v6"],
             "digitalocean": ["https://digitalocean.com/geo/google.csv"],
             "google_cloud": ["https://www.gstatic.com/ipranges/cloud.json"],
+            "google_bot": ["https://developers.google.com/static/search/apis/ipranges/googlebot.json"],
             "oracle_cloud": ["https://docs.oracle.com/iaas/tools/public_ip_ranges.json"],
             "linode": ["https://geoip.linode.com/"],
             "vultr": ["https://geofeed.constant.com/?json"],
@@ -195,6 +196,21 @@ class CloudIPRanges:
                     result["ipv6"].append(prefix)
                 else:
                     result["ipv4"].append(prefix)
+
+        return result
+
+    def _transform_google_bot(self, response: List[requests.Response]) -> Dict[str, Any]:
+        """Transform Google Bot IP ranges to unified format."""
+        result = self._transform_base("google_bot")
+        data = response[0].json()
+        result["last_update"] = data["creationTime"]
+
+        for prefix in data["prefixes"]:
+            if "ipv6Prefix" in prefix:
+                result["ipv6"].append(prefix["ipv6Prefix"])
+
+            if "ipv4Prefix" in prefix:
+                result["ipv4"].append(prefix["ipv4Prefix"])
 
         return result
 
