@@ -18,6 +18,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 class CloudIPRanges:
     def __init__(self, output_formats: Set[str]) -> None:
         self.base_url = Path.cwd()
+        self.session = requests.Session()
         self.sources = {
             "aws": ["https://ip-ranges.amazonaws.com/ip-ranges.json"],
             "cloudflare": ["https://www.cloudflare.com/ips-v4", "https://www.cloudflare.com/ips-v6"],
@@ -73,6 +74,8 @@ class CloudIPRanges:
 
         result = self._transform_base(source_key, ", ".join(sources))
         data = response[0].text
+        if 'API count exceeded' in data:
+            raise RuntimeError("API request count exceeded")
 
         for x, line in enumerate(data.split("\n")):
             if not line.strip() or line.startswith("#") or x == 0:
@@ -301,7 +304,7 @@ class CloudIPRanges:
             if not u.startswith("https://download.microsoft.com"):
                 continue
 
-            r = requests.get(u, timeout=10)
+            r = self.session.get(u, timeout=10)
             r.raise_for_status()
             response.append(r)
 
@@ -363,12 +366,12 @@ class CloudIPRanges:
 
     def _fetch_and_save(self, source_key: str) -> None:
         """Fetch and save IP ranges for a specific source."""
-        logging.info("Fetching {} IP ranges".format(source_key))
+        logging.debug("Fetching %s source", source_key)
         url = self.sources[source_key]
 
         response = []
         for u in url:
-            r = requests.get(u, timeout=10)
+            r = self.session.get(u, timeout=10)
             r.raise_for_status()
             response.append(r)
 
@@ -395,7 +398,7 @@ class CloudIPRanges:
 
                 return ip
             except ValueError as e:
-                logging.warning(f"Invalid IP address/subnet: {ip} - {str(e)}")
+                logging.warning("Invalid IP address/subnet: %s - %s", ip, str(e))
                 return None
 
         # Process IPv4 addresses
@@ -410,12 +413,15 @@ class CloudIPRanges:
             if validated_ip:
                 ipv6.add(validated_ip)
 
+        if not ipv4 and not ipv6:
+            raise RuntimeError(f"Failed to parse {source_key}")
+
         # Update the transformed data with validated IPs
         transformed_data["ipv4"] = sorted(ipv4)
         transformed_data["ipv6"] = sorted(ipv6)
 
         # Save in all requested formats
-        for output_format in self.output_formats:
+        for x, output_format in enumerate(self.output_formats):
             filename = "{}.{}".format(source_key.replace("_", "-"), output_format)
 
             with open(self.base_url / filename, "w") as f:
@@ -440,10 +446,12 @@ class CloudIPRanges:
                 else:
                     raise ValueError(f"Unknown output format: {output_format}")
 
-            logging.info("Saved {}".format(filename))
+            if x == 0:
+                logging.info("Saved %s [IPv4: %d, IPv6: %d]", filename, len(transformed_data["ipv4"]), len(transformed_data["ipv6"]))
+            else:
+                logging.debug("Saved %s", filename)
 
     def fetch_all(self, sources: Optional[Set[str]] = None) -> None:
-        logging.info("Starting IP range collection")
         try:
             for source in self.sources:
                 if sources is not None and source not in sources:
@@ -451,11 +459,10 @@ class CloudIPRanges:
                 try:
                     self._fetch_and_save(source)
                 except Exception as e:
-                    logging.error("Failed to fetch {}: {}".format(source, str(e)))
+                    logging.error("Failed to fetch %s: %s", source, str(e))
 
-            logging.info("IP range collection completed successfully")
         except Exception as e:
-            logging.error("Error during IP range collection: {}".format(str(e)))
+            logging.error("Error during IP range collection: %s", e)
             raise
 
 
