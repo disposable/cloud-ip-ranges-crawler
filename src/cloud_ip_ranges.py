@@ -37,7 +37,9 @@ class CloudIPRanges:
         "digitalocean": ["https://digitalocean.com/geo/google.csv"],
         "google_cloud": ["https://www.gstatic.com/ipranges/cloud.json"],
         "google_bot": ["https://developers.google.com/static/search/apis/ipranges/googlebot.json"],
+        "bing_bot": ["https://www.bing.com/toolbox/bingbot.json"],
         "oracle_cloud": ["https://docs.oracle.com/iaas/tools/public_ip_ranges.json"],
+        "ahrefs": ["https://api.ahrefs.com/v3/public/crawler-ips"],
         "linode": ["https://geoip.linode.com/"],
         "vultr": ["https://geofeed.constant.com/?json"],
         "openai": ["https://openai.com/chatgpt-user.json", "https://openai.com/gptbot.json"],
@@ -62,6 +64,8 @@ class CloudIPRanges:
         "tencent": ["AS45090", "AS133478", "AS132591", "AS132203"],
         "ucloud": ["AS135377", "AS59077"],
         "meta_crawler": ["AS32934"],
+        "huawei_cloud": ["AS136907", "AS55990"],
+        "rackspace": ["AS39921", "AS12200", "AS15395", "AS44009", "AS45187", "AS58683", "AS27357", "AS19994"],
     }
 
     def __init__(self, output_formats: Set[str], only_if_changed: bool = False) -> None:
@@ -223,6 +227,10 @@ class CloudIPRanges:
         """Transform Google Bot IP ranges to unified format."""
         return self._transform_google_style(response, "google_bot")
 
+    def _transform_bing_bot(self, response: List[requests.Response]) -> Dict[str, Any]:
+        """Transform Bing Bot IP ranges to unified format."""
+        return self._transform_google_style(response, "bing_bot")
+
     def _transform_google_cloud(self, response: List[requests.Response]) -> Dict[str, Any]:
         """Transform Google Cloud data to unified format."""
         return self._transform_google_style(response, "google_cloud")
@@ -362,6 +370,24 @@ class CloudIPRanges:
                         result["ipv6"].append(range)
                     else:
                         result["ipv4"].append(range)
+
+        return result
+
+    def _transform_ahrefs(self, response: List[requests.Response]) -> Dict[str, Any]:
+        """Transform Ahrefs crawler IP ranges to unified format."""
+        result = self._transform_base("ahrefs")
+        data = response[0].json()
+
+        if isinstance(data, dict) and "ips" in data:
+            for ip_dict in data["ips"]:
+                if isinstance(ip_dict, dict) and "ip_address" in ip_dict:
+                    ip = ip_dict["ip_address"]
+                    if ":" in ip:
+                        result["ipv6"].append(ip)
+                    else:
+                        result["ipv4"].append(ip)
+        else:
+            logging.warning("Invalid Ahrefs response format")
 
         return result
 
