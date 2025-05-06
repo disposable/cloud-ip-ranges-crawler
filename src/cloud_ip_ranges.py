@@ -5,6 +5,7 @@ import ipaddress
 import json
 import logging
 import re
+import sys
 import zipfile
 from datetime import datetime
 from pathlib import Path
@@ -13,6 +14,22 @@ from typing import Any, Dict, List, Optional, Set, Union
 import requests
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+
+def validate_ip(ip: str) -> Optional[str]:
+    """Validate an IP address or subnet."""
+    try:
+        # Try to create a network object first (works for both IPs and subnets)
+        network = ipaddress.ip_network(ip, strict=False)
+
+        # Skip private, loopback, link-local, and multicast networks
+        if network.is_private or network.is_loopback or network.is_link_local or network.is_multicast:
+            return None
+
+        return ip
+    except ValueError as e:
+        logging.warning("Invalid IP address/subnet: %s - %s", ip, str(e))
+        return None
 
 
 class CloudIPRanges:
@@ -29,6 +46,8 @@ class CloudIPRanges:
             "oracle_cloud": ["https://docs.oracle.com/iaas/tools/public_ip_ranges.json"],
             "linode": ["https://geoip.linode.com/"],
             "vultr": ["https://geofeed.constant.com/?json"],
+            "openai": ["https://openai.com/chatgpt-user.json", "https://openai.com/gptbot.json"],
+            "perplexity": ["https://www.perplexity.ai/perplexitybot.json", "https://www.perplexity.ai/perplexity-user.json"],
             "github": ["https://api.github.com/meta"],
             "apple_icloud": ["https://mask-api.icloud.com/egress-ip-ranges.csv"],
             "akamai": ["https://techdocs.akamai.com/property-manager/pdfs/akamai_ipv4_ipv6_CIDRs-txt.zip"],
@@ -38,20 +57,16 @@ class CloudIPRanges:
             ],
             "fastly": ["https://api.fastly.com/public-ip-list"],
             "microsoft_azure": ["https://azservicetags.azurewebsites.net/"],
-            "softlayer_ibm": ["https://api.hackertarget.com/aslookup/?q=AS36351"],
-            "vercel_aws": ["https://api.hackertarget.com/aslookup/?q=AS15169"],
-            "heroku_aws": ["https://api.hackertarget.com/aslookup/?q=AS14618"],
-            "a2hosting": ["https://api.hackertarget.com/aslookup/?q=AS55293"],
-            "godaddy": ["https://api.hackertarget.com/aslookup/?q=AS26496", "https://api.hackertarget.com/aslookup/?q=AS30083"],
-            "dreamhost": ["https://api.hackertarget.com/aslookup/?q=AS26347"],
-            "alibaba": ["https://api.hackertarget.com/aslookup/?q=AS45102", "https://api.hackertarget.com/aslookup/?q=AS134963"],
-            "tencent": [
-                "https://api.hackertarget.com/aslookup/?q=AS45090",
-                "https://api.hackertarget.com/aslookup/?q=AS133478",
-                "https://api.hackertarget.com/aslookup/?q=AS132591",
-                "https://api.hackertarget.com/aslookup/?q=AS132203",
-            ],
-            "ucloud": ["https://api.hackertarget.com/aslookup/?q=AS135377", "https://api.hackertarget.com/aslookup/?q=AS59077"],
+            "softlayer_ibm": ["AS36351"],
+            "vercel_aws": ["AS15169"],
+            "heroku_aws": ["AS14618"],
+            "a2hosting": ["AS55293"],
+            "godaddy": ["AS26496", "AS30083"],
+            "dreamhost": ["AS26347"],
+            "alibaba": ["AS45102", "AS134963"],
+            "tencent": ["AS45090", "AS133478", "AS132591", "AS132203"],
+            "ucloud": ["AS135377", "AS59077"],
+            "meta_crawler": ["AS32934"],
         }
 
         self.output_formats = output_formats
@@ -61,9 +76,6 @@ class CloudIPRanges:
         if source_url is None:
             source_url = self.sources[source_key]
 
-        if isinstance(source_url, list):
-            source_url = ", ".join(source_url)
-
         result = {"provider": source_key.replace("_", " ").title(), "source": source_url, "last_update": datetime.now().isoformat(), "ipv4": [], "ipv6": []}
         return result
 
@@ -72,7 +84,7 @@ class CloudIPRanges:
 
         sources = []
         for s in self.sources[source_key]:
-            sources.append(s.replace("https://api.hackertarget.com/aslookup/?q=", ""))
+            sources.append(s.replace("", ""))
 
         result = self._transform_base(source_key, ", ".join(sources))
         data = response[0].text
@@ -137,43 +149,31 @@ class CloudIPRanges:
 
         return result
 
-    def _transform_linode(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Linode data to unified format."""
-        result = self._transform_base("linode")
+    def _transform_csv_format(self, response: List[requests.Response], source_key: str) -> Dict[str, Any]:
+        """Transform CSV format data (used by Linode and Apple iCloud) to unified format."""
+        result = self._transform_base(source_key)
         data = response[0].text
 
         lines = data.splitlines()
         for line in lines:
-            if not line.strip():
-                continue
-            if line.startswith("#"):
+            if not line.strip() or line.startswith("#"):
                 continue
 
-            ip_range = line.split(",")[0]
-            if ":" in ip_range:
-                result["ipv6"].append(ip_range)
+            ip = line.split(",")[0]
+            if ":" in ip:
+                result["ipv6"].append(ip)
             else:
-                result["ipv4"].append(ip_range)
+                result["ipv4"].append(ip)
 
         return result
+
+    def _transform_linode(self, response: List[requests.Response]) -> Dict[str, Any]:
+        """Transform Linode data to unified format."""
+        return self._transform_csv_format(response, "linode")
 
     def _transform_apple_icloud(self, response: List[requests.Response]) -> Dict[str, Any]:
         """Transform Apple iCloud data to unified format."""
-        result = self._transform_base("apple_icloud")
-        data = response[0].text
-
-        lines = data.splitlines()
-        for line in lines:
-            if not line.strip():
-                continue
-
-            prefix = line.split(",")[0]
-            if ":" in prefix:
-                result["ipv6"].append(prefix)
-            else:
-                result["ipv4"].append(prefix)
-
-        return result
+        return self._transform_csv_format(response, "apple_icloud")
 
     def _transform_zscaler(self, response: List[requests.Response]) -> Dict[str, Any]:
         """Transform Zscaler data to unified format."""
@@ -199,20 +199,39 @@ class CloudIPRanges:
 
         return result
 
-    def _transform_google_bot(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Google Bot IP ranges to unified format."""
-        result = self._transform_base("google_bot")
-        data = response[0].json()
-        result["last_update"] = data["creationTime"]
+    def _transform_google_style(self, response: List[requests.Response], source_key: str) -> Dict[str, Any]:
+        """Transform Google-style JSON files (Google Bot, OpenAI, Google Cloud) to unified format."""
+        result = self._transform_base(source_key)
 
-        for prefix in data["prefixes"]:
-            if "ipv6Prefix" in prefix:
-                result["ipv6"].append(prefix["ipv6Prefix"])
+        # Process multiple responses if needed (like for OpenAI which has two URLs)
+        for r in response:
+            data = r.json()
+            result["last_update"] = data["creationTime"]
 
-            if "ipv4Prefix" in prefix:
-                result["ipv4"].append(prefix["ipv4Prefix"])
+            prefixes = data.get("prefixes", [])
+            for prefix in prefixes:
+                if "ipv4Prefix" in prefix:
+                    result["ipv4"].append(prefix["ipv4Prefix"])
+                if "ipv6Prefix" in prefix:
+                    result["ipv6"].append(prefix["ipv6Prefix"])
 
         return result
+
+    def _transform_google_bot(self, response: List[requests.Response]) -> Dict[str, Any]:
+        """Transform Google Bot IP ranges to unified format."""
+        return self._transform_google_style(response, "google_bot")
+
+    def _transform_google_cloud(self, response: List[requests.Response]) -> Dict[str, Any]:
+        """Transform Google Cloud data to unified format."""
+        return self._transform_google_style(response, "google_cloud")
+
+    def _transform_openai(self, response: List[requests.Response]) -> Dict[str, Any]:
+        """Transform OpenAI IP ranges to unified format."""
+        return self._transform_google_style(response, "openai")
+
+    def _transform_perplexity(self, response: List[requests.Response]) -> Dict[str, Any]:
+        """Transform Perplexity IP ranges to unified format."""
+        return self._transform_google_style(response, "perplexity")
 
     def _transform_fastly(self, response: List[requests.Response]) -> Dict[str, Any]:
         """Transform Fastly data to unified format."""
@@ -244,21 +263,6 @@ class CloudIPRanges:
                             result["ipv6"].append(prefix)
                         else:
                             result["ipv4"].append(prefix)
-
-        return result
-
-    def _transform_google_cloud(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Google Cloud data to unified format."""
-        result = self._transform_base("google_cloud")
-        data = response[0].json()
-
-        if isinstance(data, dict):
-            prefixes = data.get("prefixes", [])
-            for prefix in prefixes:
-                if "ipv4Prefix" in prefix:
-                    result["ipv4"].append(prefix["ipv4Prefix"])
-                if "ipv6Prefix" in prefix:
-                    result["ipv6"].append(prefix["ipv6Prefix"])
 
         return result
 
@@ -381,19 +385,9 @@ class CloudIPRanges:
 
         return result
 
-    def _fetch_and_save(self, source_key: str) -> None:
-        """Fetch and save IP ranges for a specific source."""
-        logging.debug("Fetching %s source", source_key)
-        url = self.sources[source_key]
-
-        response = []
-        for u in url:
-            r = self.session.get(u, timeout=10)
-            r.raise_for_status()
-            response.append(r)
-
+    def _transform_response(self, response: List[requests.Response], source_key: str, is_asn: bool) -> Dict[str, Any]:
         # Dynamically get the transformation method
-        if url[0].startswith("https://api.hackertarget.com/"):
+        if is_asn:
             transformed_data = self._transform_hackertarget(response, source_key)
         else:
             transform_method = getattr(self, f"_transform_{source_key}")
@@ -402,21 +396,6 @@ class CloudIPRanges:
         # Validate and deduplicate IPs
         ipv4 = set()
         ipv6 = set()
-
-        def validate_ip(ip: str) -> Optional[str]:
-            """Validate an IP address or subnet."""
-            try:
-                # Try to create a network object first (works for both IPs and subnets)
-                network = ipaddress.ip_network(ip, strict=False)
-
-                # Skip private, loopback, link-local, and multicast networks
-                if network.is_private or network.is_loopback or network.is_link_local or network.is_multicast:
-                    return None
-
-                return ip
-            except ValueError as e:
-                logging.warning("Invalid IP address/subnet: %s - %s", ip, str(e))
-                return None
 
         # Process IPv4 addresses
         for ip in transformed_data["ipv4"]:
@@ -437,6 +416,23 @@ class CloudIPRanges:
         transformed_data["ipv4"] = sorted(ipv4)
         transformed_data["ipv6"] = sorted(ipv6)
 
+        return transformed_data
+
+    def _fetch_and_save(self, source_key: str) -> None:
+        """Fetch and save IP ranges for a specific source."""
+        logging.debug("Fetching %s source", source_key)
+        url = self.sources[source_key]
+
+        response = []
+        for u in url:
+            if u.startswith("AS"):
+                u = f"https://api.hackertarget.com/aslookup/?q={u}"
+            r = self.session.get(u, timeout=10)
+            r.raise_for_status()
+            response.append(r)
+
+        transformed_data = self._transform_response(response, source_key, url[0].startswith("AS"))
+
         # Check if there are any changes only if --only-if-changed is specified
         if self.only_if_changed:
             json_filename = "{}.json".format(source_key.replace("_", "-"))
@@ -456,6 +452,10 @@ class CloudIPRanges:
                     return  # Return early if no changes found
 
         # Save in all requested formats
+        self._save_result(transformed_data, source_key)
+
+    def _save_result(self, transformed_data: Dict[str, Any], source_key: str):
+        # Save in all requested formats
         for x, output_format in enumerate(self.output_formats):
             filename = "{}.{}".format(source_key.replace("_", "-"), output_format)
 
@@ -471,7 +471,8 @@ class CloudIPRanges:
                         writer.writerow(["IPv6", ip])
                 elif output_format == "txt":
                     for k in ("provider", "source", "last_update"):
-                        f.write("# {}: {}\n".format(k, transformed_data[k]))
+                        vl = ", ".join(transformed_data[k]) if isinstance(transformed_data[k], list) else transformed_data[k]
+                        f.write("# {}: {}\n".format(k, vl))
 
                     f.write("\n")
                     f.write("\n".join(transformed_data["ipv4"]))
@@ -486,7 +487,8 @@ class CloudIPRanges:
             else:
                 logging.debug("Saved %s", filename)
 
-    def fetch_all(self, sources: Optional[Set[str]] = None) -> None:
+    def fetch_all(self, sources: Optional[Set[str]] = None) -> bool:
+        error = False
         try:
             for source in self.sources:
                 if sources is not None and source not in sources:
@@ -495,10 +497,13 @@ class CloudIPRanges:
                     self._fetch_and_save(source)
                 except Exception as e:
                     logging.error("Failed to fetch %s: %s", source, str(e))
+                    error = True
 
         except Exception as e:
             logging.error("Error during IP range collection: %s", e)
             raise
+
+        return not error
 
 
 def main() -> None:
@@ -515,7 +520,8 @@ def main() -> None:
     sources = set(args.sources) if args.sources else None
     output_formats = set(args.output_format)
     cloud_ip_ranges = CloudIPRanges(output_formats, args.only_if_changed)
-    cloud_ip_ranges.fetch_all(sources)
+    if not cloud_ip_ranges.fetch_all(sources):
+        sys.exit(1)
 
 
 if __name__ == "__main__":
