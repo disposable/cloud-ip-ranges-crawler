@@ -48,6 +48,7 @@ class CloudIPRanges:
         "apple_icloud": ["https://mask-api.icloud.com/egress-ip-ranges.csv"],
         "starlink": ["https://geoip.starlinkisp.net/feed.csv"],
         "akamai": ["https://techdocs.akamai.com/property-manager/pdfs/akamai_ipv4_ipv6_CIDRs-txt.zip"],
+        "telegram": ["https://core.telegram.org/resources/cidr.txt"],
         "zscaler": [
             "https://config.zscaler.com/api/zscaler.net/hubs/cidr/json/required",
             "https://config.zscaler.com/api/zscaler.net/hubs/cidr/json/recommended",
@@ -169,6 +170,10 @@ class CloudIPRanges:
                 result["ipv4"].append(ip)
 
         return result
+
+    def _transform_telegram(self, response: List[requests.Response]) -> Dict[str, Any]:
+        """Transform Telegram CIDR ranges to unified format."""
+        return self._transform_csv_format(response, "telegram")
 
     def _transform_linode(self, response: List[requests.Response]) -> Dict[str, Any]:
         """Transform Linode data to unified format."""
