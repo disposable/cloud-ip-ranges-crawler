@@ -1,5 +1,6 @@
 import argparse
 import csv
+import html
 import io
 import ipaddress
 import json
@@ -49,6 +50,7 @@ class CloudIPRanges:
         "starlink": ["https://geoip.starlinkisp.net/feed.csv"],
         "akamai": ["https://techdocs.akamai.com/property-manager/pdfs/akamai_ipv4_ipv6_CIDRs-txt.zip"],
         "telegram": ["https://core.telegram.org/resources/cidr.txt"],
+        "whatsapp": ["https://developers.facebook.com/docs/whatsapp/guides/network-requirements/"],
         "zscaler": [
             "https://config.zscaler.com/api/zscaler.net/hubs/cidr/json/required",
             "https://config.zscaler.com/api/zscaler.net/hubs/cidr/json/recommended",
@@ -326,6 +328,39 @@ class CloudIPRanges:
                         result["ipv6"].append(ip_prefix)
                     else:
                         result["ipv4"].append(ip_prefix)
+
+        return result
+
+    def _transform_whatsapp(self, response: List[requests.Response]) -> Dict[str, Any]:
+        """Transform WhatsApp data to unified format."""
+        result = self._transform_base("microsoft_azure")
+
+        match = re.findall(r"""<a href=\"([^\"]+)\"""", response[0].text)
+        data = None
+        for u in match:
+            if not "fbcdn.net" in u and not ".zip" in u:
+                continue
+
+            u = html.unescape(u)
+            r = self.session.get(u, timeout=10)
+            r.raise_for_status()
+            data = r.content
+            break
+        else:
+            raise RuntimeError("No valid zip file found")
+
+        zip_data = io.BytesIO(data)
+        with zipfile.ZipFile(zip_data, "r") as zip_ref:
+            for file in zip_ref.filelist:
+                if "__MACOSX" in file.filename:
+                    continue
+
+                if file.filename.endswith(".txt"):
+                    with zip_ref.open(file) as f:
+                        for line in io.TextIOWrapper(f, encoding="utf-8"):
+                            line = line.strip()
+                            if line and not line.startswith("#"):
+                                result["ipv4"].append(line)
 
         return result
 
