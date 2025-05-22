@@ -69,6 +69,27 @@ class CloudIPRanges:
         "meta_crawler": ["AS32934"],
         "huawei_cloud": ["AS136907", "AS55990"],
         "rackspace": ["AS39921", "AS12200", "AS15395", "AS44009", "AS45187", "AS58683", "AS27357", "AS19994"],
+        "hetzner": ["AS24940", "AS37153"],
+        "choopa": ["AS47540", "AS46407", "AS20473", "AS133795", "AS11508"],
+        "ovh": ["AS35540", "AS16276"],
+        "onlinesas": ["AS12876"],
+        "rackspace": [
+            "AS58683",
+            "AS54636",
+            "AS45187",
+            "AS44716",
+            "AS39921",
+            "AS36248",
+            "AS33070",
+            "AS27357",
+            "AS22720",
+            "AS19994",
+            "AS15395",
+            "AS12200",
+            "AS10532",
+        ],
+        "linode": ["AS63949", "AS48337"],
+        "nforce": ["AS64437", "AS43350"]
     }
 
     def __init__(self, output_formats: Set[str], only_if_changed: bool = False) -> None:
