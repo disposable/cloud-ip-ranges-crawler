@@ -89,7 +89,7 @@ class CloudIPRanges:
             "AS10532",
         ],
         "linode": ["AS63949", "AS48337"],
-        "nforce": ["AS64437", "AS43350"]
+        "nforce": ["AS64437", "AS43350"],
     }
 
     def __init__(self, output_formats: Set[str], only_if_changed: bool = False) -> None:
