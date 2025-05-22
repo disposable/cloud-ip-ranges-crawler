@@ -88,7 +88,6 @@ class CloudIPRanges:
             "AS12200",
             "AS10532",
         ],
-        "linode": ["AS63949", "AS48337"],
         "nforce": ["AS64437", "AS43350"],
     }
 
