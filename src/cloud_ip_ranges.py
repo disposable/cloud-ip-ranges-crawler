@@ -68,7 +68,6 @@ class CloudIPRanges:
         "ucloud": ["AS135377", "AS59077"],
         "meta_crawler": ["AS32934"],
         "huawei_cloud": ["AS136907", "AS55990"],
-        "rackspace": ["AS39921", "AS12200", "AS15395", "AS44009", "AS45187", "AS58683", "AS27357", "AS19994"],
         "hetzner": ["AS24940", "AS37153"],
         "choopa": ["AS47540", "AS46407", "AS20473", "AS133795", "AS11508"],
         "ovh": ["AS35540", "AS16276"],
@@ -87,6 +86,7 @@ class CloudIPRanges:
             "AS15395",
             "AS12200",
             "AS10532",
+            "AS44009",
         ],
         "nforce": ["AS64437", "AS43350"],
     }
