@@ -360,7 +360,9 @@ class CloudIPRanges:
         for url_str in re.findall(r"""<a href=\"([^\"]+)\"""", response[0].text):
             url_str = html.unescape(url_str)
             url_parsed = urllib.parse.urlparse(url_str)
-            if not re.search(r"\.fbcdn.net$", url_parsed.hostname) or not re.search(r"\.zip$", url_parsed.path):
+            if (not url_parsed.hostname or not url_parsed.path) or (
+                not re.search(r"\.fbcdn.net$", url_parsed.hostname) or not re.search(r"\.zip$", url_parsed.path)
+            ):
                 continue
 
             r = self.session.get(url_str, timeout=10)
@@ -576,6 +578,7 @@ class CloudIPRanges:
                     self._fetch_and_save(source)
                 except Exception as e:
                     logging.error("Failed to fetch %s: %s", source, str(e))
+                    logging.exception(e)
                     error = True
 
         except Exception as e:
