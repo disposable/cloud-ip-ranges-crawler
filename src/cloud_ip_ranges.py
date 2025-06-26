@@ -8,6 +8,7 @@ import logging
 import re
 import sys
 import zipfile
+import urllib.parse
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Union
@@ -355,14 +356,14 @@ class CloudIPRanges:
         """Transform WhatsApp data to unified format."""
         result = self._transform_base("microsoft_azure")
 
-        match = re.findall(r"""<a href=\"([^\"]+)\"""", response[0].text)
         data = None
-        for u in match:
-            if not "fbcdn.net" in u and not ".zip" in u:
+        for url_str in re.findall(r"""<a href=\"([^\"]+)\"""", response[0].text):
+            url_str = html.unescape(url_str)
+            url_parsed = urllib.parse.urlparse(url_str)
+            if (not re.search(r"\.fbcdn.net$", url_parsed.hostname) or not re.search(r"\.zip$", url_parsed.path)):
                 continue
 
-            u = html.unescape(u)
-            r = self.session.get(u, timeout=10)
+            r = self.session.get(url_str, timeout=10)
             r.raise_for_status()
             data = r.content
             break
