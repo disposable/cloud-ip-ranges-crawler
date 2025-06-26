@@ -5,6 +5,7 @@ import io
 import ipaddress
 import json
 import logging
+import os
 import re
 import sys
 import zipfile
@@ -14,8 +15,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Union
 
 import requests
-
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
 def validate_ip(ip: str) -> Optional[str]:
@@ -503,7 +502,7 @@ class CloudIPRanges:
 
         return transformed_data
 
-    def _fetch_and_save(self, source_key: str) -> None:
+    def _fetch_and_save(self, source_key: str) -> Optional[tuple[int, int]]:
         """Fetch and save IP ranges for a specific source."""
         logging.debug("Fetching %s source", source_key)
         url = self.sources[source_key]
@@ -534,9 +533,9 @@ class CloudIPRanges:
                     logging.debug("No changes found for %s, skipping other formats", source_key)
                     return
 
-        self._save_result(transformed_data, source_key)
+        return self._save_result(transformed_data, source_key)
 
-    def _save_result(self, transformed_data: Dict[str, Any], source_key: str):
+    def _save_result(self, transformed_data: Dict[str, Any], source_key: str) -> tuple[int, int]:
         for x, output_format in enumerate(self.output_formats):
             filename = "{}.{}".format(source_key.replace("_", "-"), output_format)
 
@@ -568,14 +567,19 @@ class CloudIPRanges:
             else:
                 logging.debug("Saved %s", filename)
 
+        return len(transformed_data["ipv4"]), len(transformed_data["ipv6"])
+
     def fetch_all(self, sources: Optional[Set[str]] = None) -> bool:
         error = False
+        self.statistics = {}
         try:
             for source in self.sources:
                 if sources is not None and source not in sources:
                     continue
                 try:
-                    self._fetch_and_save(source)
+                    if res := self._fetch_and_save(source):
+                        ipv4_count, ipv6_count = res
+                        self.statistics[source] = {"ipv4": ipv4_count, "ipv6": ipv6_count}
                 except Exception as e:
                     logging.error("Failed to fetch %s: %s", source, str(e))
                     logging.exception(e)
@@ -587,16 +591,40 @@ class CloudIPRanges:
 
         return not error
 
+    def add_env_statistics(self) -> None:
+        total_ipv4 = 0
+        total_ipv6 = 0
+        sources_updated = []
+
+        # Calculate totals
+        for source, stats in self.statistics.items():
+            total_ipv4 += stats["ipv4"]
+            total_ipv6 += stats["ipv6"]
+            sources_updated.append(source)
+
+        print(f"::set-output name=total_ipv4::{total_ipv4}")
+        print(f"::set-output name=total_ipv6::{total_ipv6}")
+        print(f"::set-output name=sources_updated::{','.join(sources_updated)}")
 
 def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Collect IP ranges from cloud providers")
     parser.add_argument("--sources", nargs="+", choices=CloudIPRanges.sources.keys(), help="Specific sources to update (e.g., aws google_cloud)")
     parser.add_argument("--only-if-changed", action="store_true", help="Only write files if there are changes (only works with JSON format)")
+    parser.add_argument("--add-env-statistics", action="store_true", help="Add statistics to environment variables for github action")
     parser.add_argument(
         "--output-format", nargs="+", choices=["json", "csv", "txt"], default=["json"], help="Output format(s) to save the data in (default: json)"
     )
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
+    parser.add_argument("--logfile", type=str, help="Log file")
     args = parser.parse_args()
+
+    log_level = logging.DEBUG if args.debug else logging.INFO
+
+    if args.logfile:
+        logging.basicConfig(level=log_level, format="%(asctime)s - %(levelname)s - %(message)s", filename=args.logfile)
+    else:
+        logging.basicConfig(level=log_level, format="%(asctime)s - %(levelname)s - %(message)s")
 
     # Convert sources to set if specified, otherwise None
     sources = set(args.sources) if args.sources else None
@@ -607,6 +635,9 @@ def main() -> None:
     cloud_ip_ranges = CloudIPRanges(output_formats, args.only_if_changed)
     if not cloud_ip_ranges.fetch_all(sources):
         sys.exit(1)
+
+    if args.add_env_statistics:
+        cloud_ip_ranges.add_env_statistics()
 
 
 if __name__ == "__main__":
