@@ -360,7 +360,7 @@ class CloudIPRanges:
         for url_str in re.findall(r"""<a href=\"([^\"]+)\"""", response[0].text):
             url_str = html.unescape(url_str)
             url_parsed = urllib.parse.urlparse(url_str)
-            if (not re.search(r"\.fbcdn.net$", url_parsed.hostname) or not re.search(r"\.zip$", url_parsed.path)):
+            if not re.search(r"\.fbcdn.net$", url_parsed.hostname) or not re.search(r"\.zip$", url_parsed.path):
                 continue
 
             r = self.session.get(url_str, timeout=10)
