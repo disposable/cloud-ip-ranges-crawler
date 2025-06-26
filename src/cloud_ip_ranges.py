@@ -8,8 +8,8 @@ import logging
 import os
 import re
 import sys
-import zipfile
 import urllib.parse
+import zipfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Union
@@ -602,9 +602,12 @@ class CloudIPRanges:
             total_ipv6 += stats["ipv6"]
             sources_updated.append(source)
 
-        print(f"::set-output name=total_ipv4::{total_ipv4}")
-        print(f"::set-output name=total_ipv6::{total_ipv6}")
-        print(f"::set-output name=sources_updated::{','.join(sources_updated)}")
+        if github_output := os.getenv("GITHUB_OUTPUT"):
+            with open(github_output, "a") as f:
+                f.write(f"total_ipv4={total_ipv4}\n")
+                f.write(f"total_ipv6={total_ipv6}\n")
+                f.write(f"sources_updated={','.join(sources_updated)}\n")
+
 
 def main() -> None:
     """Main entry point."""
@@ -616,7 +619,7 @@ def main() -> None:
         "--output-format", nargs="+", choices=["json", "csv", "txt"], default=["json"], help="Output format(s) to save the data in (default: json)"
     )
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
-    parser.add_argument("--logfile", type=str, help="Log file")
+    parser.add_argument("--log-file", type=str, help="Log file")
     args = parser.parse_args()
 
     log_level = logging.DEBUG if args.debug else logging.INFO
