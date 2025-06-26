@@ -624,7 +624,7 @@ def main() -> None:
 
     log_level = logging.DEBUG if args.debug else logging.INFO
 
-    if args.logfile:
+    if args.log_file:
         logging.basicConfig(level=log_level, format="%(asctime)s - %(levelname)s - %(message)s", filename=args.logfile)
     else:
         logging.basicConfig(level=log_level, format="%(asctime)s - %(levelname)s - %(message)s")
