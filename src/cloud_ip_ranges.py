@@ -392,7 +392,7 @@ class CloudIPRanges:
         match = re.findall(r"""<a href=\"([^\"]+)\"""", response[0].text)
         response = []
         for u in match:
-            if not u.startswith("https://download.microsoft.com"):
+            if not u.startswith("https://download.microsoft.com/"):
                 continue
 
             r = self.session.get(u, timeout=10)
