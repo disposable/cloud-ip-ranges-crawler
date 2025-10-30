@@ -394,26 +394,22 @@ class CloudIPRanges:
                 if ip_prefix:
                     if ":" in ip_prefix:
                         result["ipv6"].append(ip_prefix)
-                        result["details_ipv6"].append(
-                            {
-                                "address": ip_prefix,
-                                "alpha2code": subnet.get("alpha2code"),
-                                "region": subnet.get("region"),
-                                "city": subnet.get("city"),
-                                "postal_code": subnet.get("postal_code"),
-                            }
-                        )
+                        result["details_ipv6"].append({
+                            "address": ip_prefix,
+                            "alpha2code": subnet.get("alpha2code"),
+                            "region": subnet.get("region"),
+                            "city": subnet.get("city"),
+                            "postal_code": subnet.get("postal_code"),
+                        })
                     else:
                         result["ipv4"].append(ip_prefix)
-                        result["details_ipv4"].append(
-                            {
-                                "address": ip_prefix,
-                                "alpha2code": subnet.get("alpha2code"),
-                                "region": subnet.get("region"),
-                                "city": subnet.get("city"),
-                                "postal_code": subnet.get("postal_code"),
-                            }
-                        )
+                        result["details_ipv4"].append({
+                            "address": ip_prefix,
+                            "alpha2code": subnet.get("alpha2code"),
+                            "region": subnet.get("region"),
+                            "city": subnet.get("city"),
+                            "postal_code": subnet.get("postal_code"),
+                        })
 
         return result
 
