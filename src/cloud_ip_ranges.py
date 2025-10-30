@@ -142,14 +142,12 @@ class CloudIPRanges:
                 if not ip:
                     continue
                 result["ipv4"].append(ip)
-                result["details_ipv4"].append(
-                    {
-                        "address": ip,
-                        "service": prefix.get("service"),
-                        "region": prefix.get("region"),
-                        "network_border_group": prefix.get("network_border_group"),
-                    }
-                )
+                result["details_ipv4"].append({
+                    "address": ip,
+                    "service": prefix.get("service"),
+                    "region": prefix.get("region"),
+                    "network_border_group": prefix.get("network_border_group"),
+                })
 
         if "ipv6_prefixes" in data:
             for prefix in data["ipv6_prefixes"]:
@@ -157,14 +155,12 @@ class CloudIPRanges:
                 if not ip6:
                     continue
                 result["ipv6"].append(ip6)
-                result["details_ipv6"].append(
-                    {
-                        "address": ip6,
-                        "service": prefix.get("service"),
-                        "region": prefix.get("region"),
-                        "network_border_group": prefix.get("network_border_group"),
-                    }
-                )
+                result["details_ipv6"].append({
+                    "address": ip6,
+                    "service": prefix.get("service"),
+                    "region": prefix.get("region"),
+                    "network_border_group": prefix.get("network_border_group"),
+                })
 
         return result
 
@@ -278,23 +274,19 @@ class CloudIPRanges:
                 if "ipv4Prefix" in prefix:
                     ip = prefix["ipv4Prefix"]
                     result["ipv4"].append(ip)
-                    result["details_ipv4"].append(
-                        {
-                            "address": ip,
-                            "service": prefix.get("service"),
-                            "scope": prefix.get("scope"),
-                        }
-                    )
+                    result["details_ipv4"].append({
+                        "address": ip,
+                        "service": prefix.get("service"),
+                        "scope": prefix.get("scope"),
+                    })
                 if "ipv6Prefix" in prefix:
                     ip6 = prefix["ipv6Prefix"]
                     result["ipv6"].append(ip6)
-                    result["details_ipv6"].append(
-                        {
-                            "address": ip6,
-                            "service": prefix.get("service"),
-                            "scope": prefix.get("scope"),
-                        }
-                    )
+                    result["details_ipv6"].append({
+                        "address": ip6,
+                        "service": prefix.get("service"),
+                        "scope": prefix.get("scope"),
+                    })
 
         return result
 
