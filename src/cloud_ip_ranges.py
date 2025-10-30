@@ -131,16 +131,36 @@ class CloudIPRanges:
     def _transform_aws(self, response: List[requests.Response]) -> Dict[str, Any]:
         """Transform AWS data to unified format."""
         result = self._transform_base("aws")
+        result["details_ipv4"] = []
+        result["details_ipv6"] = []
         data = response[0].json()
         result["last_update"] = data["createDate"]
 
         if "prefixes" in data:
             for prefix in data["prefixes"]:
-                result["ipv4"].append(prefix["ip_prefix"])
+                ip = prefix.get("ip_prefix")
+                if not ip:
+                    continue
+                result["ipv4"].append(ip)
+                result["details_ipv4"].append({
+                    "address": ip,
+                    "service": prefix.get("service"),
+                    "region": prefix.get("region"),
+                    "network_border_group": prefix.get("network_border_group"),
+                })
 
         if "ipv6_prefixes" in data:
             for prefix in data["ipv6_prefixes"]:
-                result["ipv6"].append(prefix["ipv6_prefix"])
+                ip6 = prefix.get("ipv6_prefix")
+                if not ip6:
+                    continue
+                result["ipv6"].append(ip6)
+                result["details_ipv6"].append({
+                    "address": ip6,
+                    "service": prefix.get("service"),
+                    "region": prefix.get("region"),
+                    "network_border_group": prefix.get("network_border_group"),
+                })
 
         return result
 
@@ -212,6 +232,8 @@ class CloudIPRanges:
     def _transform_zscaler(self, response: List[requests.Response]) -> Dict[str, Any]:
         """Transform Zscaler data to unified format."""
         result = self._transform_base("zscaler")
+        result["details_ipv4"] = []
+        result["details_ipv6"] = []
 
         # Process required IPs
         required_data = response[0].json()
@@ -219,8 +241,10 @@ class CloudIPRanges:
             for prefix in required_data["hubPrefixes"]:
                 if ":" in prefix:
                     result["ipv6"].append(prefix)
+                    result["details_ipv6"].append({"address": prefix, "category": "required"})
                 else:
                     result["ipv4"].append(prefix)
+                    result["details_ipv4"].append({"address": prefix, "category": "required"})
 
         # Process recommended IPs
         recommended_data = response[1].json()
@@ -228,14 +252,18 @@ class CloudIPRanges:
             for prefix in recommended_data["hubPrefixes"]:
                 if ":" in prefix:
                     result["ipv6"].append(prefix)
+                    result["details_ipv6"].append({"address": prefix, "category": "recommended"})
                 else:
                     result["ipv4"].append(prefix)
+                    result["details_ipv4"].append({"address": prefix, "category": "recommended"})
 
         return result
 
     def _transform_google_style(self, response: List[requests.Response], source_key: str) -> Dict[str, Any]:
         """Transform Google-style JSON files (Google Bot, OpenAI, Google Cloud) to unified format."""
         result = self._transform_base(source_key)
+        result["details_ipv4"] = []
+        result["details_ipv6"] = []
 
         for r in response:
             data = r.json()
@@ -244,9 +272,21 @@ class CloudIPRanges:
             prefixes = data.get("prefixes", [])
             for prefix in prefixes:
                 if "ipv4Prefix" in prefix:
-                    result["ipv4"].append(prefix["ipv4Prefix"])
+                    ip = prefix["ipv4Prefix"]
+                    result["ipv4"].append(ip)
+                    result["details_ipv4"].append({
+                        "address": ip,
+                        "service": prefix.get("service"),
+                        "scope": prefix.get("scope"),
+                    })
                 if "ipv6Prefix" in prefix:
-                    result["ipv6"].append(prefix["ipv6Prefix"])
+                    ip6 = prefix["ipv6Prefix"]
+                    result["ipv6"].append(ip6)
+                    result["details_ipv6"].append({
+                        "address": ip6,
+                        "service": prefix.get("service"),
+                        "scope": prefix.get("scope"),
+                    })
 
         return result
 
@@ -305,6 +345,8 @@ class CloudIPRanges:
     def _transform_oracle_cloud(self, response: List[requests.Response]) -> Dict[str, Any]:
         """Transform Oracle Cloud data to unified format."""
         result = self._transform_base("oracle_cloud")
+        result["details_ipv4"] = []
+        result["details_ipv6"] = []
         data = response[0].json()
 
         if isinstance(data, dict):
@@ -319,24 +361,30 @@ class CloudIPRanges:
                     if ip:
                         if ":" in ip:
                             result["ipv6"].append(ip)
+                            result["details_ipv6"].append({"address": ip, "region": region.get("region") or region.get("regionKey")})
                         else:
                             result["ipv4"].append(ip)
+                            result["details_ipv4"].append({"address": ip, "region": region.get("region") or region.get("regionKey")})
 
                 for cidr in ipv4_cidrs:
                     ip = cidr.get("cidr")
                     if ip:
                         result["ipv4"].append(ip)
+                        result["details_ipv4"].append({"address": ip, "region": region.get("region") or region.get("regionKey")})
 
                 for cidr in ipv6_cidrs:
                     ip = cidr.get("cidr")
                     if ip:
                         result["ipv6"].append(ip)
+                        result["details_ipv6"].append({"address": ip, "region": region.get("region") or region.get("regionKey")})
 
         return result
 
     def _transform_vultr(self, response: List[requests.Response]) -> Dict[str, Any]:
         """Transform Vultr data to unified format."""
         result = self._transform_base("vultr")
+        result["details_ipv4"] = []
+        result["details_ipv6"] = []
         data = response[0].json()
 
         if isinstance(data, dict):
@@ -346,8 +394,22 @@ class CloudIPRanges:
                 if ip_prefix:
                     if ":" in ip_prefix:
                         result["ipv6"].append(ip_prefix)
+                        result["details_ipv6"].append({
+                            "address": ip_prefix,
+                            "alpha2code": subnet.get("alpha2code"),
+                            "region": subnet.get("region"),
+                            "city": subnet.get("city"),
+                            "postal_code": subnet.get("postal_code"),
+                        })
                     else:
                         result["ipv4"].append(ip_prefix)
+                        result["details_ipv4"].append({
+                            "address": ip_prefix,
+                            "alpha2code": subnet.get("alpha2code"),
+                            "region": subnet.get("region"),
+                            "city": subnet.get("city"),
+                            "postal_code": subnet.get("postal_code"),
+                        })
 
         return result
 
@@ -356,11 +418,11 @@ class CloudIPRanges:
         result = self._transform_base("microsoft_azure")
 
         data = None
-        for url_str in re.findall(r"""<a href=\"([^\"]+)\"""", response[0].text):
+        for url_str in re.findall(r'<a href="([^"]+)"', response[0].text):
             url_str = html.unescape(url_str)
             url_parsed = urllib.parse.urlparse(url_str)
             if (not url_parsed.hostname or not url_parsed.path) or (
-                not re.search(r"\.fbcdn.net$", url_parsed.hostname) or not re.search(r"\.zip$", url_parsed.path)
+                not re.search(r"\.fbcdn\.net$", url_parsed.hostname) or not re.search(r"\.zip$", url_parsed.path)
             ):
                 continue
 
@@ -389,8 +451,10 @@ class CloudIPRanges:
     def _transform_microsoft_azure(self, response: List[requests.Response]) -> Dict[str, Any]:
         """Transform Microsoft Azure data to unified format."""
         result = self._transform_base("microsoft_azure")
+        result["details_ipv4"] = []
+        result["details_ipv6"] = []
 
-        match = re.findall(r"""<a href=\"([^\"]+)\"""", response[0].text)
+        match = re.findall(r'<a href="([^"]+)"', response[0].text)
         response = []
         for u in match:
             if not u.startswith("https://download.microsoft.com/"):
@@ -402,29 +466,42 @@ class CloudIPRanges:
 
         ipv4 = set()
         ipv6 = set()
+        details_ipv4 = []
+        details_ipv6 = []
 
         for r in response:
             data = r.json()
             values = data.get("values", [])
             for value in values:
                 properties = value.get("properties", {})
+                system_service = properties.get("systemService")
+                region = properties.get("region")
                 addresses = properties.get("addressPrefixes", [])
                 for address in addresses:
                     if ":" in address:
                         ipv6.add(address)
+                        details_ipv6.append({"address": address, "systemService": system_service, "region": region})
                     else:
                         ipv4.add(address)
+                        details_ipv4.append({"address": address, "systemService": system_service, "region": region})
 
         result["ipv4"] = list(ipv4)
         result["ipv6"] = list(ipv6)
+        if details_ipv4:
+            result["details_ipv4"] = details_ipv4
+        if details_ipv6:
+            result["details_ipv6"] = details_ipv6
         return result
 
     def _transform_github(self, response: List[requests.Response]) -> Dict[str, Any]:
         """Transform GitHub data to unified format."""
         result = self._transform_base("github")
+        result["details_ipv4"] = []
+        result["details_ipv6"] = []
         data = response[0].json()
 
         if isinstance(data, dict):
+            # Keep original exported IP lists limited to hooks/web to avoid changing existing behavior
             for key in ["hooks", "web"]:
                 ranges = data.get(key, [])
                 for range in ranges:
@@ -432,6 +509,11 @@ class CloudIPRanges:
                         result["ipv6"].append(range)
                     else:
                         result["ipv4"].append(range)
+                    # Add details with category for the included lists
+                    if ":" in range:
+                        result["details_ipv6"].append({"address": range, "category": key})
+                    else:
+                        result["details_ipv4"].append({"address": range, "category": key})
 
         return result
 
@@ -483,22 +565,49 @@ class CloudIPRanges:
 
         ipv4 = set()
         ipv6 = set()
+        details_ipv4 = []
+        details_ipv6 = []
 
         for ip in transformed_data["ipv4"]:
             validated_ip = validate_ip(ip)
             if validated_ip:
                 ipv4.add(validated_ip)
 
+        # Preserve details if present and valid
+        for d in transformed_data.get("details_ipv4", []):
+            ip = d.get("address")
+            if not ip:
+                continue
+            validated_ip = validate_ip(ip)
+            if validated_ip:
+                nd = d.copy()
+                nd["address"] = validated_ip
+                details_ipv4.append(nd)
+
         for ip in transformed_data["ipv6"]:
             validated_ip = validate_ip(ip)
             if validated_ip:
                 ipv6.add(validated_ip)
+
+        for d in transformed_data.get("details_ipv6", []):
+            ip = d.get("address")
+            if not ip:
+                continue
+            validated_ip = validate_ip(ip)
+            if validated_ip:
+                nd = d.copy()
+                nd["address"] = validated_ip
+                details_ipv6.append(nd)
 
         if not ipv4 and not ipv6:
             raise RuntimeError(f"Failed to parse {source_key}")
 
         transformed_data["ipv4"] = sorted(ipv4)
         transformed_data["ipv6"] = sorted(ipv6)
+        if details_ipv4:
+            transformed_data["details_ipv4"] = details_ipv4
+        if details_ipv6:
+            transformed_data["details_ipv6"] = details_ipv6
 
         return transformed_data
 
@@ -566,6 +675,46 @@ class CloudIPRanges:
                 logging.info("Saved %s [IPv4: %d, IPv6: %d]", filename, len(transformed_data["ipv4"]), len(transformed_data["ipv6"]))
             else:
                 logging.debug("Saved %s", filename)
+
+        # Additionally, if details are present, write companion '-details' files for JSON and CSV
+        details_written = False
+        base_name = source_key.replace("_", "-")
+        if transformed_data.get("details_ipv4") or transformed_data.get("details_ipv6"):
+            # JSON details
+            if "json" in self.output_formats:
+                details_json_path = self.base_url / f"{base_name}-details.json"
+                details_payload = {
+                    "provider": transformed_data.get("provider"),
+                    "source": transformed_data.get("source"),
+                    "last_update": transformed_data.get("last_update"),
+                    "ipv4": transformed_data.get("details_ipv4", []),
+                    "ipv6": transformed_data.get("details_ipv6", []),
+                }
+                with open(details_json_path, "w") as df:
+                    json.dump(details_payload, df, indent=2)
+                details_written = True
+
+            # CSV details
+            if "csv" in self.output_formats:
+                details_csv_path = self.base_url / f"{base_name}-details.csv"
+                # Collect all metadata keys
+                keys: Set[str] = set()
+                for d in transformed_data.get("details_ipv4", []):
+                    keys.update(k for k in d.keys() if k != "address")
+                for d in transformed_data.get("details_ipv6", []):
+                    keys.update(k for k in d.keys() if k != "address")
+                ordered_keys = sorted(keys)
+                with open(details_csv_path, "w") as df:
+                    writer = csv.writer(df)
+                    writer.writerow(["Type", "Address", *ordered_keys])
+                    for d in transformed_data.get("details_ipv4", []):
+                        writer.writerow(["IPv4", d.get("address"), *[d.get(k) for k in ordered_keys]])
+                    for d in transformed_data.get("details_ipv6", []):
+                        writer.writerow(["IPv6", d.get("address"), *[d.get(k) for k in ordered_keys]])
+                details_written = True
+
+        if details_written:
+            logging.debug("Saved %s-details.(json/csv)", base_name)
 
         return len(transformed_data["ipv4"]), len(transformed_data["ipv6"])
 

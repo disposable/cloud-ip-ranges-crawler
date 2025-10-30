@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Home - Azure Service Tags</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+    <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container">
+                <a class="navbar-brand" href="/">Azure Service Tags</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex flex-sm-row-reverse" id="navbarSupportedContent">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item"><a class="nav-link" title="Explore Service Tags" href="/servicetag">Explore</a></li>
+                        <li class="nav-item"><a class="nav-link" title="Check if IP addresses are part of any Service Tags" href="/iplookup">IP Lookup</a></li>
+                        <li class="nav-item"><a class="nav-link" title="Learn about the available API's" href="/api">API</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            
+<h3>Definitions</h3>
+<p class="text-muted">These are the different Service Tag definitions we're currently using:</p>
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Cloud</th>
+            <th>Change Number</th>
+            <th>Download</th>
+            <th>Last Retrieved</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>Public</code></td>
+            <td>374</td>
+            <td><a href="https://download.microsoft.com/download/7/1/d/71d86715-5596-4529-9b13-da13a5de5b63/ServiceTags_Public_20251020.json" target="_blank">ServiceTags_Public_20251020.json</a></td>
+            <td title="Wed, 29 Oct 2025 20:20:08 GMT">29 Oct 2025</td>
+        </tr>
+        <tr>
+            <td><code>China</code></td>
+            <td>370</td>
+            <td><a href="https://download.microsoft.com/download/9/d/0/9d03b7e2-4b80-4bf3-9b91-da8c7d3ee9f9/ServiceTags_China_20251020.json" target="_blank">ServiceTags_China_20251020.json</a></td>
+            <td title="Wed, 29 Oct 2025 20:19:30 GMT">29 Oct 2025</td>
+        </tr>
+        <tr>
+            <td><code>AzureGovernment</code></td>
+            <td>371</td>
+            <td><a href="https://download.microsoft.com/download/6/4/d/64db03bf-895b-4173-a8b1-ba4ad5d4df22/ServiceTags_AzureGovernment_20251020.json" target="_blank">ServiceTags_AzureGovernment_20251020.json</a></td>
+            <td title="Wed, 29 Oct 2025 20:19:23 GMT">29 Oct 2025</td>
+        </tr>
+        <tr>
+            <td><code>AzureGermany</code></td>
+            <td>193</td>
+            <td><a href="https://download.microsoft.com/download/0/7/6/076274ab-4b0b-4246-a422-4baf1e03f974/ServiceTags_AzureGermany_20220307.json" target="_blank">ServiceTags_AzureGermany_20220307.json</a></td>
+            <td title="Wed, 29 Oct 2025 20:19:50 GMT">29 Oct 2025</td>
+        </tr>
+    </tbody>
+</table>
+        </main>
+    </div>
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2025 | <a href="https://github.com/jelledruyts/AzureServiceTags">Project Homepage</a> | v2025.08.11.21&#x2B;9ae40355da18881bf32c496b48720f86997ec32a
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4" crossorigin="anonymous"></script>
+    <script src="/js/site.js?v=D4TFpxvZBRwxBiTkpn2L_q-zBuyBxK-Rvd7M1cA7jP4"></script>
+
+    
+</body>
+</html>
