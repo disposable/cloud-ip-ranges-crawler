@@ -44,7 +44,7 @@ pythonpath = ["."]
 asyncio_default_fixture_loop_scope = "function"
 
 [tool.pyright]
-exclude = ["**/__pycache__", "**/node_modules", "**/dist", "**/build", "**/venv", "**/.venv", "**/docs"]
+exclude = ["**/__pycache__", "**/node_modules", "**/dist", "**/build", "**/venv", "**/.venv", "**/docs", "**/tests"]
 
 [tool.bandit]
 exclude_dirs = [".venv", "tests", "docs"]
