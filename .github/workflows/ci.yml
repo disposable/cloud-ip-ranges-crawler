@@ -40,30 +40,28 @@ jobs:
 
       - name: Run Ruff (PEP 8 Formatting)
         run: |
-          source .venv/bin/activate
-          make format
+          uv run make format
 
       - name: Run Ruff (Linting + Docstrings)
         run: |
-          source .venv/bin/activate
-          make check
+          uv run make check
 
       - name: Run vulture (Duplicate Code)
         run: |
-          source .venv/bin/activate
-          make vulture
+          uv run make vulture
 
       - name: Run xenon (Cyclomatic Complexity)
         run: |
-          source .venv/bin/activate
-          make xenon
+          uv run make xenon
 
       - name: Run bandit (Security)
         run: |
-          source .venv/bin/activate
-          make bandit
+          uv run make bandit
 
       - name: Run pyright (Type Checking)
         run: |
-          source .venv/bin/activate
-          make pyright
+          uv run make pyright
+
+      - name: Run pytest (Unit Tests)
+        run: |
+          uv run make test
