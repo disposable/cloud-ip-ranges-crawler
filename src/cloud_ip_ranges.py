@@ -46,7 +46,7 @@ class CloudIPRanges:
         "openai": ["https://openai.com/chatgpt-user.json", "https://openai.com/gptbot.json"],
         "perplexity": ["https://www.perplexity.ai/perplexitybot.json", "https://www.perplexity.ai/perplexity-user.json"],
         "github": ["https://api.github.com/meta"],
-        "apple_icloud": ["https://mask-api.icloud.com/egress-ip-ranges.csv"],
+        "apple_private_relay": ["https://mask-api.icloud.com/egress-ip-ranges.csv"],
         "starlink": ["https://geoip.starlinkisp.net/feed.csv"],
         "akamai": ["https://techdocs.akamai.com/property-manager/pdfs/akamai_ipv4_ipv6_CIDRs-txt.zip"],
         "telegram": ["https://core.telegram.org/resources/cidr.txt"],
@@ -221,9 +221,9 @@ class CloudIPRanges:
         """Transform Linode data to unified format."""
         return self._transform_csv_format(response, "linode")
 
-    def _transform_apple_icloud(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Apple iCloud data to unified format."""
-        return self._transform_csv_format(response, "apple_icloud")
+    def _transform_apple_private_relay(self, response: List[requests.Response]) -> Dict[str, Any]:
+        """Transform Apple Private Relay data to unified format."""
+        return self._transform_csv_format(response, "apple_private_relay")
 
     def _transform_starlink(self, response: List[requests.Response]) -> Dict[str, Any]:
         """Transform Starlink ISP data to unified format."""
