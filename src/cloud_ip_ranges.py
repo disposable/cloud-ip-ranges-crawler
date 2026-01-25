@@ -640,7 +640,8 @@ class CloudIPRanges:
 
                 if existing_data == new_data:
                     logging.debug("No changes found for %s, skipping other formats", source_key)
-                    return
+                    # Still return statistics even when no changes
+                    return len(transformed_data["ipv4"]), len(transformed_data["ipv6"])
 
         return self._save_result(transformed_data, source_key)
 
