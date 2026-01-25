@@ -50,7 +50,7 @@ class CloudIPRanges:
         "starlink": ["https://geoip.starlinkisp.net/feed.csv"],
         "akamai": ["https://techdocs.akamai.com/property-manager/pdfs/akamai_ipv4_ipv6_CIDRs-txt.zip"],
         "telegram": ["https://core.telegram.org/resources/cidr.txt"],
-        "whatsapp": ["https://developers.facebook.com/docs/whatsapp/guides/network-requirements/"],
+        # "whatsapp": ["https://developers.facebook.com/docs/whatsapp/guides/network-requirements/"],  # Temporarily disabled due to page structure changes
         "zscaler": [
             "https://config.zscaler.com/api/zscaler.net/hubs/cidr/json/required",
             "https://config.zscaler.com/api/zscaler.net/hubs/cidr/json/recommended",
