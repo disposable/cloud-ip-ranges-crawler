@@ -754,6 +754,7 @@ class CloudIPRanges:
                 f.write(f"total_ipv4={total_ipv4}\n")
                 f.write(f"total_ipv6={total_ipv6}\n")
                 f.write(f"sources_updated={','.join(sources_updated)}\n")
+                f.write(f"sources_count={len(sources_updated)}\n")
 
 
 def main() -> None:
