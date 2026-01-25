@@ -58,7 +58,7 @@ class CloudIPRanges:
         "fastly": ["https://api.fastly.com/public-ip-list"],
         "microsoft_azure": ["https://azservicetags.azurewebsites.net/"],
         "softlayer_ibm": ["AS36351"],
-        "vercel_aws": ["AS15169"],
+        # "vercel_aws": ["AS15169"],  # Disabled - AS15169 is Google's ASN, Vercel doesn't have its own ASN
         "heroku_aws": ["AS14618"],
         "a2hosting": ["AS55293"],
         "godaddy": ["AS26496", "AS30083"],
