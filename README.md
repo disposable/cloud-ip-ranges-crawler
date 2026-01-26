@@ -56,26 +56,28 @@ This crawler fetches IP ranges from multiple cloud providers and online services
 - **Vercel** - Edge computing platform IP ranges (registry-owned)
 
 ### ASN-based Sources (RIPEstat + RADB)
-Providers that don't publish explicit IP ranges are queried through ASN lookups. The crawler supports both direct ASN lists and RADB AS-SET expansion (e.g., `RADB::AS-FACEBOOK`):
+When providers do not publish explicit IP allowlists, the crawler performs BGP lookups via RIPEstat and optionally expands RADB AS-SETs (`RADB::AS-SET`). The current mappings align with the values in `CloudIPRanges.sources`:
 
-- **IBM/Softlayer** (AS36351)
-- **Heroku/AWS** (AS14618)
-- **Fly.io** (AS40509)
-- **Render** (AS397273)
-- **A2Hosting** (AS55293)
-- **GoDaddy** (AS26496, AS30083)
-- **Dreamhost** (AS26347)
-- **Alibaba** (AS45102, AS134963)
-- **Tencent** (AS45090, AS133478, AS132591, AS132203)
-- **Ucloud** (AS135377, AS59077)
-- **Meta Crawler** (RADB::AS-FACEBOOK)
-- **Huawei Cloud** (AS136907, AS55990)
-- **Hetzner** (AS24940, AS37153)
-- **Choopa** (AS46407, AS20473, AS133795, AS11508)
-- **OVH** (AS35540, AS16276)
-- **Online SAS** (AS12876)
-- **Rackspace** (Multiple ASNs)
-- **nForce** (AS64437, AS43350)
+| Provider | Definition |
+| --- | --- |
+| IBM / Softlayer | `RADB::AS-SOFTLAYER` |
+| Heroku (AWS) | `AS14618` |
+| Fly.io | `AS40509` |
+| Render | `AS397273` |
+| A2Hosting | `AS55293` |
+| GoDaddy | `AS26496`, `AS30083` |
+| Dreamhost | `AS26347` |
+| Alibaba Cloud | `RADB::AS-ALIBABA-CN-NET`, `AS134963` (kept separate) |
+| Tencent Cloud | `RADB::AS132203:AS-TENCENT` |
+| UCloud | `AS135377`, `AS59077` |
+| Meta crawler traffic | `RADB::AS-FACEBOOK` |
+| Huawei Cloud | `RADB::AS-HUAWEI` |
+| Hetzner / xneelo | `RADB::AS-HETZNER` |
+| Choopa / Constant | `AS46407`, `AS20473`, `AS133795`, `AS11508` |
+| OVH | `RADB::AS-OVH` |
+| Online SAS | `RADB::AS-ONLINESAS` |
+| Rackspace | `RADB::AS-RACKSPACE` |
+| nForce | `RADB::AS-NFORCE` |
 
 ### Misc Providers
 Providers that are not typical cloud providers or crawlers, but may be useful for reference:
