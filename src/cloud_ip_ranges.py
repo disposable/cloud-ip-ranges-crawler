@@ -16,6 +16,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Union
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 
 def validate_ip(ip: str) -> Optional[str]:
@@ -99,6 +101,26 @@ class CloudIPRanges:
     def __init__(self, output_formats: Set[str], only_if_changed: bool = False) -> None:
         self.base_url = Path.cwd()
         self.session = requests.Session()
+        self.session.headers.update(
+            {
+                "User-Agent": "cloud-ip-ranges-crawler/1.0 (+https://github.com/stefan/cloud-ip-ranges)",
+                "Accept": "application/json, text/plain, */*",
+            }
+        )
+
+        retry = Retry(
+            total=5,
+            connect=5,
+            read=5,
+            status=5,
+            backoff_factor=0.5,
+            status_forcelist=(429, 500, 502, 503, 504),
+            allowed_methods=("HEAD", "GET", "OPTIONS"),
+            raise_on_status=False,
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
         self.only_if_changed = only_if_changed
         self.output_formats = output_formats
 
@@ -851,6 +873,7 @@ class CloudIPRanges:
         url = self.sources[source_key]
 
         transformed_data: Dict[str, Any]
+        source_http: List[Dict[str, Any]] = []
 
         if url and isinstance(url[0], str) and url[0].startswith("AS"):
             asn = url[0]
@@ -858,6 +881,15 @@ class CloudIPRanges:
             try:
                 r = self.session.get(ripestat_url, timeout=10)
                 r.raise_for_status()
+                source_http.append(
+                    {
+                        "url": ripestat_url,
+                        "status": r.status_code,
+                        "content_type": r.headers.get("content-type"),
+                        "etag": r.headers.get("etag"),
+                        "last_modified": r.headers.get("last-modified"),
+                    }
+                )
                 transformed_data = self._transform_ripestat_announced_prefixes([r], source_key, asn)
                 transformed_data = self._normalize_transformed_data(transformed_data, source_key)
             except Exception as e:
@@ -869,6 +901,15 @@ class CloudIPRanges:
                     r = self.session.get(u, timeout=10)
                     r.raise_for_status()
                     response.append(r)
+                    source_http.append(
+                        {
+                            "url": u,
+                            "status": r.status_code,
+                            "content_type": r.headers.get("content-type"),
+                            "etag": r.headers.get("etag"),
+                            "last_modified": r.headers.get("last-modified"),
+                        }
+                    )
                 transformed_data = self._transform_response(response, source_key, is_asn=True)
         else:
             response = []
@@ -876,7 +917,19 @@ class CloudIPRanges:
                 r = self.session.get(u, timeout=10)
                 r.raise_for_status()
                 response.append(r)
+                source_http.append(
+                    {
+                        "url": u,
+                        "status": r.status_code,
+                        "content_type": r.headers.get("content-type"),
+                        "etag": r.headers.get("etag"),
+                        "last_modified": r.headers.get("last-modified"),
+                    }
+                )
             transformed_data = self._transform_response(response, source_key, is_asn=False)
+
+        if source_http:
+            transformed_data["source_http"] = source_http
 
         if self.only_if_changed:
             json_filename = "{}.json".format(source_key.replace("_", "-"))
@@ -887,8 +940,10 @@ class CloudIPRanges:
                     existing_data = json.load(f)
 
                 existing_data.pop("last_update", None)
+                existing_data.pop("generated_at", None)
                 new_data = transformed_data.copy()
                 new_data.pop("last_update", None)
+                new_data.pop("generated_at", None)
 
                 if existing_data == new_data:
                     logging.debug("No changes found for %s, skipping other formats", source_key)
