@@ -642,76 +642,111 @@ class CloudIPRanges:
 
         return self._save_result(transformed_data, source_key)
 
-    def _save_result(self, transformed_data: Dict[str, Any], source_key: str) -> tuple[int, int]:
-        for x, output_format in enumerate(self.output_formats):
-            filename = "{}.{}".format(source_key.replace("_", "-"), output_format)
+    def _save_json(self, transformed_data: Dict[str, Any], filename: str) -> None:
+        """Save data in JSON format."""
+        with open(self.base_url / filename, "w") as f:
+            json.dump(transformed_data, f, indent=2)
 
-            with open(self.base_url / filename, "w") as f:
-                if output_format == "json":
-                    json.dump(transformed_data, f, indent=2)
-                elif output_format == "csv":
-                    writer = csv.writer(f)
-                    writer.writerow(["Type", "Address"])
-                    for ip in transformed_data["ipv4"]:
-                        writer.writerow(["IPv4", ip])
-                    for ip in transformed_data["ipv6"]:
-                        writer.writerow(["IPv6", ip])
-                elif output_format == "txt":
-                    for k in ("provider", "source", "last_update"):
-                        vl = ", ".join(transformed_data[k]) if isinstance(transformed_data[k], list) else transformed_data[k]
-                        f.write("# {}: {}\n".format(k, vl))
+    def _save_csv(self, transformed_data: Dict[str, Any], filename: str) -> None:
+        """Save data in CSV format."""
+        with open(self.base_url / filename, "w") as f:
+            writer = csv.writer(f)
+            writer.writerow(["Type", "Address"])
+            for ip in transformed_data["ipv4"]:
+                writer.writerow(["IPv4", ip])
+            for ip in transformed_data["ipv6"]:
+                writer.writerow(["IPv6", ip])
 
-                    f.write("\n")
-                    f.write("\n".join(transformed_data["ipv4"]))
-                    if transformed_data["ipv6"]:
-                        f.write("\n")
-                        f.write("\n".join(transformed_data["ipv6"]))
-                else:
-                    raise ValueError(f"Unknown output format: {output_format}")
+    def _save_txt(self, transformed_data: Dict[str, Any], filename: str) -> None:
+        """Save data in TXT format."""
+        with open(self.base_url / filename, "w") as f:
+            for k in ("provider", "source", "last_update"):
+                vl = ", ".join(transformed_data[k]) if isinstance(transformed_data[k], list) else transformed_data[k]
+                f.write("# {}: {}\n".format(k, vl))
 
-            if x == 0:
-                logging.info("Saved %s [IPv4: %d, IPv6: %d]", filename, len(transformed_data["ipv4"]), len(transformed_data["ipv6"]))
-            else:
-                logging.debug("Saved %s", filename)
+            f.write("\n")
+            f.write("\n".join(transformed_data["ipv4"]))
+            if transformed_data["ipv6"]:
+                f.write("\n")
+                f.write("\n".join(transformed_data["ipv6"]))
 
-        # Additionally, if details are present, write companion '-details' files for JSON and CSV
+    def _save_details_files(self, transformed_data: Dict[str, Any], base_name: str) -> bool:
+        """Save detailed metadata files if available."""
+        if not (transformed_data.get("details_ipv4") or transformed_data.get("details_ipv6")):
+            return False
+
         details_written = False
+
+        if "json" in self.output_formats:
+            self._save_json_details(transformed_data, base_name)
+            details_written = True
+
+        if "csv" in self.output_formats:
+            self._save_csv_details(transformed_data, base_name)
+            details_written = True
+
+        return details_written
+
+    def _save_json_details(self, transformed_data: Dict[str, Any], base_name: str) -> None:
+        """Save detailed metadata in JSON format."""
+        details_json_path = self.base_url / f"{base_name}-details.json"
+        details_payload = {
+            "provider": transformed_data.get("provider"),
+            "source": transformed_data.get("source"),
+            "last_update": transformed_data.get("last_update"),
+            "ipv4": transformed_data.get("details_ipv4", []),
+            "ipv6": transformed_data.get("details_ipv6", []),
+        }
+        with open(details_json_path, "w") as df:
+            json.dump(details_payload, df, indent=2)
+
+    def _save_csv_details(self, transformed_data: Dict[str, Any], base_name: str) -> None:
+        """Save detailed metadata in CSV format."""
+        details_csv_path = self.base_url / f"{base_name}-details.csv"
+
+        # Collect all metadata keys
+        keys: Set[str] = set()
+        for d in transformed_data.get("details_ipv4", []):
+            keys.update(k for k in d.keys() if k != "address")
+        for d in transformed_data.get("details_ipv6", []):
+            keys.update(k for k in d.keys() if k != "address")
+        ordered_keys = sorted(keys)
+
+        with open(details_csv_path, "w") as df:
+            writer = csv.writer(df)
+            writer.writerow(["Type", "Address", *ordered_keys])
+            for d in transformed_data.get("details_ipv4", []):
+                writer.writerow(["IPv4", d.get("address"), *[d.get(k) for k in ordered_keys]])
+            for d in transformed_data.get("details_ipv6", []):
+                writer.writerow(["IPv6", d.get("address"), *[d.get(k) for k in ordered_keys]])
+
+    def _save_result(self, transformed_data: Dict[str, Any], source_key: str) -> tuple[int, int]:
+        """Save transformed data in all configured output formats."""
+        # Format writer methods mapping
+        format_writers = {
+            "json": self._save_json,
+            "csv": self._save_csv,
+            "txt": self._save_txt,
+        }
+
         base_name = source_key.replace("_", "-")
-        if transformed_data.get("details_ipv4") or transformed_data.get("details_ipv6"):
-            # JSON details
-            if "json" in self.output_formats:
-                details_json_path = self.base_url / f"{base_name}-details.json"
-                details_payload = {
-                    "provider": transformed_data.get("provider"),
-                    "source": transformed_data.get("source"),
-                    "last_update": transformed_data.get("last_update"),
-                    "ipv4": transformed_data.get("details_ipv4", []),
-                    "ipv6": transformed_data.get("details_ipv6", []),
-                }
-                with open(details_json_path, "w") as df:
-                    json.dump(details_payload, df, indent=2)
-                details_written = True
 
-            # CSV details
-            if "csv" in self.output_formats:
-                details_csv_path = self.base_url / f"{base_name}-details.csv"
-                # Collect all metadata keys
-                keys: Set[str] = set()
-                for d in transformed_data.get("details_ipv4", []):
-                    keys.update(k for k in d.keys() if k != "address")
-                for d in transformed_data.get("details_ipv6", []):
-                    keys.update(k for k in d.keys() if k != "address")
-                ordered_keys = sorted(keys)
-                with open(details_csv_path, "w") as df:
-                    writer = csv.writer(df)
-                    writer.writerow(["Type", "Address", *ordered_keys])
-                    for d in transformed_data.get("details_ipv4", []):
-                        writer.writerow(["IPv4", d.get("address"), *[d.get(k) for k in ordered_keys]])
-                    for d in transformed_data.get("details_ipv6", []):
-                        writer.writerow(["IPv6", d.get("address"), *[d.get(k) for k in ordered_keys]])
-                details_written = True
+        # Save main files in each format
+        for x, output_format in enumerate(self.output_formats):
+            filename = f"{base_name}.{output_format}"
 
-        if details_written:
+            if output_format not in format_writers:
+                raise ValueError(f"Unknown output format: {output_format}")
+
+            format_writers[output_format](transformed_data, filename)
+
+            # Log first format as info, others as debug
+            log_message = "Saved %s [IPv4: %d, IPv6: %d]" if x == 0 else "Saved %s"
+            log_level = logging.info if x == 0 else logging.debug
+            log_level(log_message, filename, len(transformed_data["ipv4"]), len(transformed_data["ipv6"]))
+
+        # Save detailed metadata files if available
+        if self._save_details_files(transformed_data, base_name):
             logging.debug("Saved %s-details.(json/csv)", base_name)
 
         return len(transformed_data["ipv4"]), len(transformed_data["ipv6"])

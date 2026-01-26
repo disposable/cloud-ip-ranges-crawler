@@ -202,8 +202,8 @@ def test_linode_transform_csv(cipr: CloudIPRanges) -> None:
 
 def test_apple_icloud_transform_csv(cipr: CloudIPRanges) -> None:
     r = _load_raw(SAMPLES_DIR / "apple_icloud_0.raw")
-    res = cipr._transform_response([r], "apple_icloud", is_asn=False)
-    assert res["provider"] == "Apple Icloud"
+    res = cipr._transform_response([r], "apple_private_relay", is_asn=False)
+    assert res["provider"] == "Apple Private Relay"
     assert _has_valid_ipv4(res) or _has_valid_ipv6(res)
 
 
