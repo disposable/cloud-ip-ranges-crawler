@@ -21,6 +21,7 @@ dev = [
     "bandit>=1.8.3",
     "codecov>=2.1.13",
     "coverage>=7.8.0",
+    "pytest-cov>=6.0.0",
     "pre-commit>=4.2.0",
     "pyright>=1.1.408",
     "pytest>=8.3.5",
@@ -48,6 +49,9 @@ ignore = ["F821"]  # Ignore specific docstring rules
 [tool.pytest.ini_options]
 addopts = [
     "--import-mode=importlib",
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-fail-under=70",
 ]
 pythonpath = ["."]
 asyncio_default_fixture_loop_scope = "function"

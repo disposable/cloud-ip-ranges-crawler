@@ -1,0 +1,45 @@
+{
+  "mock_response": true,
+  "source": "vercel",
+  "seeds": [
+    "76.76.21.0/24",
+    "198.169.1.0/24",
+    "155.121.0.0/16"
+  ],
+  "rdap_responses": [
+    {
+      "entities": [
+        {
+          "handle": "VERCEL-ARIN-HANDLE",
+          "roles": [
+            "registrant"
+          ],
+          "name": "Vercel Inc."
+        }
+      ]
+    },
+    {
+      "entities": [
+        {
+          "handle": "VERCEL-ARIN-HANDLE",
+          "roles": [
+            "registrant"
+          ],
+          "name": "Vercel Inc."
+        }
+      ]
+    },
+    {
+      "entities": [
+        {
+          "handle": "VERCEL-ARIN-HANDLE",
+          "roles": [
+            "registrant"
+          ],
+          "name": "Vercel Inc."
+        }
+      ]
+    }
+  ],
+  "note": "vercel uses RDAP lookups from seed CIDRs. This mock simulates the ARIN registry responses."
+}

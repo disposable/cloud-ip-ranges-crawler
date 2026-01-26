@@ -23,7 +23,53 @@ def download_raw_samples():
 
     # Download raw data for each source
     for source, urls in cloud_ip_ranges.sources.items():
-        if urls[0].startswith("AS"):
+        if isinstance(urls, str):
+            urls = [urls]
+
+        # Handle sources that use seed CIDRs for RDAP lookups (not traditional URLs)
+        # These are identified by CIDR notation (e.g., "76.76.21.0/24") rather than URLs
+        if urls and any("/" in url and "." in url.split("/")[0] for url in urls):
+            # This looks like CIDR notation, not URLs
+            logging.info(f"Handling seed-based source {source} with CIDRs: {urls}")
+            try:
+                # For seed-based sources, we need to simulate the RDAP lookup process
+                # Create mock RDAP responses for each seed CIDR
+                mock_responses = []
+                for seed in urls:
+                    seed_ip = seed.split("/")[0]
+                    # Mock RDAP registry response for the seed IP
+                    mock_rdap = {
+                        "entities": [{
+                            "handle": f"{source.upper()}-ARIN-HANDLE",
+                            "roles": ["registrant"],
+                            "name": f"{source.title()} Inc."
+                        }]
+                    }
+                    mock_responses.append(mock_rdap)
+
+                # Create a mock file that contains the array of mock responses
+                mock_data = {
+                    "mock_response": True,
+                    "source": source,
+                    "seeds": urls,
+                    "rdap_responses": mock_responses,
+                    "note": f"{source} uses RDAP lookups from seed CIDRs. This mock simulates the ARIN registry responses."
+                }
+
+                output_file = output_dir / f"{source}_0.raw"
+                with open(output_file, 'w') as f:
+                    json.dump(mock_data, f, indent=2)
+
+                logging.info(f"Created mock {source} sample with {len(mock_responses)} RDAP responses: {output_file}")
+                continue
+
+            except Exception as e:
+                logging.error(f"Error creating mock {source} data: {e}")
+                continue
+
+        # Skip ASN-based sources (they start with "AS")
+        if urls and urls[0].startswith("AS"):
+            logging.info(f"Skipping ASN-based source: {source}")
             continue
 
         try:
@@ -45,6 +91,8 @@ def download_raw_samples():
                             json.dump(data, f, indent=2)
                         else:
                             f.write(data)
+
+                    logging.info(f"Downloaded {source}_{i}.raw")
 
                 except requests.RequestException as e:
                     logging.error(f"Error downloading {url}: {e}")
