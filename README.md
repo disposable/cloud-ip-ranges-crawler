@@ -62,7 +62,7 @@ Providers that don't publish explicit IP ranges are queried through ASN lookups:
 ## Installation
 
 ### Prerequisites
-- Python 3.9 or higher
+- Python 3.10 or higher
 - `uv` package manager (recommended) or pip
 
 ### Setup with uv (Recommended)
@@ -185,32 +185,29 @@ IPv6,2600:1f14::/36
 ## Development
 
 ### Code Quality Tools
-The project uses several code quality tools configured in `pyproject.toml`:
+The project uses comprehensive code quality tools configured in `pyproject.toml`:
 
 ```bash
-# Format code
-make reformat-ruff
-
-# Check code quality
-make check
-
 # Run all validation checks
-make validate
+uv run make validate
 
-# Run tests
-make test
-
-# Fix code issues
-make fix
+# Individual tools
+uv run make format      # Code formatting check
+uv run make check       # Linting and docstrings
+uv run make test        # Unit tests
+uv run make bandit      # Security analysis
+uv run make pyright     # Static type checking
+uv run make vulture     # Dead code detection
+uv run make complexity  # Cyclomatic complexity analysis
 ```
 
 ### Available Make Targets
-- `format` - Check code formatting
-- `check` - Run linting checks
+- `validate` - Run all quality checks (format, check, complexity, bandit, pyright, vulture)
+- `format` - Check code formatting with ruff
+- `check` - Run linting checks with ruff
 - `fix` - Auto-fix formatting and linting issues
-- `test` - Run pytest tests
-- `validate` - Run all quality checks
-- `bandit` - Security analysis
+- `test` - Run pytest unit tests
+- `bandit` - Security vulnerability scanning
 - `pyright` - Static type checking
 - `vulture` - Dead code detection
 - `complexity` - Code complexity analysis
