@@ -146,9 +146,20 @@ uv run cloud-ip-ranges --log-file crawler.log
 - `--sources`: Specify which providers to fetch (space-separated list)
 - `--output-format`: Output format(s) - `json`, `csv`, `txt` (default: json)
 - `--only-if-changed`: Only write files if content has changed
+- `--max-delta-ratio`: Reject runs where IP count changes by more than this ratio (e.g., 0.3 = 30%)
 - `--add-env-statistics`: Add statistics to environment variables (for CI/CD)
 - `--debug`: Enable debug logging
 - `--log-file`: Specify log file path
+
+### Output Metadata
+
+All JSON outputs include enhanced metadata:
+- `provider_id`: Machine-readable provider identifier
+- `method`: How the data was obtained (e.g., `published_list`, `bgp_announced`, `rdap_registry`)
+- `coverage_notes`: Scope limitations (e.g., “registry-owned only”)
+- `generated_at`: Timestamp when the file was generated
+- `source_updated_at`: When the upstream source was last updated
+- `source_http`: HTTP response metadata (status, content-type, etag, last-modified)
 
 ## Output Formats
 
@@ -234,6 +245,38 @@ The crawler is built around the `CloudIPRanges` class which:
 - `_transform_*` methods: Provider-specific data transformation logic
 - `validate_ip()`: IP address validation and filtering
 - `_save_result()`: Multi-format output generation
+- `_audit_transformed_data()`: Sanity checks (no default routes, no private ranges)
+- `_enforce_max_delta()`: Delta change enforcement for CI gating
+
+## Data Collection Methods
+
+### Direct API Sources
+Providers with official IP range documents/JSON APIs.
+
+### ASN-based Sources (RIPEstat)
+Providers without published lists use RIPEstat “Announced Prefixes” for BGP-announced prefixes, with HackerTarget as fallback.
+
+### RDAP-based Sources (Vercel)
+For providers that own netblocks but lack ASN, we use:
+- Seed CIDRs → RDAP → org handle → ARIN Whois-RWS nets enumeration
+- Emits registry-owned netblocks only (not cloud egress/edge IPs)
+
+## Reliability Features
+
+### HTTP Layer Hardening
+- Default User-Agent and headers
+- Retries with exponential backoff (5 attempts)
+- Captures HTTP metadata (status, content-type, etag, last-modified)
+
+### Change Detection
+- `--only-if-changed`: Skip writes when content is unchanged
+- `--max-delta-ratio`: Reject runs with extreme IP count changes (e.g., >30%)
+- Delta summaries logged for CI visibility
+
+### Auditing
+- Rejects default routes (0.0.0.0/0, ::/0)
+- Filters private/local ranges
+- Validates CIDR syntax
 
 ## Error Handling
 
