@@ -412,7 +412,7 @@ class CloudIPRanges:
 
     def _transform_whatsapp(self, response: List[requests.Response]) -> Dict[str, Any]:
         """Transform WhatsApp data to unified format."""
-        result = self._transform_base("microsoft_azure")
+        result = self._transform_base("whatsapp", "https://developers.facebook.com/docs/whatsapp/guides/network-requirements/")
 
         data = None
         for url_str in re.findall(r'<a href="([^"]+)"', response[0].text):

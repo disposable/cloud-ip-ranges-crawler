@@ -309,5 +309,5 @@ def test_whatsapp_transform_with_mocked_zip(cipr: CloudIPRanges, monkeypatch: py
 
     monkeypatch.setattr(cipr.session, "get", fake_get)
     res = cipr._transform_response([html_page], "whatsapp", is_asn=False)
-    assert res["provider"] == "Microsoft Azure"
+    assert res["provider"] == "Whatsapp"
     assert any("." in ip for ip in res["ipv4"])  # entries parsed from zip
