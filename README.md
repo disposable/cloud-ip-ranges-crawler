@@ -39,11 +39,18 @@ This crawler fetches IP ranges from multiple cloud providers and online services
 - **Fastly** - CDN and edge computing IP ranges
 - **Microsoft Azure** - Cloud service IP ranges with service details
 - **Telegram** - Messaging service IP ranges
+- **Atlassian** - Collaboration tools IP ranges
+- **Datadog** - Monitoring and security platform IP ranges
+- **Okta** - Identity management service IP ranges
+- **Zendesk** - Customer support platform IP ranges
+- **Vercel** - Edge computing platform IP ranges (registry-owned)
 
 ### ASN-based Sources
 Providers that don't publish explicit IP ranges are queried through ASN lookups:
 - **IBM/Softlayer** (AS36351)
 - **Heroku/AWS** (AS14618)
+- **Fly.io** (AS40509)
+- **Render** (AS397273)
 - **A2Hosting** (AS55293)
 - **GoDaddy** (AS26496, AS30083)
 - **Dreamhost** (AS26347)
