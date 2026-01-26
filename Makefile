@@ -41,7 +41,7 @@ test:
 	pytest
 
 test-unit:
-	pytest tests/unit/
+	pytest tests/unit/ --cov-fail-under=85
 
 test-integration:
 	pytest -m integration
