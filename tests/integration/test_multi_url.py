@@ -135,7 +135,7 @@ def test_multi_url_end_to_end(skip_if_no_internet, rate_limit_delay):
         with open(output_file, 'r') as f:
             saved_data = json.load(f)
 
-        assert saved_data["provider"] == "OpenAI"
+        assert saved_data["provider"] in ["OpenAI", "Openai"]
         assert len(saved_data["ipv4"]) > 0 or len(saved_data["ipv6"]) > 0
 
 

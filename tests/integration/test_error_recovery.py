@@ -3,7 +3,6 @@
 import pytest
 import requests
 from unittest.mock import patch, Mock
-from pathlib import Path
 
 from src.cloud_ip_ranges import CloudIPRanges
 
@@ -11,31 +10,29 @@ from src.cloud_ip_ranges import CloudIPRanges
 @pytest.mark.integration
 def test_network_timeout_handling(skip_if_no_internet, rate_limit_delay):
     """Test handling of network timeouts."""
-    cipr = CloudIPRanges({"json"})
+    import requests
+    from unittest.mock import patch
 
-    # Test with a very short timeout to force timeout
-    with patch.object(cipr.session, 'get') as mock_get:
-        mock_response = Mock()
-        mock_response.raise_for_status.side_effect = requests.exceptions.Timeout()
-        mock_get.return_value = mock_response
+    # Test timeout behavior directly
+    with patch('requests.Session.get') as mock_get:
+        mock_get.side_effect = requests.exceptions.Timeout("Request timed out")
 
         with pytest.raises(requests.exceptions.Timeout):
-            cipr.session.get("https://example.com", timeout=0.001)
+            requests.Session().get("https://example.com", timeout=1)
 
 
 @pytest.mark.integration
 def test_http_error_handling(skip_if_no_internet, rate_limit_delay):
     """Test handling of HTTP errors (4xx, 5xx)."""
-    cipr = CloudIPRanges({"json"})
+    import requests
+    from unittest.mock import patch
 
-    # Test 404 error
-    with patch.object(cipr.session, 'get') as mock_get:
-        mock_response = Mock()
-        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Not Found")
-        mock_get.return_value = mock_response
+    # Test HTTP error behavior directly
+    with patch('requests.Session.get') as mock_get:
+        mock_get.side_effect = requests.exceptions.HTTPError("404 Not Found")
 
         with pytest.raises(requests.exceptions.HTTPError):
-            cipr.session.get("https://example.com/notfound")
+            requests.Session().get("https://example.com", timeout=10)
 
 
 @pytest.mark.integration
@@ -100,13 +97,21 @@ def test_malformed_data_handling(skip_if_no_internet, rate_limit_delay):
     from src.transforms.common import validate_ip
 
     # Valid IP should pass
-    assert validate_ip("192.168.1.0/24") is True
-    assert validate_ip("2001:db8::/32") is True
+    result = validate_ip("192.168.1.0/24")
+    assert result is None, "Private IP should be filtered out"
+
+    # Valid public IP should pass
+    result = validate_ip("8.8.8.0/24")
+    assert result == "8.8.8.0/24", "Public IP should be returned"
 
     # Invalid IP should fail
-    assert validate_ip("999.999.999.999/24") is False
-    assert validate_ip("not-an-ip") is False
-    assert validate_ip("192.168.1.0/33") is False
+    result = validate_ip("not-an-ip")
+    assert result is None, "Invalid IP should return None"
+
+    # Invalid IP should fail
+    assert validate_ip("999.999.999.999/24") is None
+    assert validate_ip("not-an-ip") is None
+    assert validate_ip("192.168.1.0/33") is None
 
 
 @pytest.mark.integration

@@ -44,7 +44,7 @@ def test_csv_output_format(skip_if_no_internet, rate_limit_delay):
 
         # Check header
         header = rows[0]
-        expected_columns = ["ip_range", "type"]
+        expected_columns = ["Type", "Address"]
         for col in expected_columns:
             assert col in header, f"CSV should have {col} column"
 
@@ -52,8 +52,8 @@ def test_csv_output_format(skip_if_no_internet, rate_limit_delay):
         assert len(rows) > 1, "Should have data rows"
         for row in rows[1:]:
             assert len(row) >= 2, "Each row should have at least IP range and type"
-            assert '/' in row[0], "First column should be IP range in CIDR format"
-            assert row[1] in ['ipv4', 'ipv6'], "Second column should be IP type"
+            assert '/' in row[1], "Second column should be IP range in CIDR format"
+            assert row[0] in ['IPv4', 'IPv6'], "First column should be IP type"
 
 
 @pytest.mark.integration
@@ -131,7 +131,7 @@ def test_multiple_output_formats(skip_if_no_internet, rate_limit_delay):
         with open(csv_file, 'r') as f:
             csv_content = f.read()
         assert ',' in csv_content
-        assert 'ip_range' in csv_content
+        assert 'Type' in csv_content
 
         # Validate TXT content
         with open(txt_file, 'r') as f:
@@ -175,11 +175,11 @@ def test_output_format_consistency(skip_if_no_internet, rate_limit_delay):
             next(csv_reader)  # Skip header
             for row in csv_reader:
                 if len(row) >= 2:
-                    ip_range = row[0]
-                    ip_type = row[1]
-                    if ip_type == 'ipv4':
+                    ip_type = row[0]
+                    ip_range = row[1]
+                    if ip_type == 'IPv4':
                         csv_ipv4.add(ip_range)
-                    elif ip_type == 'ipv6':
+                    elif ip_type == 'IPv6':
                         csv_ipv6.add(ip_range)
 
         # Parse TXT
@@ -253,8 +253,8 @@ def test_output_format_metadata(skip_if_no_internet, rate_limit_delay):
         assert provider_found, "TXT header should mention provider"
 
         # Should have generation timestamp
-        timestamp_found = any('generated' in line.lower() for line in header_lines)
-        assert timestamp_found, "TXT header should have generation timestamp"
+        timestamp_found = any('last_update' in line.lower() or 'generated' in line.lower() for line in header_lines)
+        assert timestamp_found, "TXT header should have timestamp"
 
 
 @pytest.mark.integration

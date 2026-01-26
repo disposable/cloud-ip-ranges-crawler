@@ -106,10 +106,15 @@ def transform_hackertarget(cipr: Any, response: List[Any], source_key: str) -> D
     for r in response:
         lines = r.text.strip().splitlines()
         for line in lines:
-            # Expect format: "AS,IP" or "1, 8.8.8.0/24"
+            # Expect format: "AS,IP" or "1, 8.8.8.0/24" or new format: "AS","INFO" then IP lines
             line = line.strip()
             if not line or line.startswith("AS,IP"):
                 continue
+
+            # Skip quoted ASN info lines (new format)
+            if line.startswith('"') and '"' in line and ',' in line:
+                continue
+
             parts = line.split(",")
             if len(parts) >= 2:
                 ip = parts[1].strip()
@@ -120,6 +125,12 @@ def transform_hackertarget(cipr: Any, response: List[Any], source_key: str) -> D
                         result["ipv4"].append(ip)
                 else:
                     logging.warning("Invalid IP range from HackerTarget for %s: %s", source_key, ip)
+            elif '/' in line and validate_ip(line):
+                # Handle case where line is just an IP range (new format)
+                if ":" in line:
+                    result["ipv6"].append(line)
+                else:
+                    result["ipv4"].append(line)
 
     return result
 

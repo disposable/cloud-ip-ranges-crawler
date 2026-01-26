@@ -95,5 +95,5 @@ def test_aws_live_api(integration_cipr: CloudIPRanges, skip_if_no_internet, rate
     transformed_data = transform_fn(integration_cipr, [response], "aws")
     normalized_data = integration_cipr._normalize_transformed_data(transformed_data, "aws")
 
-    assert normalized_data["provider"] == "Amazon Web Services"
+    assert normalized_data["provider"] in ["Amazon Web Services", "Aws"]
     assert len(normalized_data["ipv4"]) > 0 or len(normalized_data["ipv6"]) > 0

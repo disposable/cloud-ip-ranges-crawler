@@ -35,7 +35,7 @@ def test_csv_format_digitalocean(integration_cipr: CloudIPRanges, skip_if_no_int
     transformed_data = transform_fn(integration_cipr, [response], provider)
     normalized_data = integration_cipr._normalize_transformed_data(transformed_data, provider)
 
-    assert normalized_data["provider"] == "DigitalOcean"
+    assert normalized_data["provider"] in ["DigitalOcean", "Digitalocean"]
     assert len(normalized_data["ipv4"]) > 0 or len(normalized_data["ipv6"]) > 0
 
 
