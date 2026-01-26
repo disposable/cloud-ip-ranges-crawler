@@ -311,3 +311,25 @@ def test_whatsapp_transform_with_mocked_zip(cipr: CloudIPRanges, monkeypatch: py
     res = cipr._transform_response([html_page], "whatsapp", is_asn=False)
     assert res["provider"] == "Whatsapp"
     assert any("." in ip for ip in res["ipv4"])  # entries parsed from zip
+
+
+def test_ripestat_announced_prefixes_transform(cipr: CloudIPRanges) -> None:
+    r = FakeResponse(json_data={
+        "status": "ok",
+        "data": {
+            "queried_at": "2026-01-01T00:00:00Z",
+            "resource": "AS24940",
+            "prefixes": [
+                {"prefix": "1.1.1.0/24"},
+                {"prefix": "2606:4700::/32"},
+            ],
+        },
+    })
+
+    res = cipr._transform_ripestat_announced_prefixes([r], "hetzner", "AS24940")
+    res = cipr._normalize_transformed_data(res, "hetzner")
+    assert res["method"] == "bgp_announced"
+    assert res["provider_id"] == "hetzner"
+    assert res["source_updated_at"] == "2026-01-01T00:00:00Z"
+    assert "1.1.1.0/24" in res["ipv4"]
+    assert "2606:4700::/32" in res["ipv6"]

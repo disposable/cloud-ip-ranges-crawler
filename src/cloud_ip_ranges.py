@@ -117,6 +117,88 @@ class CloudIPRanges:
             result["method"] = "asn_lookup"
         return result
 
+    def _normalize_transformed_data(self, transformed_data: Dict[str, Any], source_key: str) -> Dict[str, Any]:
+        ipv4 = set()
+        ipv6 = set()
+        details_ipv4 = []
+        details_ipv6 = []
+
+        for ip in transformed_data["ipv4"]:
+            validated_ip = validate_ip(ip)
+            if validated_ip:
+                ipv4.add(validated_ip)
+
+        # Preserve details if present and valid
+        for d in transformed_data.get("details_ipv4", []):
+            ip = d.get("address")
+            if not ip:
+                continue
+            validated_ip = validate_ip(ip)
+            if validated_ip:
+                nd = d.copy()
+                nd["address"] = validated_ip
+                details_ipv4.append(nd)
+
+        for ip in transformed_data["ipv6"]:
+            validated_ip = validate_ip(ip)
+            if validated_ip:
+                ipv6.add(validated_ip)
+
+        for d in transformed_data.get("details_ipv6", []):
+            ip = d.get("address")
+            if not ip:
+                continue
+            validated_ip = validate_ip(ip)
+            if validated_ip:
+                nd = d.copy()
+                nd["address"] = validated_ip
+                details_ipv6.append(nd)
+
+        if not ipv4 and not ipv6:
+            raise RuntimeError(f"Failed to parse {source_key}")
+
+        transformed_data["ipv4"] = sorted(ipv4)
+        transformed_data["ipv6"] = sorted(ipv6)
+        if details_ipv4:
+            transformed_data["details_ipv4"] = details_ipv4
+        if details_ipv6:
+            transformed_data["details_ipv6"] = details_ipv6
+
+        return transformed_data
+
+
+    def _transform_ripestat_announced_prefixes(self, response: List[requests.Response], source_key: str, asn: str) -> Dict[str, Any]:
+        """Transform RIPEstat Announced Prefixes response to unified format."""
+        ripestat_url = f"https://stat.ripe.net/data/announced-prefixes/data.json?resource={asn}"
+        result = self._transform_base(source_key, [ripestat_url])
+        result["method"] = "bgp_announced"
+        result["coverage_notes"] = "BGP-announced prefixes for the ASN"
+
+        data = response[0].json()
+        status = data.get("status")
+        if status != "ok":
+            raise RuntimeError(f"RIPEstat announced-prefixes failed for {asn}: status={status}")
+
+        payload = data.get("data", {})
+        result["source_updated_at"] = payload.get("queried_at")
+
+        prefixes = payload.get("prefixes", [])
+        if not isinstance(prefixes, list):
+            raise RuntimeError("RIPEstat announced-prefixes: invalid prefixes")
+
+        for p in prefixes:
+            if not isinstance(p, dict):
+                continue
+            prefix = p.get("prefix")
+            if not prefix:
+                continue
+            if ":" in prefix:
+                result["ipv6"].append(prefix)
+            else:
+                result["ipv4"].append(prefix)
+
+        return result
+
     def _transform_hackertarget(self, response: List[requests.Response], source_key: str) -> Dict[str, Any]:
         """Transform HackerTarget AS lookup response to unified format."""
 
@@ -578,68 +660,40 @@ class CloudIPRanges:
             transform_method = getattr(self, f"_transform_{source_key}")
             transformed_data = transform_method(response)
 
-        ipv4 = set()
-        ipv6 = set()
-        details_ipv4 = []
-        details_ipv6 = []
-
-        for ip in transformed_data["ipv4"]:
-            validated_ip = validate_ip(ip)
-            if validated_ip:
-                ipv4.add(validated_ip)
-
-        # Preserve details if present and valid
-        for d in transformed_data.get("details_ipv4", []):
-            ip = d.get("address")
-            if not ip:
-                continue
-            validated_ip = validate_ip(ip)
-            if validated_ip:
-                nd = d.copy()
-                nd["address"] = validated_ip
-                details_ipv4.append(nd)
-
-        for ip in transformed_data["ipv6"]:
-            validated_ip = validate_ip(ip)
-            if validated_ip:
-                ipv6.add(validated_ip)
-
-        for d in transformed_data.get("details_ipv6", []):
-            ip = d.get("address")
-            if not ip:
-                continue
-            validated_ip = validate_ip(ip)
-            if validated_ip:
-                nd = d.copy()
-                nd["address"] = validated_ip
-                details_ipv6.append(nd)
-
-        if not ipv4 and not ipv6:
-            raise RuntimeError(f"Failed to parse {source_key}")
-
-        transformed_data["ipv4"] = sorted(ipv4)
-        transformed_data["ipv6"] = sorted(ipv6)
-        if details_ipv4:
-            transformed_data["details_ipv4"] = details_ipv4
-        if details_ipv6:
-            transformed_data["details_ipv6"] = details_ipv6
-
-        return transformed_data
+        return self._normalize_transformed_data(transformed_data, source_key)
 
     def _fetch_and_save(self, source_key: str) -> Optional[tuple[int, int]]:
         """Fetch and save IP ranges for a specific source."""
         logging.debug("Fetching %s source", source_key)
         url = self.sources[source_key]
 
-        response = []
-        for u in url:
-            if u.startswith("AS"):
-                u = f"https://api.hackertarget.com/aslookup/?q={u}"
-            r = self.session.get(u, timeout=10)
-            r.raise_for_status()
-            response.append(r)
+        transformed_data: Dict[str, Any]
 
-        transformed_data = self._transform_response(response, source_key, url[0].startswith("AS"))
+        if url and isinstance(url[0], str) and url[0].startswith("AS"):
+            asn = url[0]
+            ripestat_url = f"https://stat.ripe.net/data/announced-prefixes/data.json?resource={asn}"
+            try:
+                r = self.session.get(ripestat_url, timeout=10)
+                r.raise_for_status()
+                transformed_data = self._transform_ripestat_announced_prefixes([r], source_key, asn)
+                transformed_data = self._normalize_transformed_data(transformed_data, source_key)
+            except Exception as e:
+                logging.warning("RIPEstat lookup failed for %s (%s), falling back to HackerTarget", source_key, str(e))
+                response = []
+                for u in url:
+                    if u.startswith("AS"):
+                        u = f"https://api.hackertarget.com/aslookup/?q={u}"
+                    r = self.session.get(u, timeout=10)
+                    r.raise_for_status()
+                    response.append(r)
+                transformed_data = self._transform_response(response, source_key, is_asn=True)
+        else:
+            response = []
+            for u in url:
+                r = self.session.get(u, timeout=10)
+                r.raise_for_status()
+                response.append(r)
+            transformed_data = self._transform_response(response, source_key, is_asn=False)
 
         if self.only_if_changed:
             json_filename = "{}.json".format(source_key.replace("_", "-"))
