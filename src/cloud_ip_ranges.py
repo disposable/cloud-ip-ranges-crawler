@@ -55,6 +55,28 @@ class CloudIPRanges:
         "datadog": ["https://ip-ranges.datadoghq.com/"],
         "okta": ["https://s3.amazonaws.com/okta-ip-ranges/ip_ranges.json"],
         "zendesk": ["https://support.zendesk.com/ips"],
+        "circleci": ["https://circleci.com/docs/ip-ranges-list.json"],
+        "hcp_terraform": ["https://app.terraform.io/api/meta/ip-ranges"],
+        "new_relic_synthetics": ["https://nr-synthetics-assets.s3.amazonaws.com/nat-ip-dnsname/production/ip-ranges.json"],
+        "grafana_cloud": [
+            "https://grafana.com/api/hosted-alerts/source-ips",
+            "https://grafana.com/api/hosted-grafana/source-ips",
+            "https://grafana.com/api/hosted-metrics/source-ips",
+            "https://grafana.com/api/hosted-traces/source-ips",
+            "https://grafana.com/api/hosted-logs/source-ips",
+            "https://grafana.com/api/hosted-profiles/source-ips",
+            "https://grafana.com/api/hosted-otlp/source-ips",
+        ],
+        "intercom": [
+            "https://static.intercomcdn.com/intercom-ips/us/intercom-ip-ranges.json",
+            "https://static.intercomcdn.com/intercom-ips/eu/intercom-ip-ranges.json",
+            "https://static.intercomcdn.com/intercom-ips/au/intercom-ip-ranges.json",
+        ],
+        "stripe": ["https://stripe.com/files/ips/ips_api.json", "https://stripe.com/files/ips/ips_webhooks.json"],
+        "adyen": ["https://docs.adyen.com/development-resources/security/integration-security/allowlisting"],
+        "salesforce_hyperforce": ["https://ip-ranges.salesforce.com/ip-ranges.json"],
+        "sentry": ["https://sentry.io/api/0/uptime-ips/"],
+        "branch": ["https://help.branch.io/docs/postback-webhook-ip-address-allowlist-expands"],
         "vercel": ["76.76.21.0/24", "198.169.1.0/24", "155.121.0.0/16"],
         # "whatsapp": ["https://developers.facebook.com/docs/whatsapp/guides/network-requirements/"],  # Temporarily disabled due to page structure changes
         "zscaler": [

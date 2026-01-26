@@ -2,6 +2,7 @@
 
 import pytest
 from pathlib import Path
+from typing import Any, List
 
 from src.cloud_ip_ranges import CloudIPRanges
 
@@ -64,24 +65,30 @@ def test_sample_files_are_valid(cipr: CloudIPRanges) -> None:
     sample_files = list(SAMPLES_DIR.glob("*.raw"))
     assert len(sample_files) > 0, "No sample files found"
 
+    # Group responses by base source key so multi-endpoint providers can be tested.
+    groups: dict[str, list[Path]] = {}
     for sample_file in sample_files:
-        # Skip zscaler as it requires two responses (required + recommended)
+        base = sample_file.name
+        if base.endswith(".raw"):
+            base = base[:-4]
+        base_key = base.rsplit("_", 1)[0]
+        groups.setdefault(base_key, []).append(sample_file)
+
+    for base_key, files in groups.items():
         # Skip microsoft_azure as it requires network calls to download JSON
         # Skip vercel as it requires network calls for RDAP/WHOIS lookups
         # Skip akamai as it's a zip file and FakeResponse doesn't handle binary content properly
-        # Skip cloudflare as it expects two responses (IPv4 + IPv6)
         # Skip whatsapp as it requires network calls to download zip
-        if (sample_file.name.startswith("zscaler") or
-            sample_file.name.startswith("microsoft") or
-            sample_file.name.startswith("vercel") or
-            sample_file.name.startswith("akamai") or
-            sample_file.name.startswith("cloudflare") or
-            sample_file.name.startswith("whatsapp")):
+        if (
+            base_key.startswith("microsoft")
+            or base_key.startswith("vercel")
+            or base_key.startswith("akamai")
+            or base_key.startswith("whatsapp")
+        ):
             continue
 
-        # Extract source key from filename (e.g., "vercel_0.raw" -> "vercel")
-        source_key = sample_file.name.split("_")[0]
         # Map filename prefixes to actual source keys
+        source_key = base_key
         if source_key == "apple":
             source_key = "apple_private_relay"
         elif source_key == "oracle":
@@ -91,13 +98,13 @@ def test_sample_files_are_valid(cipr: CloudIPRanges) -> None:
         elif source_key == "google":
             source_key = "google_bot"
 
-        # Read and create a fake response
-        content = sample_file.read_text(encoding="utf-8")
-        response = FakeResponse(text=content)
+        # Ensure deterministic ordering for multi-response providers
+        files = sorted(files, key=lambda p: p.name)
+
+        responses: List[Any] = [FakeResponse(text=f.read_text(encoding="utf-8")) for f in files]
 
         try:
-            # Try to transform the response
-            result = cipr._transform_response([response], source_key, is_asn=False)
+            result = cipr._transform_response(responses, source_key, is_asn=False)
 
             # Verify basic structure
             assert "provider" in result
@@ -106,7 +113,7 @@ def test_sample_files_are_valid(cipr: CloudIPRanges) -> None:
             assert isinstance(result["ipv4"], list)
             assert isinstance(result["ipv6"], list)
         except Exception as e:
-            pytest.fail(f"Failed to process sample file {sample_file.name} as {source_key}: {e}")
+            pytest.fail(f"Failed to process sample files for {source_key}: {e}")
 
 
 def test_sample_file_consistency() -> None:

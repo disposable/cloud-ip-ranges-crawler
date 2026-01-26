@@ -1,0 +1,310 @@
+{
+  "ip_ranges": [
+    {
+      "range": "52.63.36.185/32",
+      "region": "AU",
+      "service": "INTERCOM-OUTBOUND"
+    },
+    {
+      "range": "3.104.68.152/32",
+      "region": "AU",
+      "service": "INTERCOM-OUTBOUND"
+    },
+    {
+      "range": "52.64.2.165/32",
+      "region": "AU",
+      "service": "INTERCOM-OUTBOUND"
+    },
+    {
+      "range": "13.210.142.221/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "13.210.215.42/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "13.210.219.8/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "13.210.35.115/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "13.211.195.214/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "13.237.138.185/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "13.237.212.154/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "13.237.49.68/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "13.237.68.249/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "13.237.88.108/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "13.238.16.168/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "13.238.171.195/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "13.239.190.104/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "13.239.211.175/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "13.239.221.8/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "13.54.10.190/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "13.54.134.227/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "13.55.132.218/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "13.55.56.210/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "13.55.73.73/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "15.134.118.181/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "15.134.198.209/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "15.135.4.54/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "15.135.45.53/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "15.135.62.128/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "16.176.252.47/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "16.176.67.26/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "3.104.195.13/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "3.105.145.115/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "3.105.232.234/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "3.105.234.123/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "3.105.238.232/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "3.105.252.100/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "3.105.58.67/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "3.24.11.78/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "3.24.187.225/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "3.24.233.131/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "3.24.46.11/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "3.24.8.250/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "3.25.19.184/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "52.62.162.50/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "52.64.169.206/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "52.64.19.66/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "52.65.232.45/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "52.65.6.177/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "52.65.66.199/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "54.153.130.25/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "54.206.31.37/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "54.252.14.87/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "54.252.155.219/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "54.252.193.246/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "54.252.217.248/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "54.252.68.252/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "54.253.165.17/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "54.253.182.122/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "54.253.31.164/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "54.79.149.130/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "54.79.168.176/32",
+      "region": "AU",
+      "service": "INTERCOM-GENERAL"
+    }
+  ],
+  "date": "2026-01-26"
+}

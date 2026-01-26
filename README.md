@@ -43,6 +43,16 @@ This crawler fetches IP ranges from multiple cloud providers and online services
 - **Datadog** - Monitoring and security platform IP ranges
 - **Okta** - Identity management service IP ranges
 - **Zendesk** - Customer support platform IP ranges
+- **CircleCI** - CI/CD platform IP ranges (jobs, core, macOS)
+- **HCP Terraform** - HashiCorp Terraform Cloud IP ranges (API, notifications, Sentinel, VCS)
+- **New Relic Synthetics** - Synthetic monitoring public minion IP ranges by location
+- **Grafana Cloud** - Hosted Grafana services source IPs (alerts, Grafana, metrics, traces, logs, profiles, OTLP)
+- **Intercom** - Customer communication platform outbound webhook IP ranges (US/EU/AU)
+- **Stripe** - Payment platform IP ranges (API, webhooks)
+- **Adyen** - Payment platform outbound IP ranges
+- **Salesforce Hyperforce** - Salesforce Hyperforce IP ranges by region and provider
+- **Sentry** - Error monitoring platform uptime monitoring IP ranges
+- **Branch** - Mobile measurement platform webhook and postback IP ranges
 - **Vercel** - Edge computing platform IP ranges (registry-owned)
 
 ### ASN-based Sources

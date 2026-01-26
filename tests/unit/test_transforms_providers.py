@@ -3,6 +3,7 @@
 import pytest
 from io import BytesIO
 from zipfile import ZipFile
+import socket  # Add missing socket import
 
 from tests.unit.conftest import FakeResponse, SAMPLES_DIR, _load_raw, _has_valid_ipv4, _has_valid_ipv6
 
@@ -225,6 +226,291 @@ def test_datadog_transform_extracts_ranges_by_heuristics(cipr) -> None:
     assert "2606:4700::/32" in res["ipv6"]
 
 
+def test_circleci_transform_normalizes_bare_ips(cipr) -> None:
+    r = _load_raw(SAMPLES_DIR / "circleci_0.raw")
+    res = cipr._transform_response([r], "circleci", is_asn=False)
+    assert res["provider"] == "Circleci"
+    assert _has_valid_ipv4(res)
+    assert any(ip.endswith("/32") for ip in res["ipv4"])
+
+
+def test_hcp_terraform_transform_extracts_cidrs(cipr) -> None:
+    r = _load_raw(SAMPLES_DIR / "hcp_terraform_0.raw")
+    res = cipr._transform_response([r], "hcp_terraform", is_asn=False)
+    assert res["provider"] == "Hcp Terraform"
+    assert _has_valid_ipv4(res)
+
+
+def test_new_relic_synthetics_transform_extracts_location_ranges(cipr) -> None:
+    r = _load_raw(SAMPLES_DIR / "new_relic_synthetics_0.raw")
+    res = cipr._transform_response([r], "new_relic_synthetics", is_asn=False)
+    assert res["provider"] == "New Relic Synthetics"
+    assert _has_valid_ipv4(res)
+
+
+def test_grafana_cloud_transform_normalizes_ip_lists(cipr) -> None:
+    rs = [
+        _load_raw(SAMPLES_DIR / "grafana_cloud_0.raw"),
+        _load_raw(SAMPLES_DIR / "grafana_cloud_1.raw"),
+        _load_raw(SAMPLES_DIR / "grafana_cloud_2.raw"),
+        _load_raw(SAMPLES_DIR / "grafana_cloud_3.raw"),
+        _load_raw(SAMPLES_DIR / "grafana_cloud_4.raw"),
+        _load_raw(SAMPLES_DIR / "grafana_cloud_5.raw"),
+        _load_raw(SAMPLES_DIR / "grafana_cloud_6.raw"),
+    ]
+    res = cipr._transform_response(rs, "grafana_cloud", is_asn=False)
+    assert res["provider"] == "Grafana Cloud"
+    assert _has_valid_ipv4(res)
+    assert any(ip.endswith("/32") for ip in res["ipv4"])
+
+
+def test_intercom_transform_filters_to_outbound(cipr) -> None:
+    r0 = _load_raw(SAMPLES_DIR / "intercom_0.raw")
+    r1 = _load_raw(SAMPLES_DIR / "intercom_1.raw")
+    r2 = _load_raw(SAMPLES_DIR / "intercom_2.raw")
+    res = cipr._transform_response([r0, r1, r2], "intercom", is_asn=False)
+    assert res["provider"] == "Intercom"
+    assert "34.197.76.213/32" in res["ipv4"]
+    assert "34.197.76.214/32" not in res["ipv4"]
+
+
+def test_stripe_transform_normalizes_api_and_webhooks(cipr) -> None:
+    r0 = _load_raw(SAMPLES_DIR / "stripe_0.raw")
+    r1 = _load_raw(SAMPLES_DIR / "stripe_1.raw")
+    res = cipr._transform_response([r0, r1], "stripe", is_asn=False)
+    assert res["provider"] == "Stripe"
+    assert _has_valid_ipv4(res)
+    assert any(ip.endswith("/32") for ip in res["ipv4"])
+
+
+def test_adyen_transform_extracts_cidrs_from_docs(cipr) -> None:
+    r = _load_raw(SAMPLES_DIR / "adyen_0.raw")
+    res = cipr._transform_response([r], "adyen", is_asn=False)
+    assert res["provider"] == "Adyen"
+    assert "82.199.87.128/26" in res["ipv4"]
+
+
+def test_salesforce_hyperforce_transform_extracts_prefixes(cipr) -> None:
+    r = _load_raw(SAMPLES_DIR / "salesforce_hyperforce_0.raw")
+    res = cipr._transform_response([r], "salesforce_hyperforce", is_asn=False)
+    assert res["provider"] == "Salesforce Hyperforce"
+    assert "155.226.144.0/22" in res["ipv4"]
+
+
+def test_circleci_transform_malformed_json(cipr) -> None:
+    r = FakeResponse(json_data={"IPRanges": {"jobs": ["1.2.3.4"]}})
+    res = cipr._transform_response([r], "circleci", is_asn=False)
+    assert res["provider"] == "Circleci"
+    assert "1.2.3.4/32" in res["ipv4"]
+
+
+def test_hcp_terraform_transform_missing_keys(cipr) -> None:
+    r = FakeResponse(json_data={"api": ["1.2.3.4/32"]})
+    res = cipr._transform_response([r], "hcp_terraform", is_asn=False)
+    assert res["provider"] == "Hcp Terraform"
+    assert "1.2.3.4/32" in res["ipv4"]
+
+
+def test_new_relic_synthetics_transform_not_dict(cipr) -> None:
+    r = FakeResponse(json_data={"us": ["1.2.3.4/32"]})
+    res = cipr._transform_response([r], "new_relic_synthetics", is_asn=False)
+    assert res["provider"] == "New Relic Synthetics"
+    assert "1.2.3.4/32" in res["ipv4"]
+
+
+def test_grafana_cloud_transform_malformed_response(cipr) -> None:
+    r = FakeResponse(json_data=["1.2.3.4"])
+    res = cipr._transform_response([r], "grafana_cloud", is_asn=False)
+    assert res["provider"] == "Grafana Cloud"
+    assert "1.2.3.4/32" in res["ipv4"]
+
+
+def test_intercom_transform_filters_non_outbound(cipr) -> None:
+    r = FakeResponse(json_data={
+        "ip_ranges": [
+            {"range": "1.2.3.4/32", "service": "INTERCOM-INBOUND"},
+            {"range": "5.6.7.8/32", "service": "INTERCOM-OUTBOUND"},
+        ],
+        "date": "2025-07-25"
+    })
+    res = cipr._transform_response([r], "intercom", is_asn=False)
+    assert res["provider"] == "Intercom"
+    assert "5.6.7.8/32" in res["ipv4"]
+    assert "1.2.3.4/32" not in res["ipv4"]
+    assert res["source_updated_at"] == "2025-07-25"
+
+
+def test_stripe_transform_malformed_entries(cipr) -> None:
+    r = FakeResponse(json_data={
+        "API": ["1.2.3.4"],
+        "WEBHOOKS": "not a list"
+    })
+    res = cipr._transform_response([r], "stripe", is_asn=False)
+    assert res["provider"] == "Stripe"
+    assert "1.2.3.4/32" in res["ipv4"]
+
+
+def test_adyen_transform_no_cidrs_in_text(cipr) -> None:
+    r = FakeResponse(text="Adyen outgoing IPs: 1.2.3.4/32")
+    res = cipr._transform_response([r], "adyen", is_asn=False)
+    assert res["provider"] == "Adyen"
+    assert "1.2.3.4/32" in res["ipv4"]
+
+
+def test_adyen_transform_dns_resolution(cipr, monkeypatch: pytest.MonkeyPatch) -> None:
+    # Mock DNS resolution to return test IPs
+    def mock_gethostbyname_ex(hostname):
+        return ("out.adyen.com", [], ["1.2.3.4", "5.6.7.8"])
+
+    monkeypatch.setattr("socket.gethostbyname_ex", mock_gethostbyname_ex)
+    r = FakeResponse(text="Some text without CIDRs")
+    res = cipr._transform_response([r], "adyen", is_asn=False)
+    assert res["provider"] == "Adyen"
+    assert "1.2.3.4/32" in res["ipv4"]
+    assert "5.6.7.8/32" in res["ipv4"]
+
+
+def test_adyen_transform_dns_failure(cipr, monkeypatch: pytest.MonkeyPatch) -> None:
+    # Mock DNS resolution failure
+    def mock_gethostbyname_ex(hostname):
+        raise socket.gaierror("DNS resolution failed")
+
+    monkeypatch.setattr("socket.gethostbyname_ex", mock_gethostbyname_ex)
+    r = FakeResponse(text="Adyen outgoing IPs: 1.2.3.4/32")
+    res = cipr._transform_response([r], "adyen", is_asn=False)
+    assert res["provider"] == "Adyen"
+    assert "1.2.3.4/32" in res["ipv4"]
+    # Should still work with static CIDRs even if DNS fails
+
+
+def test_salesforce_hyperforce_transform_missing_prefixes(cipr) -> None:
+    r = FakeResponse(json_data={
+        "syncToken": "123",
+        "createDate": "2025-01-01-00-00-00",
+        "prefixes": [{"ip_prefix": ["1.2.3.4/32"]}]
+    })
+    res = cipr._transform_response([r], "salesforce_hyperforce", is_asn=False)
+    assert res["provider"] == "Salesforce Hyperforce"
+    assert res["source_updated_at"] == "2025-01-01-00-00-00"
+    assert "1.2.3.4/32" in res["ipv4"]
+
+
+def test_circleci_transform_nonlist_values(cipr) -> None:
+    r = FakeResponse(json_data={"IPRanges": {"jobs": ["1.2.3.4"], "core": "not a list"}})
+    res = cipr._transform_response([r], "circleci", is_asn=False)
+    assert res["provider"] == "Circleci"
+    assert "1.2.3.4/32" in res["ipv4"]
+
+
+def test_grafana_cloud_transform_nonstring_items(cipr) -> None:
+    r = FakeResponse(json_data=["1.2.3.4", 123, None])
+    res = cipr._transform_response([r], "grafana_cloud", is_asn=False)
+    assert res["provider"] == "Grafana Cloud"
+    assert "1.2.3.4/32" in res["ipv4"]
+
+
+def test_new_relic_synthetics_transform_nonlist_values(cipr) -> None:
+    r = FakeResponse(json_data={"us": ["1.2.3.4/32"], "eu": "not a list"})
+    res = cipr._transform_response([r], "new_relic_synthetics", is_asn=False)
+    assert res["provider"] == "New Relic Synthetics"
+    assert "1.2.3.4/32" in res["ipv4"]
+
+
+def test_circleci_transform_nonstring_ips(cipr) -> None:
+    r = FakeResponse(json_data={"IPRanges": {"jobs": ["1.2.3.4", 123, None]}})
+    res = cipr._transform_response([r], "circleci", is_asn=False)
+    assert res["provider"] == "Circleci"
+    assert "1.2.3.4/32" in res["ipv4"]
+
+
+def test_hcp_terraform_transform_nonstring_cidrs(cipr) -> None:
+    r = FakeResponse(json_data={"api": ["1.2.3.4/32", 123, None]})
+    res = cipr._transform_response([r], "hcp_terraform", is_asn=False)
+    assert res["provider"] == "Hcp Terraform"
+    assert "1.2.3.4/32" in res["ipv4"]
+
+
+def test_intercom_transform_missing_fields(cipr) -> None:
+    r = FakeResponse(json_data={
+        "ip_ranges": [
+            {"range": "1.2.3.4/32"},
+            {"service": "INTERCOM-OUTBOUND"},
+            {"range": "5.6.7.8/32", "service": "INTERCOM-OUTBOUND"},
+        ]
+    })
+    res = cipr._transform_response([r], "intercom", is_asn=False)
+    assert res["provider"] == "Intercom"
+    assert "5.6.7.8/32" in res["ipv4"]
+
+
+def test_stripe_transform_nonstring_ips(cipr) -> None:
+    r = FakeResponse(json_data={
+        "API": ["1.2.3.4", 123, None],
+        "WEBHOOKS": ["5.6.7.8"]
+    })
+    res = cipr._transform_response([r], "stripe", is_asn=False)
+    assert res["provider"] == "Stripe"
+    assert "1.2.3.4/32" in res["ipv4"]
+    assert "5.6.7.8/32" in res["ipv4"]
+
+
+def test_salesforce_hyperforce_transform_nonstring_cidrs(cipr) -> None:
+    r = FakeResponse(json_data={
+        "syncToken": "123",
+        "createDate": "2025-01-01-00-00-00",
+        "prefixes": [{"ip_prefix": ["1.2.3.4/32", 123, None]}]
+    })
+    res = cipr._transform_response([r], "salesforce_hyperforce", is_asn=False)
+    assert res["provider"] == "Salesforce Hyperforce"
+    assert "1.2.3.4/32" in res["ipv4"]
+
+
+def test_grafana_cloud_transform_mixed_types(cipr) -> None:
+    r = FakeResponse(json_data=["1.2.3.4", "5.6.7.8/32", 123, None])
+    res = cipr._transform_response([r], "grafana_cloud", is_asn=False)
+    assert res["provider"] == "Grafana Cloud"
+    assert "1.2.3.4/32" in res["ipv4"]
+    assert "5.6.7.8/32" in res["ipv4"]
+
+
+def test_new_relic_synthetics_transform_nonstring_cidrs(cipr) -> None:
+    r = FakeResponse(json_data={"us": ["1.2.3.4/32", 123, None]})
+    res = cipr._transform_response([r], "new_relic_synthetics", is_asn=False)
+    assert res["provider"] == "New Relic Synthetics"
+    assert "1.2.3.4/32" in res["ipv4"]
+
+
+def test_intercom_transform_nonstring_range(cipr) -> None:
+    r = FakeResponse(json_data={
+        "ip_ranges": [
+            {"range": 123, "service": "INTERCOM-OUTBOUND"},
+            {"range": "1.2.3.4/32", "service": "INTERCOM-OUTBOUND"},
+        ]
+    })
+    res = cipr._transform_response([r], "intercom", is_asn=False)
+    assert res["provider"] == "Intercom"
+    assert "1.2.3.4/32" in res["ipv4"]
+
+
+def test_hcp_terraform_transform_nonlist_entries(cipr) -> None:
+    r = FakeResponse(json_data={"api": "not a list", "notifications": ["1.2.3.4/32"]})
+    res = cipr._transform_response([r], "hcp_terraform", is_asn=False)
+    assert res["provider"] == "Hcp Terraform"
+    assert "1.2.3.4/32" in res["ipv4"]
+
+
+def test_salesforce_hyperforce_transform_nonlist_prefixes(cipr) -> None:
+    r = FakeResponse(json_data={
+        "syncToken": "123",
+        "createDate": "2025-01-01-00-00-00",
+        "prefixes": [{"ip_prefix": ["1.2.3.4/32"]}, "not a list"]
+    })
+    res = cipr._transform_response([r], "salesforce_hyperforce", is_asn=False)
+    assert res["provider"] == "Salesforce Hyperforce"
+    assert res["source_updated_at"] == "2025-01-01-00-00-00"
+    assert "1.2.3.4/32" in res["ipv4"]
+
+
 def test_atlassian_transform_parses_items_list(cipr) -> None:
     r = FakeResponse(json_data={
         "creationDate": "2026-01-04T00:00:00Z",
@@ -237,6 +523,54 @@ def test_atlassian_transform_parses_items_list(cipr) -> None:
     assert res["provider"] == "Atlassian"
     assert "5.5.5.0/24" in res["ipv4"]
     assert "2606:4700::/32" in res["ipv6"]
+
+
+def test_branch_transform_parses_html_ips(cipr) -> None:
+    r = _load_raw(SAMPLES_DIR / "branch_0.raw")
+    res = cipr._transform_response([r], "branch", is_asn=False)
+    assert res["provider"] == "Branch"
+    assert "52.43.119.253/32" in res["ipv4"]
+    assert "100.21.145.61/32" in res["ipv4"]
+    assert len(res["ipv4"]) > 20  # Should extract multiple IPs
+
+
+def test_branch_transform_mixed_content(cipr) -> None:
+    r = FakeResponse(text="Some text with 52.43.119.253/32 and 1.2.3.4 and 5.6.7.8/32")
+    res = cipr._transform_response([r], "branch", is_asn=False)
+    assert res["provider"] == "Branch"
+    assert "52.43.119.253/32" in res["ipv4"]
+    assert "5.6.7.8/32" in res["ipv4"]
+    assert "1.2.3.4/32" in res["ipv4"]
+
+
+def test_branch_transform_no_duplicates(cipr) -> None:
+    r = FakeResponse(text="Repeated IPs: 52.43.119.253/32, 52.43.119.253/32, 1.2.3.4, 1.2.3.4")
+    res = cipr._transform_response([r], "branch", is_asn=False)
+    assert res["provider"] == "Branch"
+    assert res["ipv4"].count("52.43.119.253/32") == 1
+    assert res["ipv4"].count("1.2.3.4/32") == 1
+
+
+def test_sentry_transform_parses_uptime_ips(cipr) -> None:
+    r = _load_raw(SAMPLES_DIR / "sentry_0.raw")
+    res = cipr._transform_response([r], "sentry", is_asn=False)
+    assert res["provider"] == "Sentry"
+    assert "34.123.33.225/32" in res["ipv4"]
+    assert "35.204.169.245/32" in res["ipv4"]
+
+
+def test_sentry_transform_empty_response(cipr) -> None:
+    r = FakeResponse(text="34.123.33.225")
+    res = cipr._transform_response([r], "sentry", is_asn=False)
+    assert res["provider"] == "Sentry"
+    assert "34.123.33.225/32" in res["ipv4"]
+
+
+def test_sentry_transform_whitespace_only(cipr) -> None:
+    r = FakeResponse(text="34.123.33.225\n\n \n\n")
+    res = cipr._transform_response([r], "sentry", is_asn=False)
+    assert res["provider"] == "Sentry"
+    assert "34.123.33.225/32" in res["ipv4"]
 
 
 def test_vercel_rdap_transform_discovers_org_nets(cipr, monkeypatch: pytest.MonkeyPatch) -> None:
