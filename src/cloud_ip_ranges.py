@@ -494,10 +494,15 @@ class CloudIPRanges:
         try:
             org_root = ET.fromstring(org_r.text)
             result["source_updated_at"] = self._xml_find_text(org_root, "updateDate")
-        except Exception:
-            pass
+        except Exception as e:
+            logging.warning("Failed to parse ARIN org XML for Vercel: %s", e)
 
-        nets_root = ET.fromstring(nets_r.text)
+        try:
+            nets_root = ET.fromstring(nets_r.text)
+        except Exception as e:
+            logging.error("Failed to parse ARIN nets XML for Vercel: %s", e)
+            logging.error("Response body: %s", nets_r.text[:500])
+            raise RuntimeError("ARIN nets XML could not be parsed for Vercel")
         for el in nets_root.iter():
             if not el.tag.endswith("}" + "netRef"):
                 continue
