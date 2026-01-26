@@ -10,7 +10,8 @@ import re
 import sys
 import urllib.parse
 import zipfile
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as std_ET  # nosec: B405
+from defusedxml import ElementTree as ET
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Union
@@ -100,12 +101,10 @@ class CloudIPRanges:
     def __init__(self, output_formats: Set[str], only_if_changed: bool = False, max_delta_ratio: Optional[float] = None) -> None:
         self.base_url = Path.cwd()
         self.session = requests.Session()
-        self.session.headers.update(
-            {
-                "User-Agent": "cloud-ip-ranges-crawler/1.0 (+https://github.com/stefan/cloud-ip-ranges)",
-                "Accept": "application/json, text/plain, */*",
-            }
-        )
+        self.session.headers.update({
+            "User-Agent": "cloud-ip-ranges-crawler/1.0 (+https://github.com/stefan/cloud-ip-ranges)",
+            "Accept": "application/json, text/plain, */*",
+        })
 
         retry = Retry(
             total=5,
@@ -219,7 +218,6 @@ class CloudIPRanges:
             transformed_data["details_ipv6"] = details_ipv6
 
         return transformed_data
-
 
     def _transform_ripestat_announced_prefixes(self, response: List[requests.Response], source_key: str, asn: str) -> Dict[str, Any]:
         """Transform RIPEstat Announced Prefixes response to unified format."""
@@ -448,9 +446,9 @@ class CloudIPRanges:
                 result["ipv4"].append(cidr)
         return result
 
-    def _xml_find_text(self, root: ET.Element, tag_local: str) -> Optional[str]:
+    def _xml_find_text(self, root: std_ET.Element, tag_local: str) -> Optional[str]:  # type: ignore
         for el in root.iter():
-            if el.tag.endswith("}" + tag_local) and el.text:
+            if el.tag.endswith("}" + tag_local) and el.text:  # type: ignore
                 return el.text
         return None
 
@@ -459,10 +457,7 @@ class CloudIPRanges:
         seeds = self.sources["vercel"]
         result = self._transform_base(
             "vercel",
-            [
-                f"https://rdap.arin.net/registry/ip/{seed.split('/')[0]}"
-                for seed in seeds
-            ],
+            [f"https://rdap.arin.net/registry/ip/{seed.split('/')[0]}" for seed in seeds],
         )
         result["method"] = "rdap_registry"
         result["coverage_notes"] = "Vercel-owned netblocks (registry), not the full set of cloud egress/edge IPs"
@@ -477,7 +472,7 @@ class CloudIPRanges:
                         continue
                     roles = e.get("roles", [])
                     if isinstance(roles, list) and "registrant" in roles and e.get("handle"):
-                        org_handles.add(e.get("handle"))
+                        org_handles.add(e.get("handle"))  # type: ignore
                         break
 
         if not org_handles:
@@ -503,7 +498,7 @@ class CloudIPRanges:
             except Exception:
                 # Fallback to XML parsing if JSON fails
                 try:
-                    org_root = ET.fromstring(org_r.text)
+                    org_root = ET.fromstring(org_r.text)  # type: ignore
                     if result.get("source_updated_at") is None:
                         result["source_updated_at"] = self._xml_find_text(org_root, "updateDate")
                 except Exception as e:
@@ -524,7 +519,7 @@ class CloudIPRanges:
             except Exception:
                 # Fallback to XML parsing if JSON fails
                 try:
-                    nets_root = ET.fromstring(nets_r.text)
+                    nets_root = ET.fromstring(nets_r.text)  # type: ignore
                     for el in nets_root.iter():
                         if not el.tag.endswith("}" + "netRef"):
                             continue
@@ -548,7 +543,7 @@ class CloudIPRanges:
             try:
                 start_ip = ipaddress.ip_address(start)
                 end_ip = ipaddress.ip_address(end)
-            except Exception:
+            except Exception:  # nosec: B112
                 continue
             for net in ipaddress.summarize_address_range(start_ip, end_ip):
                 cidr = str(net)
@@ -922,20 +917,18 @@ class CloudIPRanges:
             # Special case for vercel: list of seed CIDRs, each gets its own RDAP lookup
             response = []
             for seed in url:
-                seed_ip = seed.split('/')[0]
+                seed_ip = seed.split("/")[0]
                 rdap_url = f"https://rdap.arin.net/registry/ip/{seed_ip}"
                 r = self.session.get(rdap_url, timeout=10)
                 r.raise_for_status()
                 response.append(r)
-                source_http.append(
-                    {
-                        "url": rdap_url,
-                        "status": r.status_code,
-                        "content_type": r.headers.get("content-type"),
-                        "etag": r.headers.get("etag"),
-                        "last_modified": r.headers.get("last-modified"),
-                    }
-                )
+                source_http.append({
+                    "url": rdap_url,
+                    "status": r.status_code,
+                    "content_type": r.headers.get("content-type"),
+                    "etag": r.headers.get("etag"),
+                    "last_modified": r.headers.get("last-modified"),
+                })
             transformed_data = self._transform_vercel(response)
             transformed_data = self._normalize_transformed_data(transformed_data, source_key)
         elif url and isinstance(url[0], str) and url[0].startswith("AS"):
@@ -944,15 +937,13 @@ class CloudIPRanges:
             try:
                 r = self.session.get(ripestat_url, timeout=10)
                 r.raise_for_status()
-                source_http.append(
-                    {
-                        "url": ripestat_url,
-                        "status": r.status_code,
-                        "content_type": r.headers.get("content-type"),
-                        "etag": r.headers.get("etag"),
-                        "last_modified": r.headers.get("last-modified"),
-                    }
-                )
+                source_http.append({
+                    "url": ripestat_url,
+                    "status": r.status_code,
+                    "content_type": r.headers.get("content-type"),
+                    "etag": r.headers.get("etag"),
+                    "last_modified": r.headers.get("last-modified"),
+                })
                 transformed_data = self._transform_ripestat_announced_prefixes([r], source_key, asn)
                 transformed_data = self._normalize_transformed_data(transformed_data, source_key)
             except Exception as e:
@@ -964,15 +955,13 @@ class CloudIPRanges:
                     r = self.session.get(u, timeout=10)
                     r.raise_for_status()
                     response.append(r)
-                    source_http.append(
-                        {
-                            "url": u,
-                            "status": r.status_code,
-                            "content_type": r.headers.get("content-type"),
-                            "etag": r.headers.get("etag"),
-                            "last_modified": r.headers.get("last-modified"),
-                        }
-                    )
+                    source_http.append({
+                        "url": u,
+                        "status": r.status_code,
+                        "content_type": r.headers.get("content-type"),
+                        "etag": r.headers.get("etag"),
+                        "last_modified": r.headers.get("last-modified"),
+                    })
                 transformed_data = self._transform_response(response, source_key, is_asn=True)
         else:
             response = []
@@ -980,15 +969,13 @@ class CloudIPRanges:
                 r = self.session.get(u, timeout=10)
                 r.raise_for_status()
                 response.append(r)
-                source_http.append(
-                    {
-                        "url": u,
-                        "status": r.status_code,
-                        "content_type": r.headers.get("content-type"),
-                        "etag": r.headers.get("etag"),
-                        "last_modified": r.headers.get("last-modified"),
-                    }
-                )
+                source_http.append({
+                    "url": u,
+                    "status": r.status_code,
+                    "content_type": r.headers.get("content-type"),
+                    "etag": r.headers.get("etag"),
+                    "last_modified": r.headers.get("last-modified"),
+                })
             transformed_data = self._transform_response(response, source_key, is_asn=False)
 
         if source_http:
@@ -1031,7 +1018,7 @@ class CloudIPRanges:
         """Raise on obviously dangerous/broken outputs."""
         invalid = []
         for ip in transformed_data.get("ipv4", []):
-            if ip in ("0.0.0.0/0", "0.0.0.0"):  # default route
+            if ip in ("0.0.0.0/0", "0.0.0.0"):  # default route  # nosec: B104
                 invalid.append(ip)
         for ip in transformed_data.get("ipv6", []):
             if ip in ("::/0", "::"):
