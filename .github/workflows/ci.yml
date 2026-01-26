@@ -66,7 +66,14 @@ jobs:
 
       - name: Run pytest (Unit Tests)
         run: |
-          uv run make test
+          uv run make test-unit
+
+      - name: Run pytest (Integration Tests)
+        if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+        run: |
+          uv run make test-integration
+        env:
+          INTEGRATION_TESTS: true
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
