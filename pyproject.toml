@@ -7,6 +7,12 @@ dependencies = [
     "requests>=2.32.3",
 ]
 
+[project.scripts]
+cloud-ip-ranges = "cloud_ip_ranges:main"
+
+[tool.uv]
+package = true
+
 [dependency-groups]
 dev = [
     "bandit>=1.8.3",
