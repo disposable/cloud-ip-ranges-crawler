@@ -95,6 +95,11 @@ class CloudIPRanges:
         "nforce": ["AS64437", "AS43350"],
     }
 
+    # Providers categorized as misc (user ISP traffic, not harmful crawlers)
+    misc_providers = {
+        "starlink",
+    }
+
     def __init__(self, output_formats: Set[str], only_if_changed: bool = False, max_delta_ratio: Optional[float] = None) -> None:
         self.base_url = Path.cwd()
         self.session = requests.Session()
@@ -614,6 +619,7 @@ def main() -> None:
     )
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     parser.add_argument("--log-file", type=str, help="Log file")
+    parser.add_argument("--misc", action="store_true", help="Only process misc providers (user ISP traffic like Starlink)")
     args = parser.parse_args()
 
     log_level = logging.DEBUG if args.debug else logging.INFO
@@ -627,6 +633,22 @@ def main() -> None:
     sources = set(args.sources) if args.sources else None
     output_formats = set(args.output_format)
     cloud_ip_ranges = CloudIPRanges(output_formats, args.only_if_changed, max_delta_ratio=args.max_delta_ratio)
+
+    # Handle --misc flag: only process misc providers
+    if args.misc:
+        if sources is not None:
+            # If specific sources requested, filter to only misc providers
+            sources = sources.intersection(cloud_ip_ranges.misc_providers)
+        else:
+            # If no specific sources, use all misc providers
+            sources = cloud_ip_ranges.misc_providers
+    elif sources is not None:
+        # If specific sources requested and not --misc, exclude misc providers
+        sources = sources.difference(cloud_ip_ranges.misc_providers)
+    else:
+        # Default: exclude misc providers
+        sources = set(cloud_ip_ranges.sources.keys()).difference(cloud_ip_ranges.misc_providers)
+
     if not cloud_ip_ranges.fetch_all(sources):
         sys.exit(1)
 

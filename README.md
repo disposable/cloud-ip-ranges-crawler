@@ -66,6 +66,10 @@ Providers that don't publish explicit IP ranges are queried through ASN lookups:
 - **Rackspace** (Multiple ASNs)
 - **nForce** (AS64437, AS43350)
 
+### Misc Providers
+Providers that are not typical cloud providers or crawlers, but may be useful for reference:
+- **Starlink ISP** - User ISP traffic from Starlink satellite internet service (saved to misc/ directory)
+
 ## Installation
 
 ### Prerequisites
@@ -119,6 +123,12 @@ uv run python src/cloud_ip_ranges.py
 # Fetch specific providers
 uv run cloud-ip-ranges --sources aws google_cloud cloudflare
 
+# Generate misc providers only (user ISP traffic like Starlink)
+uv run cloud-ip-ranges --misc
+
+# Generate specific misc provider
+uv run cloud-ip-ranges --misc --sources starlink
+
 # Output in multiple formats
 uv run cloud-ip-ranges --output-format json csv txt
 
@@ -139,6 +149,9 @@ uv run cloud-ip-ranges --add-env-statistics
 
 # Log to file
 uv run cloud-ip-ranges --log-file crawler.log
+
+# Generate misc providers with custom output formats
+uv run cloud-ip-ranges --misc --output-format json csv
 ```
 
 ### Command Line Options
@@ -150,6 +163,7 @@ uv run cloud-ip-ranges --log-file crawler.log
 - `--add-env-statistics`: Add statistics to environment variables (for CI/CD)
 - `--debug`: Enable debug logging
 - `--log-file`: Specify log file path
+- `--misc`: Only process misc providers (user ISP traffic like Starlink) and save to misc directory
 
 ### Output Metadata
 
