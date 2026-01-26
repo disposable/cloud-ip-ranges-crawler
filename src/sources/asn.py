@@ -112,7 +112,7 @@ def transform_hackertarget(cipr: Any, response: List[Any], source_key: str) -> D
                 continue
 
             # Skip quoted ASN info lines (new format)
-            if line.startswith('"') and '"' in line and ',' in line:
+            if line.startswith('"') and '"' in line and "," in line:
                 continue
 
             parts = line.split(",")
@@ -125,7 +125,7 @@ def transform_hackertarget(cipr: Any, response: List[Any], source_key: str) -> D
                         result["ipv4"].append(ip)
                 else:
                     logging.warning("Invalid IP range from HackerTarget for %s: %s", source_key, ip)
-            elif '/' in line and validate_ip(line):
+            elif "/" in line and validate_ip(line):
                 # Handle case where line is just an IP range (new format)
                 if ":" in line:
                     result["ipv6"].append(line)
