@@ -10,6 +10,7 @@ import re
 import sys
 import urllib.parse
 import zipfile
+import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Union
@@ -54,6 +55,7 @@ class CloudIPRanges:
         "datadog": ["https://ip-ranges.datadoghq.com/"],
         "okta": ["https://s3.amazonaws.com/okta-ip-ranges/ip_ranges.json"],
         "zendesk": ["https://support.zendesk.com/ips"],
+        "vercel": ["https://rdap.arin.net/registry/ip/76.76.21.0"],
         # "whatsapp": ["https://developers.facebook.com/docs/whatsapp/guides/network-requirements/"],  # Temporarily disabled due to page structure changes
         "zscaler": [
             "https://config.zscaler.com/api/zscaler.net/hubs/cidr/json/required",
@@ -422,6 +424,76 @@ class CloudIPRanges:
                 result["ipv6"].append(cidr)
             else:
                 result["ipv4"].append(cidr)
+        return result
+
+    def _xml_find_text(self, root: ET.Element, tag_local: str) -> Optional[str]:
+        for el in root.iter():
+            if el.tag.endswith("}" + tag_local) and el.text:
+                return el.text
+        return None
+
+    def _transform_vercel(self, response: List[requests.Response]) -> Dict[str, Any]:
+        """Transform Vercel-owned netblocks using ARIN RDAP/Whois-RWS."""
+        seed_rdap = self.sources["vercel"][0]
+        result = self._transform_base(
+            "vercel",
+            [
+                seed_rdap,
+                "https://whois.arin.net/rest/org/<handle>",
+                "https://whois.arin.net/rest/org/<handle>/nets",
+            ],
+        )
+        result["method"] = "rdap_registry"
+        result["coverage_notes"] = "Vercel-owned netblocks (registry), not the full set of cloud egress/edge IPs"
+
+        rdap = response[0].json()
+        entities = rdap.get("entities", []) if isinstance(rdap, dict) else []
+        org_handle = None
+        if isinstance(entities, list):
+            for e in entities:
+                if not isinstance(e, dict):
+                    continue
+                roles = e.get("roles", [])
+                if isinstance(roles, list) and "registrant" in roles and e.get("handle"):
+                    org_handle = e.get("handle")
+                    break
+        if not org_handle:
+            raise RuntimeError("Failed to find ARIN org handle for Vercel")
+
+        org_url = f"https://whois.arin.net/rest/org/{org_handle}"
+        nets_url = f"https://whois.arin.net/rest/org/{org_handle}/nets"
+
+        org_r = self.session.get(org_url, timeout=10)
+        org_r.raise_for_status()
+        nets_r = self.session.get(nets_url, timeout=10)
+        nets_r.raise_for_status()
+
+        try:
+            org_root = ET.fromstring(org_r.text)
+            result["source_updated_at"] = self._xml_find_text(org_root, "updateDate")
+        except Exception:
+            pass
+
+        nets_root = ET.fromstring(nets_r.text)
+        for el in nets_root.iter():
+            if not el.tag.endswith("}" + "netRef"):
+                continue
+            start = el.attrib.get("startAddress")
+            end = el.attrib.get("endAddress")
+            if not start or not end:
+                continue
+            try:
+                start_ip = ipaddress.ip_address(start)
+                end_ip = ipaddress.ip_address(end)
+            except Exception:
+                continue
+            for net in ipaddress.summarize_address_range(start_ip, end_ip):
+                cidr = str(net)
+                if ":" in cidr:
+                    result["ipv6"].append(cidr)
+                else:
+                    result["ipv4"].append(cidr)
+
         return result
 
     def _transform_linode(self, response: List[requests.Response]) -> Dict[str, Any]:

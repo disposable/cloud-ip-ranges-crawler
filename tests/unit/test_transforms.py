@@ -388,3 +388,44 @@ def test_atlassian_transform_parses_items_list(cipr: CloudIPRanges) -> None:
     assert res["source_updated_at"] == "2026-01-04T00:00:00Z"
     assert "5.5.5.0/24" in res["ipv4"]
     assert "2606:4700::/32" in res["ipv6"]
+
+
+def test_vercel_rdap_transform_discovers_org_nets(cipr: CloudIPRanges, monkeypatch: pytest.MonkeyPatch) -> None:
+    rdap_seed = FakeResponse(json_data={
+        "entities": [
+            {"handle": "ZEITI", "roles": ["registrant"]},
+        ]
+    })
+
+    org_xml = (
+        "<?xml version='1.0'?>"
+        "<org xmlns='https://www.arin.net/whoisrws/core/v1'>"
+        "<updateDate>2025-12-24T07:44:44-05:00</updateDate>"
+        "</org>"
+    )
+    nets_xml = (
+        "<?xml version='1.0'?>"
+        "<nets xmlns='https://www.arin.net/whoisrws/core/v1'>"
+        "<netRef startAddress='76.76.21.0' endAddress='76.76.21.255' handle='NET-76-76-21-0-1' name='VERCEL-01'>"
+        "https://whois.arin.net/rest/net/NET-76-76-21-0-1"
+        "</netRef>"
+        "<netRef startAddress='198.169.1.0' endAddress='198.169.1.255' handle='NET-198-169-1-0-1' name='VERCEL-03'>"
+        "https://whois.arin.net/rest/net/NET-198-169-1-0-1"
+        "</netRef>"
+        "</nets>"
+    )
+
+    def fake_get(url: str, timeout: int = 10):
+        if url.endswith("/rest/org/ZEITI"):
+            return FakeResponse(text=org_xml)
+        if url.endswith("/rest/org/ZEITI/nets"):
+            return FakeResponse(text=nets_xml)
+        return FakeResponse(text="")
+
+    monkeypatch.setattr(cipr.session, "get", fake_get)
+    res = cipr._transform_response([rdap_seed], "vercel", is_asn=False)
+    assert res["provider"] == "Vercel"
+    assert res["method"] == "rdap_registry"
+    assert res["source_updated_at"] == "2025-12-24T07:44:44-05:00"
+    assert "76.76.21.0/24" in res["ipv4"]
+    assert "198.169.1.0/24" in res["ipv4"]
