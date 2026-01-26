@@ -1,17 +1,12 @@
 import argparse
 import csv
-import html
-import io
 import ipaddress
 import json
 import logging
 import os
 import re
 import sys
-import urllib.parse
-import zipfile
 import xml.etree.ElementTree as std_ET  # nosec: B405
-from defusedxml import ElementTree as ET
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Union
@@ -19,6 +14,8 @@ from typing import Any, Dict, List, Optional, Set, Union
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
+from src.transforms import get_transform
 
 
 def validate_ip(ip: str) -> Optional[str]:
@@ -102,7 +99,7 @@ class CloudIPRanges:
         self.base_url = Path.cwd()
         self.session = requests.Session()
         self.session.headers.update({
-            "User-Agent": "cloud-ip-ranges-crawler/1.0 (+https://github.com/stefan/cloud-ip-ranges)",
+            "User-Agent": "cloud-ip-ranges-crawler/1.0 (+https://github.com/disposable/cloud-ip-ranges)",
             "Accept": "application/json, text/plain, */*",
         })
 
@@ -275,633 +272,18 @@ class CloudIPRanges:
 
         return result
 
-    def _transform_aws(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform AWS data to unified format."""
-        result = self._transform_base("aws")
-        result["details_ipv4"] = []
-        result["details_ipv6"] = []
-        data = response[0].json()
-        result["last_update"] = data["createDate"]
-        result["source_updated_at"] = data["createDate"]
-
-        if "prefixes" in data:
-            for prefix in data["prefixes"]:
-                ip = prefix.get("ip_prefix")
-                if not ip:
-                    continue
-                result["ipv4"].append(ip)
-                result["details_ipv4"].append({
-                    "address": ip,
-                    "service": prefix.get("service"),
-                    "region": prefix.get("region"),
-                    "network_border_group": prefix.get("network_border_group"),
-                })
-
-        if "ipv6_prefixes" in data:
-            for prefix in data["ipv6_prefixes"]:
-                ip6 = prefix.get("ipv6_prefix")
-                if not ip6:
-                    continue
-                result["ipv6"].append(ip6)
-                result["details_ipv6"].append({
-                    "address": ip6,
-                    "service": prefix.get("service"),
-                    "region": prefix.get("region"),
-                    "network_border_group": prefix.get("network_border_group"),
-                })
-
-        return result
-
-    def _transform_digitalocean(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform DigitalOcean data to unified format."""
-        result = self._transform_base("digitalocean")
-        data = response[0].text
-
-        lines = data.splitlines()
-        for line in lines:
-            if not line.strip():
-                continue
-            prefix = line.split(",")[0]
-            if ":" in prefix:
-                result["ipv6"].append(prefix)
-            else:
-                result["ipv4"].append(prefix)
-
-        return result
-
-    def _transform_cloudflare(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Cloudflare data to unified format."""
-        result = self._transform_base("cloudflare")
-
-        data = [r.text for r in response]
-
-        if isinstance(data[0], str):
-            result["ipv4"] = data[0].splitlines()
-
-        if isinstance(data[1], str):
-            result["ipv6"] = data[1].splitlines()
-
-        return result
-
-    def _transform_csv_format(self, response: List[requests.Response], source_key: str) -> Dict[str, Any]:
-        """Transform CSV format data (used by Linode and Apple iCloud) to unified format."""
-        result = self._transform_base(source_key)
-        data = response[0].text
-
-        lines = data.splitlines()
-        for line in lines:
-            if not line.strip() or line.startswith("#"):
-                continue
-
-            ip = line.split(",")[0]
-            if ":" in ip:
-                result["ipv6"].append(ip)
-            else:
-                result["ipv4"].append(ip)
-
-        return result
-
-    def _transform_telegram(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Telegram CIDR ranges to unified format."""
-        return self._transform_csv_format(response, "telegram")
-
-    def _transform_atlassian(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Atlassian IP ranges JSON to unified format."""
-        result = self._transform_base("atlassian")
-        data = response[0].json()
-        result["source_updated_at"] = data.get("creationDate") or data.get("created") or data.get("generated")
-
-        # Prefer structured items where present
-        items = data.get("items") if isinstance(data, dict) else None
-        if isinstance(items, list):
-            for it in items:
-                if not isinstance(it, dict):
-                    continue
-                cidr = it.get("cidr") or it.get("ip") or it.get("prefix")
-                if not cidr or not isinstance(cidr, str):
-                    continue
-                if ":" in cidr:
-                    result["ipv6"].append(cidr)
-                else:
-                    result["ipv4"].append(cidr)
-            return result
-
-        # Fallback: heuristic extraction
-        for cidr in self._extract_cidrs_from_json(data):
-            if ":" in cidr:
-                result["ipv6"].append(cidr)
-            else:
-                result["ipv4"].append(cidr)
-        return result
-
-    def _transform_datadog(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Datadog IP ranges JSON to unified format."""
-        result = self._transform_base("datadog")
-        data = response[0].json()
-        result["source_updated_at"] = data.get("modified") or data.get("updated") or data.get("generated")
-
-        for cidr in self._extract_cidrs_from_json(data):
-            if ":" in cidr:
-                result["ipv6"].append(cidr)
-            else:
-                result["ipv4"].append(cidr)
-        return result
-
-    def _transform_okta(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Okta IP ranges JSON to unified format."""
-        result = self._transform_base("okta")
-        data = response[0].json()
-        result["source_updated_at"] = data.get("last_updated") or data.get("updated") or data.get("generated")
-
-        for cidr in self._extract_cidrs_from_json(data):
-            if ":" in cidr:
-                result["ipv6"].append(cidr)
-            else:
-                result["ipv4"].append(cidr)
-        return result
-
-    def _transform_zendesk(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Zendesk public IPs JSON to unified format."""
-        result = self._transform_base("zendesk")
-        data = response[0].json()
-        ips = data.get("ips", {}) if isinstance(data, dict) else {}
-
-        ingress = ips.get("ingress", {}) if isinstance(ips, dict) else {}
-        egress = ips.get("egress", {}) if isinstance(ips, dict) else {}
-        cidr_list: List[str] = []
-        for bucket in (ingress, egress):
-            if isinstance(bucket, dict):
-                for key in ("all", "specific"):
-                    v = bucket.get(key)
-                    if isinstance(v, list):
-                        cidr_list.extend([x for x in v if isinstance(x, str)])
-
-        if not cidr_list:
-            cidr_list = self._extract_cidrs_from_json(data)
-
-        for cidr in cidr_list:
-            if ":" in cidr:
-                result["ipv6"].append(cidr)
-            else:
-                result["ipv4"].append(cidr)
-        return result
-
     def _xml_find_text(self, root: std_ET.Element, tag_local: str) -> Optional[str]:  # type: ignore
         for el in root.iter():
             if el.tag.endswith("}" + tag_local) and el.text:  # type: ignore
                 return el.text
         return None
 
-    def _transform_vercel(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Vercel-owned netblocks using ARIN RDAP/Whois-RWS from a list of seed CIDRs."""
-        seeds = self.sources["vercel"]
-        result = self._transform_base(
-            "vercel",
-            [f"https://rdap.arin.net/registry/ip/{seed.split('/')[0]}" for seed in seeds],
-        )
-        result["method"] = "rdap_registry"
-        result["coverage_notes"] = "Vercel-owned netblocks (registry), not the full set of cloud egress/edge IPs"
-
-        org_handles: Set[str] = set()
-        for i, r in enumerate(response):
-            rdap = r.json()
-            entities = rdap.get("entities", []) if isinstance(rdap, dict) else []
-            if isinstance(entities, list):
-                for e in entities:
-                    if not isinstance(e, dict):
-                        continue
-                    roles = e.get("roles", [])
-                    if isinstance(roles, list) and "registrant" in roles and e.get("handle"):
-                        org_handles.add(e.get("handle"))  # type: ignore
-                        break
-
-        if not org_handles:
-            raise RuntimeError(f"Failed to find any ARIN org handles for Vercel from seeds: {seeds}")
-
-        logging.debug("Vercel: found org handles: %s", org_handles)
-
-        all_nets: List[tuple[str, str]] = []  # (start, end)
-        for handle in org_handles:
-            org_url = f"https://whois.arin.net/rest/org/{handle}"
-            nets_url = f"https://whois.arin.net/rest/org/{handle}/nets"
-
-            org_r = self.session.get(org_url, timeout=10)
-            org_r.raise_for_status()
-            nets_r = self.session.get(nets_url, timeout=10)
-            nets_r.raise_for_status()
-
-            # Try JSON first (ARIN Whois-RWS returns JSON)
-            try:
-                org_data = org_r.json()
-                if result.get("source_updated_at") is None:
-                    result["source_updated_at"] = org_data.get("org", {}).get("updateDate")
-            except Exception:
-                # Fallback to XML parsing if JSON fails
-                try:
-                    org_root = ET.fromstring(org_r.text)  # type: ignore
-                    if result.get("source_updated_at") is None:
-                        result["source_updated_at"] = self._xml_find_text(org_root, "updateDate")
-                except Exception as e:
-                    logging.warning("Failed to parse ARIN org for %s (both JSON and XML): %s", handle, e)
-
-            try:
-                nets_data = nets_r.json()
-                logging.debug("Vercel: ARIN nets response for %s: %s", handle, nets_r.text[:800])
-                nets = nets_data.get("nets", {}).get("netRef", [])
-                if isinstance(nets, list):
-                    for net in nets:
-                        if not isinstance(net, dict):
-                            continue
-                        start = net.get("@startAddress") or net.get("startAddress")
-                        end = net.get("@endAddress") or net.get("endAddress")
-                        if start and end:
-                            all_nets.append((start, end))
-            except Exception:
-                # Fallback to XML parsing if JSON fails
-                try:
-                    nets_root = ET.fromstring(nets_r.text)  # type: ignore
-                    for el in nets_root.iter():
-                        if not el.tag.endswith("}" + "netRef"):
-                            continue
-                        start = el.attrib.get("startAddress")
-                        end = el.attrib.get("endAddress")
-                        if start and end:
-                            all_nets.append((start, end))
-                except Exception as e:
-                    logging.error("Failed to parse ARIN nets for %s (both JSON and XML): %s", handle, e)
-                    logging.error("Response body: %s", nets_r.text[:500])
-                    raise RuntimeError(f"ARIN nets could not be parsed for {handle}")
-
-        logging.debug("Vercel: collected %d net ranges before dedup", len(all_nets))
-
-        # Dedupe and convert ranges to CIDRs
-        seen: Set[tuple[str, str]] = set()
-        for start, end in all_nets:
-            if (start, end) in seen:
-                continue
-            seen.add((start, end))
-            try:
-                start_ip = ipaddress.ip_address(start)
-                end_ip = ipaddress.ip_address(end)
-            except Exception:  # nosec: B112
-                continue
-            for net in ipaddress.summarize_address_range(start_ip, end_ip):
-                cidr = str(net)
-                if ":" in cidr:
-                    result["ipv6"].append(cidr)
-                else:
-                    result["ipv4"].append(cidr)
-
-        logging.debug("Vercel: after conversion: %d IPv4, %d IPv6", len(result["ipv4"]), len(result["ipv6"]))
-
-        return result
-
-    def _transform_linode(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Linode data to unified format."""
-        return self._transform_csv_format(response, "linode")
-
-    def _transform_apple_private_relay(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Apple Private Relay data to unified format."""
-        return self._transform_csv_format(response, "apple_private_relay")
-
-    def _transform_starlink(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Starlink ISP data to unified format."""
-        return self._transform_csv_format(response, "starlink")
-
-    def _transform_zscaler(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Zscaler data to unified format."""
-        result = self._transform_base("zscaler")
-        result["details_ipv4"] = []
-        result["details_ipv6"] = []
-
-        # Process required IPs
-        required_data = response[0].json()
-        if isinstance(required_data, dict) and "hubPrefixes" in required_data:
-            for prefix in required_data["hubPrefixes"]:
-                if ":" in prefix:
-                    result["ipv6"].append(prefix)
-                    result["details_ipv6"].append({"address": prefix, "category": "required"})
-                else:
-                    result["ipv4"].append(prefix)
-                    result["details_ipv4"].append({"address": prefix, "category": "required"})
-
-        # Process recommended IPs
-        recommended_data = response[1].json()
-        if isinstance(recommended_data, dict) and "hubPrefixes" in recommended_data:
-            for prefix in recommended_data["hubPrefixes"]:
-                if ":" in prefix:
-                    result["ipv6"].append(prefix)
-                    result["details_ipv6"].append({"address": prefix, "category": "recommended"})
-                else:
-                    result["ipv4"].append(prefix)
-                    result["details_ipv4"].append({"address": prefix, "category": "recommended"})
-
-        return result
-
-    def _transform_google_style(self, response: List[requests.Response], source_key: str) -> Dict[str, Any]:
-        """Transform Google-style JSON files (Google Bot, OpenAI, Google Cloud) to unified format."""
-        result = self._transform_base(source_key)
-        result["details_ipv4"] = []
-        result["details_ipv6"] = []
-
-        for r in response:
-            data = r.json()
-            result["last_update"] = data["creationTime"]
-            result["source_updated_at"] = data["creationTime"]
-
-            prefixes = data.get("prefixes", [])
-            for prefix in prefixes:
-                if "ipv4Prefix" in prefix:
-                    ip = prefix["ipv4Prefix"]
-                    result["ipv4"].append(ip)
-                    result["details_ipv4"].append({
-                        "address": ip,
-                        "service": prefix.get("service"),
-                        "scope": prefix.get("scope"),
-                    })
-                if "ipv6Prefix" in prefix:
-                    ip6 = prefix["ipv6Prefix"]
-                    result["ipv6"].append(ip6)
-                    result["details_ipv6"].append({
-                        "address": ip6,
-                        "service": prefix.get("service"),
-                        "scope": prefix.get("scope"),
-                    })
-
-        return result
-
-    def _transform_google_bot(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Google Bot IP ranges to unified format."""
-        return self._transform_google_style(response, "google_bot")
-
-    def _transform_bing_bot(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Bing Bot IP ranges to unified format."""
-        return self._transform_google_style(response, "bing_bot")
-
-    def _transform_google_cloud(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Google Cloud data to unified format."""
-        return self._transform_google_style(response, "google_cloud")
-
-    def _transform_openai(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform OpenAI IP ranges to unified format."""
-        return self._transform_google_style(response, "openai")
-
-    def _transform_perplexity(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Perplexity IP ranges to unified format."""
-        return self._transform_google_style(response, "perplexity")
-
-    def _transform_fastly(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Fastly data to unified format."""
-        result = self._transform_base("fastly")
-        data = response[0].json()
-
-        if isinstance(data, dict):
-            # Add IPv4 addresses
-            for ip in data.get("addresses", []):
-                result["ipv4"].append(ip)
-
-            # Add IPv6 addresses
-            for ip in data.get("ipv6_addresses", []):
-                result["ipv6"].append(ip)
-
-        return result
-
-    def _transform_microsoft(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Microsoft data to unified format."""
-        result = self._transform_base("microsoft")
-        data = response[0].json()
-
-        if isinstance(data, dict) and "value" in data:
-            for service in data["value"]:
-                if "properties" in service and "addressPrefixes" in service["properties"]:
-                    for prefix in service["properties"]["addressPrefixes"]:
-                        if ":" in prefix:
-                            result["ipv6"].append(prefix)
-                        else:
-                            result["ipv4"].append(prefix)
-
-        return result
-
-    def _transform_oracle_cloud(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Oracle Cloud data to unified format."""
-        result = self._transform_base("oracle_cloud")
-        result["details_ipv4"] = []
-        result["details_ipv6"] = []
-        data = response[0].json()
-
-        if isinstance(data, dict):
-            regions = data.get("regions", [])
-            for region in regions:
-                cidrs = region.get("cidrs", [])
-                ipv4_cidrs = region.get("ipv4_cidrs", [])
-                ipv6_cidrs = region.get("ipv6_cidrs", [])
-
-                for cidr in cidrs:
-                    ip = cidr.get("cidr")
-                    if ip:
-                        if ":" in ip:
-                            result["ipv6"].append(ip)
-                            result["details_ipv6"].append({"address": ip, "region": region.get("region") or region.get("regionKey")})
-                        else:
-                            result["ipv4"].append(ip)
-                            result["details_ipv4"].append({"address": ip, "region": region.get("region") or region.get("regionKey")})
-
-                for cidr in ipv4_cidrs:
-                    ip = cidr.get("cidr")
-                    if ip:
-                        result["ipv4"].append(ip)
-                        result["details_ipv4"].append({"address": ip, "region": region.get("region") or region.get("regionKey")})
-
-                for cidr in ipv6_cidrs:
-                    ip = cidr.get("cidr")
-                    if ip:
-                        result["ipv6"].append(ip)
-                        result["details_ipv6"].append({"address": ip, "region": region.get("region") or region.get("regionKey")})
-
-        return result
-
-    def _transform_vultr(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Vultr data to unified format."""
-        result = self._transform_base("vultr")
-        result["details_ipv4"] = []
-        result["details_ipv6"] = []
-        data = response[0].json()
-
-        if isinstance(data, dict):
-            subnets = data.get("subnets", [])
-            for subnet in subnets:
-                ip_prefix = subnet.get("ip_prefix")
-                if ip_prefix:
-                    if ":" in ip_prefix:
-                        result["ipv6"].append(ip_prefix)
-                        result["details_ipv6"].append({
-                            "address": ip_prefix,
-                            "alpha2code": subnet.get("alpha2code"),
-                            "region": subnet.get("region"),
-                            "city": subnet.get("city"),
-                            "postal_code": subnet.get("postal_code"),
-                        })
-                    else:
-                        result["ipv4"].append(ip_prefix)
-                        result["details_ipv4"].append({
-                            "address": ip_prefix,
-                            "alpha2code": subnet.get("alpha2code"),
-                            "region": subnet.get("region"),
-                            "city": subnet.get("city"),
-                            "postal_code": subnet.get("postal_code"),
-                        })
-
-        return result
-
-    def _transform_whatsapp(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform WhatsApp data to unified format."""
-        result = self._transform_base("whatsapp", "https://developers.facebook.com/docs/whatsapp/guides/network-requirements/")
-
-        data = None
-        for url_str in re.findall(r'<a href="([^"]+)"', response[0].text):
-            url_str = html.unescape(url_str)
-            url_parsed = urllib.parse.urlparse(url_str)
-            if (not url_parsed.hostname or not url_parsed.path) or (
-                not re.search(r"\.fbcdn\.net$", url_parsed.hostname) or not re.search(r"\.zip$", url_parsed.path)
-            ):
-                continue
-
-            r = self.session.get(url_str, timeout=10)
-            r.raise_for_status()
-            data = r.content
-            break
-        else:
-            raise RuntimeError("No valid zip file found")
-
-        zip_data = io.BytesIO(data)
-        with zipfile.ZipFile(zip_data, "r") as zip_ref:
-            for file in zip_ref.filelist:
-                if "__MACOSX" in file.filename:
-                    continue
-
-                if file.filename.endswith(".txt"):
-                    with zip_ref.open(file) as f:
-                        for line in io.TextIOWrapper(f, encoding="utf-8"):
-                            line = line.strip()
-                            if line and not line.startswith("#"):
-                                result["ipv4"].append(line)
-
-        return result
-
-    def _transform_microsoft_azure(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Microsoft Azure data to unified format."""
-        result = self._transform_base("microsoft_azure")
-        result["details_ipv4"] = []
-        result["details_ipv6"] = []
-
-        match = re.findall(r'<a href="([^"]+)"', response[0].text)
-        response = []
-        for u in match:
-            if not u.startswith("https://download.microsoft.com/"):
-                continue
-
-            r = self.session.get(u, timeout=10)
-            r.raise_for_status()
-            response.append(r)
-
-        ipv4 = set()
-        ipv6 = set()
-        details_ipv4 = []
-        details_ipv6 = []
-
-        for r in response:
-            data = r.json()
-            values = data.get("values", [])
-            for value in values:
-                properties = value.get("properties", {})
-                system_service = properties.get("systemService")
-                region = properties.get("region")
-                addresses = properties.get("addressPrefixes", [])
-                for address in addresses:
-                    if ":" in address:
-                        ipv6.add(address)
-                        details_ipv6.append({"address": address, "systemService": system_service, "region": region})
-                    else:
-                        ipv4.add(address)
-                        details_ipv4.append({"address": address, "systemService": system_service, "region": region})
-
-        result["ipv4"] = list(ipv4)
-        result["ipv6"] = list(ipv6)
-        if details_ipv4:
-            result["details_ipv4"] = details_ipv4
-        if details_ipv6:
-            result["details_ipv6"] = details_ipv6
-        return result
-
-    def _transform_github(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform GitHub data to unified format."""
-        result = self._transform_base("github")
-        result["details_ipv4"] = []
-        result["details_ipv6"] = []
-        data = response[0].json()
-
-        if isinstance(data, dict):
-            # Keep original exported IP lists limited to hooks/web to avoid changing existing behavior
-            for key in ["hooks", "web"]:
-                ranges = data.get(key, [])
-                for range in ranges:
-                    if ":" in range:
-                        result["ipv6"].append(range)
-                    else:
-                        result["ipv4"].append(range)
-                    # Add details with category for the included lists
-                    if ":" in range:
-                        result["details_ipv6"].append({"address": range, "category": key})
-                    else:
-                        result["details_ipv4"].append({"address": range, "category": key})
-
-        return result
-
-    def _transform_ahrefs(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Ahrefs crawler IP ranges to unified format."""
-        result = self._transform_base("ahrefs")
-        data = response[0].json()
-
-        if isinstance(data, dict) and "ips" in data:
-            for ip_dict in data["ips"]:
-                if isinstance(ip_dict, dict) and "ip_address" in ip_dict:
-                    ip = ip_dict["ip_address"]
-                    if ":" in ip:
-                        result["ipv6"].append(ip)
-                    else:
-                        result["ipv4"].append(ip)
-        else:
-            logging.warning("Invalid Ahrefs response format")
-
-        return result
-
-    def _transform_akamai(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Akamai data to unified format."""
-        result = self._transform_base("akamai")
-        data = response[0].content
-
-        zip_data = io.BytesIO(data)
-        with zipfile.ZipFile(zip_data, "r") as zip_ref:
-            with zip_ref.open("akamai_ipv4_CIDRs.txt") as f:
-                for line in io.TextIOWrapper(f, encoding="utf-8"):
-                    line = line.strip()
-                    if line and not line.startswith("#"):
-                        result["ipv4"].append(line)
-
-            with zip_ref.open("akamai_ipv6_CIDRs.txt") as f:
-                for line in io.TextIOWrapper(f, encoding="utf-8"):
-                    line = line.strip()
-                    if line and not line.startswith("#"):
-                        result["ipv6"].append(line)
-
-        return result
-
     def _transform_response(self, response: List[requests.Response], source_key: str, is_asn: bool) -> Dict[str, Any]:
         if is_asn:
             transformed_data = self._transform_hackertarget(response, source_key)
         else:
-            transform_method = getattr(self, f"_transform_{source_key}")
-            transformed_data = transform_method(response)
+            transform_fn = get_transform(source_key)
+            transformed_data = transform_fn(self, response, source_key)
 
         return self._normalize_transformed_data(transformed_data, source_key)
 
@@ -913,8 +295,19 @@ class CloudIPRanges:
         transformed_data: Dict[str, Any]
         source_http: List[Dict[str, Any]] = []
 
-        if source_key == "vercel":
-            # Special case for vercel: list of seed CIDRs, each gets its own RDAP lookup
+        def is_seed_cidr(v: str) -> bool:
+            if v.startswith("http://") or v.startswith("https://"):
+                return False
+            if "/" not in v:
+                return False
+            try:
+                ipaddress.ip_network(v, strict=False)
+                return True
+            except Exception:
+                return False
+
+        if isinstance(url, list) and url and isinstance(url[0], str) and is_seed_cidr(url[0]):
+            # Seed CIDR sources: each seed gets its own RDAP lookup
             response = []
             for seed in url:
                 seed_ip = seed.split("/")[0]
@@ -929,8 +322,7 @@ class CloudIPRanges:
                     "etag": r.headers.get("etag"),
                     "last_modified": r.headers.get("last-modified"),
                 })
-            transformed_data = self._transform_vercel(response)
-            transformed_data = self._normalize_transformed_data(transformed_data, source_key)
+            transformed_data = self._transform_response(response, source_key, is_asn=False)
         elif url and isinstance(url[0], str) and url[0].startswith("AS"):
             asn = url[0]
             ripestat_url = f"https://stat.ripe.net/data/announced-prefixes/data.json?resource={asn}"

@@ -9,6 +9,7 @@ from unittest.mock import patch
 import pytest
 
 from src.cloud_ip_ranges import CloudIPRanges
+from src.transforms import get_transform
 
 
 SAMPLES_DIR = Path(__file__).resolve().parent.parent / "samples"
@@ -868,13 +869,141 @@ def test_transform_method_selection() -> None:
     """Test transform method selection logic."""
     crawler = CloudIPRanges({"json"})
 
-    # Test that transform methods exist for known sources
-    assert hasattr(crawler, "_transform_cloudflare")
-    assert hasattr(crawler, "_transform_aws")
-    assert hasattr(crawler, "_transform_github")
+    # Transforms are loaded dynamically from src/transforms/<source>.py
+    assert callable(get_transform("cloudflare"))
+    assert callable(get_transform("aws"))
+    assert callable(get_transform("github"))
 
     # Test that _transform_response exists
     assert hasattr(crawler, "_transform_response")
+
+
+def test_transform_response_asn_uses_hackertarget(cipr: CloudIPRanges) -> None:
+    # Minimal hackertarget-like output
+    r = FakeResponse(text="AS,IP\n1, 8.8.8.0/24\n2, 2606:4700::/32\n")
+    res = cipr._transform_response([r], "hetzner", is_asn=True)
+    assert res["method"] == "asn_lookup"
+    assert "8.8.8.0/24" in res["ipv4"]
+    assert "2606:4700::/32" in res["ipv6"]
+
+
+def test_transform_response_apple_private_relay_csv(cipr: CloudIPRanges) -> None:
+    r = _load_raw(SAMPLES_DIR / "apple_private_relay_0.raw")
+    res = cipr._transform_response([r], "apple_private_relay", is_asn=False)
+    assert res["provider"] == "Apple Private Relay"
+    assert _has_valid_ipv4(res) or _has_valid_ipv6(res)
+
+
+def test_atlassian_transform_fallback_heuristic(cipr: CloudIPRanges) -> None:
+    r = FakeResponse(json_data={
+        "created": "2026-01-04T00:00:00Z",
+        "nested": {"prefixes_ipv4": ["5.5.5.0/24"], "prefixes_ipv6": ["2606:4700::/32"]},
+    })
+    res = cipr._transform_response([r], "atlassian", is_asn=False)
+    assert res["source_updated_at"] == "2026-01-04T00:00:00Z"
+    assert "5.5.5.0/24" in res["ipv4"]
+    assert "2606:4700::/32" in res["ipv6"]
+
+
+def test_oracle_cloud_transform_includes_ipv4_ipv6_lists(cipr: CloudIPRanges) -> None:
+    r = FakeResponse(json_data={
+        "regions": [
+            {
+                "region": "region-1",
+                "cidrs": [{"cidr": "1.1.1.0/24"}],
+                "ipv4_cidrs": [{"cidr": "2.2.2.0/24"}],
+                "ipv6_cidrs": [{"cidr": "2606:4700::/32"}],
+            }
+        ]
+    })
+    res = cipr._transform_response([r], "oracle_cloud", is_asn=False)
+    assert "1.1.1.0/24" in res["ipv4"]
+    assert "2.2.2.0/24" in res["ipv4"]
+    assert "2606:4700::/32" in res["ipv6"]
+    assert res.get("details_ipv4") and res.get("details_ipv6")
+
+
+def test_save_result_writes_details_files(tmp_path: Path) -> None:
+    crawler = CloudIPRanges({"json", "csv"})
+    crawler.base_url = tmp_path
+    data = {
+        "provider": "Test",
+        "provider_id": "test",
+        "method": "published_list",
+        "coverage_notes": "",
+        "generated_at": "2024-01-01T00:00:00",
+        "source_updated_at": "2024-01-01T00:00:00",
+        "source": "https://example.com/test",
+        "last_update": "2024-01-01T00:00:00",
+        "ipv4": ["8.8.8.0/24"],
+        "ipv6": ["2001:db8::/32"],
+        "details_ipv4": [{"address": "8.8.8.0/24", "service": "svc"}],
+        "details_ipv6": [{"address": "2001:db8::/32", "service": "svc"}],
+    }
+
+    crawler._save_result(data, "test")
+    assert (tmp_path / "test-details.json").exists()
+    assert (tmp_path / "test-details.csv").exists()
+
+
+def test_add_env_statistics_writes_github_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    crawler = CloudIPRanges({"json"})
+    crawler.statistics = {"a": {"ipv4": 1, "ipv6": 2}, "b": {"ipv4": 3, "ipv6": 4}}
+
+    out = tmp_path / "gh_out.txt"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(out))
+    crawler.add_env_statistics()
+
+    txt = out.read_text(encoding="utf-8")
+    assert "total_ipv4=4" in txt
+    assert "total_ipv6=6" in txt
+    assert "sources_count=2" in txt
+
+
+def test_fetch_and_save_seed_cidr_source_vercel(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    crawler = CloudIPRanges({"json"})
+    crawler.base_url = tmp_path
+    crawler.sources = {"vercel": ["76.76.21.0/24"]}
+
+    rdap = FakeResponse(json_data={"entities": [{"handle": "ZEITI", "roles": ["registrant"]}]})
+    rdap.status_code = 200
+    rdap.headers = {"content-type": "application/rdap+json"}
+
+    org_xml = (
+        "<?xml version='1.0'?>"
+        "<org xmlns='https://www.arin.net/whoisrws/core/v1'>"
+        "<updateDate>2025-12-24T07:44:44-05:00</updateDate>"
+        "</org>"
+    )
+    nets_xml = (
+        "<?xml version='1.0'?>"
+        "<nets xmlns='https://www.arin.net/whoisrws/core/v1'>"
+        "<netRef startAddress='76.76.21.0' endAddress='76.76.21.255' handle='NET-76-76-21-0-1' name='VERCEL-01'>"
+        "https://whois.arin.net/rest/net/NET-76-76-21-0-1"
+        "</netRef>"
+        "</nets>"
+    )
+
+    org_r = FakeResponse(text=org_xml)
+    org_r.status_code = 200
+    org_r.headers = {"content-type": "application/xml"}
+    nets_r = FakeResponse(text=nets_xml)
+    nets_r.status_code = 200
+    nets_r.headers = {"content-type": "application/xml"}
+
+    def fake_get(url: str, timeout: int = 10):
+        if url.startswith("https://rdap.arin.net/registry/ip/"):
+            return rdap
+        if url.endswith("/rest/org/ZEITI"):
+            return org_r
+        if url.endswith("/rest/org/ZEITI/nets"):
+            return nets_r
+        return FakeResponse(text="")
+
+    monkeypatch.setattr(crawler.session, "get", fake_get)
+    res = crawler._fetch_and_save("vercel")
+    assert res is not None
+    assert (tmp_path / "vercel.json").exists()
 
 
 def test_response_handling() -> None:
