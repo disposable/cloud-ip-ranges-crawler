@@ -55,8 +55,9 @@ This crawler fetches IP ranges from multiple cloud providers and online services
 - **Branch** - Mobile measurement platform webhook and postback IP ranges
 - **Vercel** - Edge computing platform IP ranges (registry-owned)
 
-### ASN-based Sources
-Providers that don't publish explicit IP ranges are queried through ASN lookups:
+### ASN-based Sources (RIPEstat + RADB)
+Providers that don't publish explicit IP ranges are queried through ASN lookups. The crawler supports both direct ASN lists and RADB AS-SET expansion (e.g., `RADB::AS-FACEBOOK`):
+
 - **IBM/Softlayer** (AS36351)
 - **Heroku/AWS** (AS14618)
 - **Fly.io** (AS40509)
@@ -67,7 +68,7 @@ Providers that don't publish explicit IP ranges are queried through ASN lookups:
 - **Alibaba** (AS45102, AS134963)
 - **Tencent** (AS45090, AS133478, AS132591, AS132203)
 - **Ucloud** (AS135377, AS59077)
-- **Meta Crawler** (AS32934)
+- **Meta Crawler** (RADB::AS-FACEBOOK)
 - **Huawei Cloud** (AS136907, AS55990)
 - **Hetzner** (AS24940, AS37153)
 - **Choopa** (AS46407, AS20473, AS133795, AS11508)
@@ -277,8 +278,11 @@ The crawler is built around the `CloudIPRanges` class which:
 ### Direct API Sources
 Providers with official IP range documents/JSON APIs.
 
-### ASN-based Sources (RIPEstat)
-Providers without published lists use RIPEstat “Announced Prefixes” for BGP-announced prefixes, with HackerTarget as fallback.
+### ASN-based Sources (RIPEstat + RADB)
+Providers without published IP range documents are resolved via:
+- **RIPEstat “Announced Prefixes”** for BGP-announced prefixes per ASN
+- **RADB AS-SET expansion** (`RADB::AS-SET`) to dynamically resolve all member ASNs
+- **HackerTarget** as a per-ASN fallback if RIPEstat fails
 
 ### RDAP-based Sources (Vercel)
 For providers that own netblocks but lack ASN, we use:

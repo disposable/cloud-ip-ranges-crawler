@@ -8,7 +8,7 @@ TransformFn = Callable[[Any, Any, str], Dict[str, Any]]
 
 
 def _import_transform_module(module_name: str) -> ModuleType:
-    return importlib.import_module(f"src.transforms.{module_name}")
+    return importlib.import_module(f"transforms.{module_name}")
 
 
 @lru_cache(maxsize=None)
@@ -17,6 +17,6 @@ def get_transform(source_key: str) -> TransformFn:
 
     fn = getattr(mod, "transform", None)
     if not callable(fn):
-        raise RuntimeError(f"Transform module src.transforms.{source_key} does not export callable 'transform'")
+        raise RuntimeError(f"Transform module transforms.{source_key} does not export callable 'transform'")
 
     return cast(TransformFn, fn)

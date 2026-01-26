@@ -17,12 +17,13 @@ class FakeResponse:
     Supports .text, .json(), .content, and .raise_for_status().
     """
 
-    def __init__(self, *, text: str | None = None, json_data: Any | None = None, content: bytes | None = None, status_code: int = 200) -> None:
+    def __init__(self, *, text: str | None = None, json_data: Any | None = None, content: bytes | None = None, status_code: int = 200, url: str | None = None) -> None:
         self._text = text
         self._json = json_data
         self._content = content
         self.status_code = status_code
         self.headers = {}
+        self.url = url
 
     @property
     def text(self) -> str:

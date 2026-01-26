@@ -2,11 +2,24 @@
 
 import pytest
 from pathlib import Path
-from typing import Any, List
+from typing import Any, Dict, List
 
 from src.cloud_ip_ranges import CloudIPRanges
 
 from tests.unit.conftest import FakeResponse, SAMPLES_DIR
+
+
+def _transform_response(cipr: CloudIPRanges, response: List[Any], source_key: str, is_asn: bool) -> Dict[str, Any]:
+    """Helper function to replace the removed _transform_response method for tests."""
+    if is_asn:
+        from src.sources.asn import transform_hackertarget
+        transformed_data = transform_hackertarget(cipr, response, source_key)
+    else:
+        from src.transforms.registry import get_transform
+        transform_fn = get_transform(source_key)
+        transformed_data = transform_fn(cipr, response, source_key)
+
+    return cipr._normalize_transformed_data(transformed_data, source_key)
 
 
 def test_seed_based_download_sample_format() -> None:
@@ -104,7 +117,7 @@ def test_sample_files_are_valid(cipr: CloudIPRanges) -> None:
         responses: List[Any] = [FakeResponse(text=f.read_text(encoding="utf-8")) for f in files]
 
         try:
-            result = cipr._transform_response(responses, source_key, is_asn=False)
+            result = _transform_response(cipr,responses, source_key, is_asn=False)
 
             # Verify basic structure
             assert "provider" in result

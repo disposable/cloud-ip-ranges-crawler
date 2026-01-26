@@ -15,21 +15,10 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from src.transforms import get_transform
-
-
-def validate_ip(ip: str) -> Optional[str]:
-    """Validate an IP address or subnet."""
-    try:
-        network = ipaddress.ip_network(ip, strict=False)
-
-        if network.is_private or network.is_loopback or network.is_link_local or network.is_multicast:
-            return None
-
-        return ip
-    except ValueError as e:
-        logging.warning("Invalid IP address/subnet: %s - %s", ip, str(e))
-        return None
+from sources.asn import fetch_and_save_asn_source
+from sources.http import fetch_and_save_http_source
+from sources.seed_cidr import fetch_and_save_seed_cidr_source
+from transforms.common import validate_ip
 
 
 class CloudIPRanges:
@@ -95,7 +84,7 @@ class CloudIPRanges:
         "alibaba": ["AS45102", "AS134963"],
         "tencent": ["AS45090", "AS133478", "AS132591", "AS132203"],
         "ucloud": ["AS135377", "AS59077"],
-        "meta_crawler": ["AS32934"],
+        "meta_crawler": ["RADB::AS-FACEBOOK"],
         "huawei_cloud": ["AS136907", "AS55990"],
         "hetzner": ["AS24940", "AS37153"],
         "choopa": ["AS46407", "AS20473", "AS133795", "AS11508"],
@@ -166,7 +155,12 @@ class CloudIPRanges:
             "ipv6": [],
         }
 
-        if isinstance(source_url, list) and source_url and isinstance(source_url[0], str) and source_url[0].startswith("AS"):
+        if (
+            isinstance(source_url, list)
+            and source_url
+            and isinstance(source_url[0], str)
+            and (source_url[0].startswith("AS") or source_url[0].startswith("RADB::"))
+        ):
             result["method"] = "asn_lookup"
         return result
 
@@ -243,84 +237,16 @@ class CloudIPRanges:
 
         return transformed_data
 
-    def _transform_ripestat_announced_prefixes(self, response: List[requests.Response], source_key: str, asn: str) -> Dict[str, Any]:
-        """Transform RIPEstat Announced Prefixes response to unified format."""
-        ripestat_url = f"https://stat.ripe.net/data/announced-prefixes/data.json?resource={asn}"
-        result = self._transform_base(source_key, [ripestat_url])
-        result["method"] = "bgp_announced"
-        result["coverage_notes"] = "BGP-announced prefixes for the ASN"
-
-        data = response[0].json()
-        status = data.get("status")
-        if status != "ok":
-            raise RuntimeError(f"RIPEstat announced-prefixes failed for {asn}: status={status}")
-
-        payload = data.get("data", {})
-        result["source_updated_at"] = payload.get("queried_at")
-
-        prefixes = payload.get("prefixes", [])
-        if not isinstance(prefixes, list):
-            raise RuntimeError("RIPEstat announced-prefixes: invalid prefixes")
-
-        for p in prefixes:
-            if not isinstance(p, dict):
-                continue
-            prefix = p.get("prefix")
-            if not prefix:
-                continue
-            if ":" in prefix:
-                result["ipv6"].append(prefix)
-            else:
-                result["ipv4"].append(prefix)
-
-        return result
-
-    def _transform_hackertarget(self, response: List[requests.Response], source_key: str) -> Dict[str, Any]:
-        """Transform HackerTarget AS lookup response to unified format."""
-
-        sources = []
-        for s in self.sources[source_key]:
-            sources.append(s.replace("", ""))
-
-        result = self._transform_base(source_key, ", ".join(sources))
-        result["method"] = "asn_lookup"
-        data = response[0].text
-        if "API count exceeded" in data:
-            raise RuntimeError("API request count exceeded")
-
-        for x, line in enumerate(data.split("\n")):
-            if not line.strip() or line.startswith("#") or x == 0:
-                continue
-            ip = line.strip().split()[-1]
-            if ":" in ip:
-                result["ipv6"].append(ip)
-            else:
-                result["ipv4"].append(ip)
-
-        return result
-
     def _xml_find_text(self, root: std_ET.Element, tag_local: str) -> Optional[str]:  # type: ignore
         for el in root.iter():
             if el.tag.endswith("}" + tag_local) and el.text:  # type: ignore
                 return el.text
         return None
 
-    def _transform_response(self, response: List[requests.Response], source_key: str, is_asn: bool) -> Dict[str, Any]:
-        if is_asn:
-            transformed_data = self._transform_hackertarget(response, source_key)
-        else:
-            transform_fn = get_transform(source_key)
-            transformed_data = transform_fn(self, response, source_key)
-
-        return self._normalize_transformed_data(transformed_data, source_key)
-
     def _fetch_and_save(self, source_key: str) -> Optional[tuple[int, int]]:
         """Fetch and save IP ranges for a specific source."""
         logging.debug("Fetching %s source", source_key)
         url = self.sources[source_key]
-
-        transformed_data: Dict[str, Any]
-        source_http: List[Dict[str, Any]] = []
 
         def is_seed_cidr(v: str) -> bool:
             if v.startswith("http://") or v.startswith("https://"):
@@ -333,72 +259,13 @@ class CloudIPRanges:
             except Exception:
                 return False
 
+        # Route to appropriate source handler
         if isinstance(url, list) and url and isinstance(url[0], str) and is_seed_cidr(url[0]):
-            # Seed CIDR sources: each seed gets its own RDAP lookup
-            response = []
-            for seed in url:
-                seed_ip = seed.split("/")[0]
-                rdap_url = f"https://rdap.arin.net/registry/ip/{seed_ip}"
-                r = self.session.get(rdap_url, timeout=10)
-                r.raise_for_status()
-                response.append(r)
-                source_http.append({
-                    "url": rdap_url,
-                    "status": r.status_code,
-                    "content_type": r.headers.get("content-type"),
-                    "etag": r.headers.get("etag"),
-                    "last_modified": r.headers.get("last-modified"),
-                })
-            transformed_data = self._transform_response(response, source_key, is_asn=False)
-        elif url and isinstance(url[0], str) and url[0].startswith("AS"):
-            asn = url[0]
-            ripestat_url = f"https://stat.ripe.net/data/announced-prefixes/data.json?resource={asn}"
-            try:
-                r = self.session.get(ripestat_url, timeout=10)
-                r.raise_for_status()
-                source_http.append({
-                    "url": ripestat_url,
-                    "status": r.status_code,
-                    "content_type": r.headers.get("content-type"),
-                    "etag": r.headers.get("etag"),
-                    "last_modified": r.headers.get("last-modified"),
-                })
-                transformed_data = self._transform_ripestat_announced_prefixes([r], source_key, asn)
-                transformed_data = self._normalize_transformed_data(transformed_data, source_key)
-            except Exception as e:
-                logging.warning("RIPEstat lookup failed for %s (%s), falling back to HackerTarget", source_key, str(e))
-                response = []
-                for u in url:
-                    if u.startswith("AS"):
-                        u = f"https://api.hackertarget.com/aslookup/?q={u}"
-                    r = self.session.get(u, timeout=10)
-                    r.raise_for_status()
-                    response.append(r)
-                    source_http.append({
-                        "url": u,
-                        "status": r.status_code,
-                        "content_type": r.headers.get("content-type"),
-                        "etag": r.headers.get("etag"),
-                        "last_modified": r.headers.get("last-modified"),
-                    })
-                transformed_data = self._transform_response(response, source_key, is_asn=True)
+            transformed_data = fetch_and_save_seed_cidr_source(self, source_key, url)
+        elif isinstance(url, list) and url and isinstance(url[0], str) and (url[0].startswith("AS") or url[0].startswith("RADB::")):
+            transformed_data = fetch_and_save_asn_source(self, source_key, url)
         else:
-            response = []
-            for u in url:
-                r = self.session.get(u, timeout=10)
-                r.raise_for_status()
-                response.append(r)
-                source_http.append({
-                    "url": u,
-                    "status": r.status_code,
-                    "content_type": r.headers.get("content-type"),
-                    "etag": r.headers.get("etag"),
-                    "last_modified": r.headers.get("last-modified"),
-                })
-            transformed_data = self._transform_response(response, source_key, is_asn=False)
-
-        if source_http:
-            transformed_data["source_http"] = source_http
+            transformed_data = fetch_and_save_http_source(self, source_key, url)
 
         # Always perform basic safety audit
         self._audit_transformed_data(transformed_data, source_key)

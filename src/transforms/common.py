@@ -1,4 +1,20 @@
-from typing import Any, Dict, List
+import ipaddress
+import logging
+from typing import Any, Dict, List, Optional
+
+
+def validate_ip(ip: str) -> Optional[str]:
+    """Validate an IP address or subnet."""
+    try:
+        network = ipaddress.ip_network(ip, strict=False)
+
+        if network.is_private or network.is_loopback or network.is_link_local or network.is_multicast:
+            return None
+
+        return ip
+    except ValueError as e:
+        logging.warning("Invalid IP address/subnet: %s - %s", ip, str(e))
+        return None
 
 
 def transform_csv_format(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]:
