@@ -50,6 +50,10 @@ class CloudIPRanges:
         "starlink": ["https://geoip.starlinkisp.net/feed.csv"],
         "akamai": ["https://techdocs.akamai.com/property-manager/pdfs/akamai_ipv4_ipv6_CIDRs-txt.zip"],
         "telegram": ["https://core.telegram.org/resources/cidr.txt"],
+        "atlassian": ["https://ip-ranges.atlassian.com/"],
+        "datadog": ["https://ip-ranges.datadoghq.com/"],
+        "okta": ["https://s3.amazonaws.com/okta-ip-ranges/ip_ranges.json"],
+        "zendesk": ["https://support.zendesk.com/ips"],
         # "whatsapp": ["https://developers.facebook.com/docs/whatsapp/guides/network-requirements/"],  # Temporarily disabled due to page structure changes
         "zscaler": [
             "https://config.zscaler.com/api/zscaler.net/hubs/cidr/json/required",
@@ -60,6 +64,8 @@ class CloudIPRanges:
         "softlayer_ibm": ["AS36351"],
         # "vercel_aws": ["AS15169"],  # Disabled - AS15169 is Google's ASN, Vercel doesn't have its own ASN
         "heroku_aws": ["AS14618"],
+        "flyio": ["AS40509"],
+        "render": ["AS397273"],
         "a2hosting": ["AS55293"],
         "godaddy": ["AS26496", "AS30083"],
         "dreamhost": ["AS26347"],
@@ -116,6 +122,30 @@ class CloudIPRanges:
         if isinstance(source_url, list) and source_url and isinstance(source_url[0], str) and source_url[0].startswith("AS"):
             result["method"] = "asn_lookup"
         return result
+
+    def _extract_cidrs_from_json(self, obj: Any) -> List[str]:
+        """Best-effort extraction of CIDR strings from nested JSON-like structures."""
+        cidrs: List[str] = []
+        cidr_re = re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}/\d{1,2}\b|\b[0-9a-fA-F:]+/\d{1,3}\b")
+
+        def walk(v: Any, key_hint: str = "") -> None:
+            if isinstance(v, str):
+                if key_hint and not re.search(r"ip|cidr|prefix|range", key_hint, re.IGNORECASE):
+                    return
+                for m in cidr_re.findall(v):
+                    cidrs.append(m)
+                return
+            if isinstance(v, list):
+                for it in v:
+                    walk(it, key_hint)
+                return
+            if isinstance(v, dict):
+                for k, it in v.items():
+                    walk(it, str(k))
+                return
+
+        walk(obj, "")
+        return cidrs
 
     def _normalize_transformed_data(self, transformed_data: Dict[str, Any], source_key: str) -> Dict[str, Any]:
         ipv4 = set()
@@ -312,6 +342,87 @@ class CloudIPRanges:
     def _transform_telegram(self, response: List[requests.Response]) -> Dict[str, Any]:
         """Transform Telegram CIDR ranges to unified format."""
         return self._transform_csv_format(response, "telegram")
+
+    def _transform_atlassian(self, response: List[requests.Response]) -> Dict[str, Any]:
+        """Transform Atlassian IP ranges JSON to unified format."""
+        result = self._transform_base("atlassian")
+        data = response[0].json()
+        result["source_updated_at"] = data.get("creationDate") or data.get("created") or data.get("generated")
+
+        # Prefer structured items where present
+        items = data.get("items") if isinstance(data, dict) else None
+        if isinstance(items, list):
+            for it in items:
+                if not isinstance(it, dict):
+                    continue
+                cidr = it.get("cidr") or it.get("ip") or it.get("prefix")
+                if not cidr or not isinstance(cidr, str):
+                    continue
+                if ":" in cidr:
+                    result["ipv6"].append(cidr)
+                else:
+                    result["ipv4"].append(cidr)
+            return result
+
+        # Fallback: heuristic extraction
+        for cidr in self._extract_cidrs_from_json(data):
+            if ":" in cidr:
+                result["ipv6"].append(cidr)
+            else:
+                result["ipv4"].append(cidr)
+        return result
+
+    def _transform_datadog(self, response: List[requests.Response]) -> Dict[str, Any]:
+        """Transform Datadog IP ranges JSON to unified format."""
+        result = self._transform_base("datadog")
+        data = response[0].json()
+        result["source_updated_at"] = data.get("modified") or data.get("updated") or data.get("generated")
+
+        for cidr in self._extract_cidrs_from_json(data):
+            if ":" in cidr:
+                result["ipv6"].append(cidr)
+            else:
+                result["ipv4"].append(cidr)
+        return result
+
+    def _transform_okta(self, response: List[requests.Response]) -> Dict[str, Any]:
+        """Transform Okta IP ranges JSON to unified format."""
+        result = self._transform_base("okta")
+        data = response[0].json()
+        result["source_updated_at"] = data.get("last_updated") or data.get("updated") or data.get("generated")
+
+        for cidr in self._extract_cidrs_from_json(data):
+            if ":" in cidr:
+                result["ipv6"].append(cidr)
+            else:
+                result["ipv4"].append(cidr)
+        return result
+
+    def _transform_zendesk(self, response: List[requests.Response]) -> Dict[str, Any]:
+        """Transform Zendesk public IPs JSON to unified format."""
+        result = self._transform_base("zendesk")
+        data = response[0].json()
+        ips = data.get("ips", {}) if isinstance(data, dict) else {}
+
+        ingress = ips.get("ingress", {}) if isinstance(ips, dict) else {}
+        egress = ips.get("egress", {}) if isinstance(ips, dict) else {}
+        cidr_list: List[str] = []
+        for bucket in (ingress, egress):
+            if isinstance(bucket, dict):
+                for key in ("all", "specific"):
+                    v = bucket.get(key)
+                    if isinstance(v, list):
+                        cidr_list.extend([x for x in v if isinstance(x, str)])
+
+        if not cidr_list:
+            cidr_list = self._extract_cidrs_from_json(data)
+
+        for cidr in cidr_list:
+            if ":" in cidr:
+                result["ipv6"].append(cidr)
+            else:
+                result["ipv4"].append(cidr)
+        return result
 
     def _transform_linode(self, response: List[requests.Response]) -> Dict[str, Any]:
         """Transform Linode data to unified format."""

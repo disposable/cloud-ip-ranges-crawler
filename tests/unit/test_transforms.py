@@ -333,3 +333,58 @@ def test_ripestat_announced_prefixes_transform(cipr: CloudIPRanges) -> None:
     assert res["source_updated_at"] == "2026-01-01T00:00:00Z"
     assert "1.1.1.0/24" in res["ipv4"]
     assert "2606:4700::/32" in res["ipv6"]
+
+
+def test_zendesk_transform_parses_ingress_and_egress(cipr: CloudIPRanges) -> None:
+    r = FakeResponse(json_data={
+        "ips": {
+            "ingress": {"all": ["216.198.0.0/18"], "specific": ["104.18.248.37/32"]},
+            "egress": {"all": ["216.198.0.0/18"], "specific": []},
+        }
+    })
+    res = cipr._transform_response([r], "zendesk", is_asn=False)
+    assert res["provider"] == "Zendesk"
+    assert "216.198.0.0/18" in res["ipv4"]
+    assert "104.18.248.37/32" in res["ipv4"]
+
+
+def test_okta_transform_extracts_nested_ranges(cipr: CloudIPRanges) -> None:
+    r = FakeResponse(json_data={
+        "last_updated": "2026-01-02T00:00:00Z",
+        "ranges": [
+            {"cidr": "3.3.3.0/24"},
+            {"ipv6": "2606:4700::/32"},
+        ],
+    })
+    res = cipr._transform_response([r], "okta", is_asn=False)
+    assert res["provider"] == "Okta"
+    assert res["source_updated_at"] == "2026-01-02T00:00:00Z"
+    assert "3.3.3.0/24" in res["ipv4"]
+    assert "2606:4700::/32" in res["ipv6"]
+
+
+def test_datadog_transform_extracts_ranges_by_heuristics(cipr: CloudIPRanges) -> None:
+    r = FakeResponse(json_data={
+        "modified": "2026-01-03T00:00:00Z",
+        "agents": {"prefixes_ipv4": ["4.4.4.0/24"], "prefixes_ipv6": ["2606:4700::/32"]},
+    })
+    res = cipr._transform_response([r], "datadog", is_asn=False)
+    assert res["provider"] == "Datadog"
+    assert res["source_updated_at"] == "2026-01-03T00:00:00Z"
+    assert "4.4.4.0/24" in res["ipv4"]
+    assert "2606:4700::/32" in res["ipv6"]
+
+
+def test_atlassian_transform_parses_items_list(cipr: CloudIPRanges) -> None:
+    r = FakeResponse(json_data={
+        "creationDate": "2026-01-04T00:00:00Z",
+        "items": [
+            {"cidr": "5.5.5.0/24"},
+            {"cidr": "2606:4700::/32"},
+        ],
+    })
+    res = cipr._transform_response([r], "atlassian", is_asn=False)
+    assert res["provider"] == "Atlassian"
+    assert res["source_updated_at"] == "2026-01-04T00:00:00Z"
+    assert "5.5.5.0/24" in res["ipv4"]
+    assert "2606:4700::/32" in res["ipv6"]
