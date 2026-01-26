@@ -99,7 +99,22 @@ class CloudIPRanges:
         if source_url is None:
             source_url = self.sources[source_key]
 
-        result = {"provider": source_key.replace("_", " ").title(), "source": source_url, "last_update": datetime.now().isoformat(), "ipv4": [], "ipv6": []}
+        generated_at = datetime.now().isoformat()
+        result = {
+            "provider": source_key.replace("_", " ").title(),
+            "provider_id": source_key.replace("_", "-"),
+            "method": "published_list",
+            "coverage_notes": "",
+            "generated_at": generated_at,
+            "source_updated_at": None,
+            "source": source_url,
+            "last_update": generated_at,
+            "ipv4": [],
+            "ipv6": [],
+        }
+
+        if isinstance(source_url, list) and source_url and isinstance(source_url[0], str) and source_url[0].startswith("AS"):
+            result["method"] = "asn_lookup"
         return result
 
     def _transform_hackertarget(self, response: List[requests.Response], source_key: str) -> Dict[str, Any]:
@@ -110,6 +125,7 @@ class CloudIPRanges:
             sources.append(s.replace("", ""))
 
         result = self._transform_base(source_key, ", ".join(sources))
+        result["method"] = "asn_lookup"
         data = response[0].text
         if "API count exceeded" in data:
             raise RuntimeError("API request count exceeded")
@@ -132,6 +148,7 @@ class CloudIPRanges:
         result["details_ipv6"] = []
         data = response[0].json()
         result["last_update"] = data["createDate"]
+        result["source_updated_at"] = data["createDate"]
 
         if "prefixes" in data:
             for prefix in data["prefixes"]:
@@ -265,6 +282,7 @@ class CloudIPRanges:
         for r in response:
             data = r.json()
             result["last_update"] = data["creationTime"]
+            result["source_updated_at"] = data["creationTime"]
 
             prefixes = data.get("prefixes", [])
             for prefix in prefixes:
@@ -692,6 +710,11 @@ class CloudIPRanges:
         details_json_path = self.base_url / f"{base_name}-details.json"
         details_payload = {
             "provider": transformed_data.get("provider"),
+            "provider_id": transformed_data.get("provider_id"),
+            "method": transformed_data.get("method"),
+            "coverage_notes": transformed_data.get("coverage_notes"),
+            "generated_at": transformed_data.get("generated_at"),
+            "source_updated_at": transformed_data.get("source_updated_at"),
             "source": transformed_data.get("source"),
             "last_update": transformed_data.get("last_update"),
             "ipv4": transformed_data.get("details_ipv4", []),
