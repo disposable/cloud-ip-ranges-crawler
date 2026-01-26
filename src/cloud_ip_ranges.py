@@ -98,7 +98,7 @@ class CloudIPRanges:
         "nforce": ["AS64437", "AS43350"],
     }
 
-    def __init__(self, output_formats: Set[str], only_if_changed: bool = False) -> None:
+    def __init__(self, output_formats: Set[str], only_if_changed: bool = False, max_delta_ratio: Optional[float] = None) -> None:
         self.base_url = Path.cwd()
         self.session = requests.Session()
         self.session.headers.update(
@@ -122,6 +122,7 @@ class CloudIPRanges:
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
         self.only_if_changed = only_if_changed
+        self.max_delta_ratio = max_delta_ratio
         self.output_formats = output_formats
 
     def _transform_base(self, source_key: str, source_url: Optional[Union[str, list]] = None) -> Dict[str, Any]:
@@ -931,19 +932,31 @@ class CloudIPRanges:
         if source_http:
             transformed_data["source_http"] = source_http
 
-        if self.only_if_changed:
-            json_filename = "{}.json".format(source_key.replace("_", "-"))
-            json_path = self.base_url / json_filename
+        # Always perform basic safety audit
+        self._audit_transformed_data(transformed_data, source_key)
 
-            if json_path.exists():
-                with open(json_path, "r") as f:
-                    existing_data = json.load(f)
+        json_filename = "{}.json".format(source_key.replace("_", "-"))
+        json_path = self.base_url / json_filename
+        existing_data_raw: Optional[Dict[str, Any]] = None
 
+        if json_path.exists():
+            with open(json_path, "r") as f:
+                existing_data_raw = json.load(f)
+
+        if existing_data_raw is not None:
+            if self.max_delta_ratio is not None:
+                self._enforce_max_delta(existing_data_raw, transformed_data, max_ratio=self.max_delta_ratio, source_key=source_key)
+                logging.debug("Delta summary for %s: %s", source_key, json.dumps(self._diff_summary(existing_data_raw, transformed_data)))
+
+            if self.only_if_changed:
+                existing_data = existing_data_raw.copy()
                 existing_data.pop("last_update", None)
                 existing_data.pop("generated_at", None)
+                existing_data.pop("source_http", None)
                 new_data = transformed_data.copy()
                 new_data.pop("last_update", None)
                 new_data.pop("generated_at", None)
+                new_data.pop("source_http", None)
 
                 if existing_data == new_data:
                     logging.debug("No changes found for %s, skipping other formats", source_key)
@@ -951,6 +964,42 @@ class CloudIPRanges:
                     return len(transformed_data["ipv4"]), len(transformed_data["ipv6"])
 
         return self._save_result(transformed_data, source_key)
+
+    def _audit_transformed_data(self, transformed_data: Dict[str, Any], source_key: str) -> None:
+        """Raise on obviously dangerous/broken outputs."""
+        invalid = []
+        for ip in transformed_data.get("ipv4", []):
+            if ip in ("0.0.0.0/0", "0.0.0.0"):  # default route
+                invalid.append(ip)
+        for ip in transformed_data.get("ipv6", []):
+            if ip in ("::/0", "::"):
+                invalid.append(ip)
+
+        if invalid:
+            raise RuntimeError(f"Audit failed for {source_key}: contains default route(s): {', '.join(invalid)}")
+
+    def _diff_summary(self, old: Dict[str, Any], new: Dict[str, Any]) -> Dict[str, Any]:
+        old4 = set(old.get("ipv4", []) or [])
+        old6 = set(old.get("ipv6", []) or [])
+        new4 = set(new.get("ipv4", []) or [])
+        new6 = set(new.get("ipv6", []) or [])
+        return {
+            "ipv4": {"old": len(old4), "new": len(new4), "added": len(new4 - old4), "removed": len(old4 - new4)},
+            "ipv6": {"old": len(old6), "new": len(new6), "added": len(new6 - old6), "removed": len(old6 - new6)},
+        }
+
+    def _enforce_max_delta(self, old: Dict[str, Any], new: Dict[str, Any], *, max_ratio: float, source_key: str) -> None:
+        def ratio(old_n: int, new_n: int) -> float:
+            if old_n == 0:
+                return float("inf") if new_n > 0 else 0.0
+            return abs(new_n - old_n) / float(old_n)
+
+        s = self._diff_summary(old, new)
+        r4 = ratio(s["ipv4"]["old"], s["ipv4"]["new"])
+        r6 = ratio(s["ipv6"]["old"], s["ipv6"]["new"])
+
+        if (r4 != float("inf") and r4 > max_ratio) or (r6 != float("inf") and r6 > max_ratio):
+            raise RuntimeError(f"Delta check failed for {source_key}: {json.dumps(s)}")
 
     def _save_json(self, transformed_data: Dict[str, Any], filename: str) -> None:
         """Save data in JSON format."""
@@ -1112,6 +1161,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Collect IP ranges from cloud providers")
     parser.add_argument("--sources", nargs="+", choices=CloudIPRanges.sources.keys(), help="Specific sources to update (e.g., aws google_cloud)")
     parser.add_argument("--only-if-changed", action="store_true", help="Only write files if there are changes (only works with JSON format)")
+    parser.add_argument(
+        "--max-delta-ratio",
+        type=float,
+        default=None,
+        help="Fail if an existing provider changes by more than this ratio (e.g. 0.3 for 30%%). Only applies when an existing JSON file is present.",
+    )
     parser.add_argument("--add-env-statistics", action="store_true", help="Add statistics to environment variables for github action")
     parser.add_argument(
         "--output-format", nargs="+", choices=["json", "csv", "txt"], default=["json"], help="Output format(s) to save the data in (default: json)"
@@ -1129,11 +1184,8 @@ def main() -> None:
 
     # Convert sources to set if specified, otherwise None
     sources = set(args.sources) if args.sources else None
-
-    # Convert sources to set if specified, otherwise None
-    sources = set(args.sources) if args.sources else None
     output_formats = set(args.output_format)
-    cloud_ip_ranges = CloudIPRanges(output_formats, args.only_if_changed)
+    cloud_ip_ranges = CloudIPRanges(output_formats, args.only_if_changed, max_delta_ratio=args.max_delta_ratio)
     if not cloud_ip_ranges.fetch_all(sources):
         sys.exit(1)
 

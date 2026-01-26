@@ -429,3 +429,15 @@ def test_vercel_rdap_transform_discovers_org_nets(cipr: CloudIPRanges, monkeypat
     assert res["source_updated_at"] == "2025-12-24T07:44:44-05:00"
     assert "76.76.21.0/24" in res["ipv4"]
     assert "198.169.1.0/24" in res["ipv4"]
+
+
+def test_audit_rejects_default_route(cipr: CloudIPRanges) -> None:
+    with pytest.raises(RuntimeError):
+        cipr._audit_transformed_data({"ipv4": ["0.0.0.0/0"], "ipv6": []}, "test")
+
+
+def test_delta_check_rejects_large_change(cipr: CloudIPRanges) -> None:
+    old = {"ipv4": ["1.1.1.0/24"], "ipv6": []}
+    new = {"ipv4": ["1.1.1.0/24", "2.2.2.0/24"], "ipv6": []}
+    with pytest.raises(RuntimeError):
+        cipr._enforce_max_delta(old, new, max_ratio=0.5, source_key="test")
