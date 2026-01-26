@@ -57,7 +57,7 @@ class CloudIPRanges:
         "datadog": ["https://ip-ranges.datadoghq.com/"],
         "okta": ["https://s3.amazonaws.com/okta-ip-ranges/ip_ranges.json"],
         "zendesk": ["https://support.zendesk.com/ips"],
-        "vercel": ["https://rdap.arin.net/registry/ip/76.76.21.0"],
+        "vercel": ["76.76.21.0/24", "198.169.1.0/24", "155.121.0.0/16"],
         # "whatsapp": ["https://developers.facebook.com/docs/whatsapp/guides/network-requirements/"],  # Temporarily disabled due to page structure changes
         "zscaler": [
             "https://config.zscaler.com/api/zscaler.net/hubs/cidr/json/required",
@@ -456,60 +456,96 @@ class CloudIPRanges:
         return None
 
     def _transform_vercel(self, response: List[requests.Response]) -> Dict[str, Any]:
-        """Transform Vercel-owned netblocks using ARIN RDAP/Whois-RWS."""
-        seed_rdap = self.sources["vercel"][0]
+        """Transform Vercel-owned netblocks using ARIN RDAP/Whois-RWS from a list of seed CIDRs."""
+        seeds = self.sources["vercel"]
         result = self._transform_base(
             "vercel",
             [
-                seed_rdap,
-                "https://whois.arin.net/rest/org/<handle>",
-                "https://whois.arin.net/rest/org/<handle>/nets",
+                f"https://rdap.arin.net/registry/ip/{seed.split('/')[0]}"
+                for seed in seeds
             ],
         )
         result["method"] = "rdap_registry"
         result["coverage_notes"] = "Vercel-owned netblocks (registry), not the full set of cloud egress/edge IPs"
 
-        rdap = response[0].json()
-        entities = rdap.get("entities", []) if isinstance(rdap, dict) else []
-        org_handle = None
-        if isinstance(entities, list):
-            for e in entities:
-                if not isinstance(e, dict):
-                    continue
-                roles = e.get("roles", [])
-                if isinstance(roles, list) and "registrant" in roles and e.get("handle"):
-                    org_handle = e.get("handle")
-                    break
-        if not org_handle:
-            raise RuntimeError("Failed to find ARIN org handle for Vercel")
+        org_handles: Set[str] = set()
+        for i, r in enumerate(response):
+            rdap = r.json()
+            entities = rdap.get("entities", []) if isinstance(rdap, dict) else []
+            if isinstance(entities, list):
+                for e in entities:
+                    if not isinstance(e, dict):
+                        continue
+                    roles = e.get("roles", [])
+                    if isinstance(roles, list) and "registrant" in roles and e.get("handle"):
+                        org_handles.add(e.get("handle"))
+                        break
 
-        org_url = f"https://whois.arin.net/rest/org/{org_handle}"
-        nets_url = f"https://whois.arin.net/rest/org/{org_handle}/nets"
+        if not org_handles:
+            raise RuntimeError(f"Failed to find any ARIN org handles for Vercel from seeds: {seeds}")
 
-        org_r = self.session.get(org_url, timeout=10)
-        org_r.raise_for_status()
-        nets_r = self.session.get(nets_url, timeout=10)
-        nets_r.raise_for_status()
+        logging.debug("Vercel: found org handles: %s", org_handles)
 
-        try:
-            org_root = ET.fromstring(org_r.text)
-            result["source_updated_at"] = self._xml_find_text(org_root, "updateDate")
-        except Exception as e:
-            logging.warning("Failed to parse ARIN org XML for Vercel: %s", e)
+        all_nets: List[tuple[str, str]] = []  # (start, end)
+        for handle in org_handles:
+            org_url = f"https://whois.arin.net/rest/org/{handle}"
+            nets_url = f"https://whois.arin.net/rest/org/{handle}/nets"
 
-        try:
-            nets_root = ET.fromstring(nets_r.text)
-        except Exception as e:
-            logging.error("Failed to parse ARIN nets XML for Vercel: %s", e)
-            logging.error("Response body: %s", nets_r.text[:500])
-            raise RuntimeError("ARIN nets XML could not be parsed for Vercel")
-        for el in nets_root.iter():
-            if not el.tag.endswith("}" + "netRef"):
+            org_r = self.session.get(org_url, timeout=10)
+            org_r.raise_for_status()
+            nets_r = self.session.get(nets_url, timeout=10)
+            nets_r.raise_for_status()
+
+            # Try JSON first (ARIN Whois-RWS returns JSON)
+            try:
+                org_data = org_r.json()
+                if result.get("source_updated_at") is None:
+                    result["source_updated_at"] = org_data.get("org", {}).get("updateDate")
+            except Exception:
+                # Fallback to XML parsing if JSON fails
+                try:
+                    org_root = ET.fromstring(org_r.text)
+                    if result.get("source_updated_at") is None:
+                        result["source_updated_at"] = self._xml_find_text(org_root, "updateDate")
+                except Exception as e:
+                    logging.warning("Failed to parse ARIN org for %s (both JSON and XML): %s", handle, e)
+
+            try:
+                nets_data = nets_r.json()
+                logging.debug("Vercel: ARIN nets response for %s: %s", handle, nets_r.text[:800])
+                nets = nets_data.get("nets", {}).get("netRef", [])
+                if isinstance(nets, list):
+                    for net in nets:
+                        if not isinstance(net, dict):
+                            continue
+                        start = net.get("@startAddress") or net.get("startAddress")
+                        end = net.get("@endAddress") or net.get("endAddress")
+                        if start and end:
+                            all_nets.append((start, end))
+            except Exception:
+                # Fallback to XML parsing if JSON fails
+                try:
+                    nets_root = ET.fromstring(nets_r.text)
+                    for el in nets_root.iter():
+                        if not el.tag.endswith("}" + "netRef"):
+                            continue
+                        start = el.attrib.get("startAddress")
+                        end = el.attrib.get("endAddress")
+                        if start and end:
+                            all_nets.append((start, end))
+                except Exception as e:
+                    logging.error("Failed to parse ARIN nets for %s (both JSON and XML): %s", handle, e)
+                    logging.error("Response body: %s", nets_r.text[:500])
+                    raise RuntimeError(f"ARIN nets could not be parsed for {handle}")
+
+        logging.debug("Vercel: collected %d net ranges before dedup", len(all_nets))
+
+        # Dedupe and convert ranges to CIDRs
+        seen: Set[tuple[str, str]] = set()
+        for start, end in all_nets:
+            if (start, end) in seen:
                 continue
-            start = el.attrib.get("startAddress")
-            end = el.attrib.get("endAddress")
-            if not start or not end:
-                continue
+            seen.add((start, end))
             try:
                 start_ip = ipaddress.ip_address(start)
                 end_ip = ipaddress.ip_address(end)
@@ -521,6 +557,8 @@ class CloudIPRanges:
                     result["ipv6"].append(cidr)
                 else:
                     result["ipv4"].append(cidr)
+
+        logging.debug("Vercel: after conversion: %d IPv4, %d IPv6", len(result["ipv4"]), len(result["ipv6"]))
 
         return result
 
@@ -881,7 +919,27 @@ class CloudIPRanges:
         transformed_data: Dict[str, Any]
         source_http: List[Dict[str, Any]] = []
 
-        if url and isinstance(url[0], str) and url[0].startswith("AS"):
+        if source_key == "vercel":
+            # Special case for vercel: list of seed CIDRs, each gets its own RDAP lookup
+            response = []
+            for seed in url:
+                seed_ip = seed.split('/')[0]
+                rdap_url = f"https://rdap.arin.net/registry/ip/{seed_ip}"
+                r = self.session.get(rdap_url, timeout=10)
+                r.raise_for_status()
+                response.append(r)
+                source_http.append(
+                    {
+                        "url": rdap_url,
+                        "status": r.status_code,
+                        "content_type": r.headers.get("content-type"),
+                        "etag": r.headers.get("etag"),
+                        "last_modified": r.headers.get("last-modified"),
+                    }
+                )
+            transformed_data = self._transform_vercel(response)
+            transformed_data = self._normalize_transformed_data(transformed_data, source_key)
+        elif url and isinstance(url[0], str) and url[0].startswith("AS"):
             asn = url[0]
             ripestat_url = f"https://stat.ripe.net/data/announced-prefixes/data.json?resource={asn}"
             try:
