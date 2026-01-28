@@ -99,8 +99,15 @@ class CloudIPRanges:
         "starlink",
     }
 
-    def __init__(self, output_formats: Set[str], only_if_changed: bool = False, max_delta_ratio: Optional[float] = None) -> None:
-        self.base_url = Path.cwd()
+    def __init__(
+        self,
+        output_formats: Set[str],
+        only_if_changed: bool = False,
+        max_delta_ratio: Optional[float] = None,
+        output_dir: Optional[Path] = None,
+    ) -> None:
+        self.base_url = Path(output_dir).expanduser() if output_dir else Path.cwd()
+        self.base_url.mkdir(parents=True, exist_ok=True)
         self.session = requests.Session()
         self.session.headers.update({
             "User-Agent": "cloud-ip-ranges-crawler/1.0 (+https://github.com/disposable/cloud-ip-ranges)",
@@ -494,6 +501,11 @@ def main() -> None:
     parser.add_argument(
         "--output-format", nargs="+", choices=["json", "csv", "txt"], default=["json"], help="Output format(s) to save the data in (default: json)"
     )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        help="Directory where generated files will be written (defaults to the current working directory)",
+    )
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     parser.add_argument("--log-file", type=str, help="Log file")
     parser.add_argument("--misc", action="store_true", help="Only process misc providers (user ISP traffic like Starlink)")
@@ -509,7 +521,14 @@ def main() -> None:
     # Convert sources to set if specified, otherwise None
     sources = set(args.sources) if args.sources else None
     output_formats = set(args.output_format)
-    cloud_ip_ranges = CloudIPRanges(output_formats, args.only_if_changed, max_delta_ratio=args.max_delta_ratio)
+    output_dir = Path(args.output_dir).expanduser() if args.output_dir else Path.cwd()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    cloud_ip_ranges = CloudIPRanges(
+        output_formats,
+        args.only_if_changed,
+        max_delta_ratio=args.max_delta_ratio,
+        output_dir=output_dir,
+    )
 
     # Handle --misc flag: only process misc providers
     if args.misc:

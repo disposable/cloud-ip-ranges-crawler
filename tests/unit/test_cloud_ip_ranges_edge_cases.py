@@ -22,6 +22,15 @@ def test_cloud_ip_ranges_initialization() -> None:
     assert crawler2.max_delta_ratio == 0.1
 
 
+def test_cloud_ip_ranges_initialization_with_output_dir(tmp_path: Path) -> None:
+    """Ensure custom output directories are honored and created."""
+    target_dir = tmp_path / "outputs"
+    crawler = CloudIPRanges({"json"}, output_dir=target_dir)
+
+    assert crawler.base_url == target_dir
+    assert target_dir.exists()
+
+
 def test_transform_base_with_custom_source() -> None:
     """Test _transform_base with custom source URL."""
     crawler = CloudIPRanges({"json"})
