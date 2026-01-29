@@ -507,7 +507,6 @@ def test_ip_merger_complex_network_expansion() -> None:
     ]
 
     merged_ipv6 = merger.merge_networks(neighboring_ipv6)
-    merged_ipv6_str = [str(net) for net in merged_ipv6]
 
     # Should merge into a larger network
     assert len(merged_ipv6) == 1
