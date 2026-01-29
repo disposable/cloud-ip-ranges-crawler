@@ -105,6 +105,7 @@ class CloudIPRanges:
         only_if_changed: bool = False,
         max_delta_ratio: Optional[float] = None,
         output_dir: Optional[Path] = None,
+        merge_all_providers: bool = False
     ) -> None:
         self.base_url = Path(output_dir).expanduser() if output_dir else Path.cwd()
         self.base_url.mkdir(parents=True, exist_ok=True)
@@ -130,6 +131,74 @@ class CloudIPRanges:
         self.only_if_changed = only_if_changed
         self.max_delta_ratio = max_delta_ratio
         self.output_formats = output_formats
+        self.merge_all_providers = merge_all_providers
+        self._reset_merge_tracking()
+
+    def _reset_merge_tracking(self) -> None:
+        self._merged_ipv4: Set[str] = set()
+        self._merged_ipv6: Set[str] = set()
+        self._merged_providers: List[Dict[str, Any]] = []
+
+    def _track_merged_outputs(self, transformed_data: Dict[str, Any]) -> None:
+        if not self.merge_all_providers:
+            return
+        self._merged_ipv4.update(transformed_data.get("ipv4", []))
+        self._merged_ipv6.update(transformed_data.get("ipv6", []))
+
+        provider_summary = {
+            "provider": transformed_data.get("provider"),
+            "provider_id": transformed_data.get("provider_id"),
+            "method": transformed_data.get("method"),
+            "source": transformed_data.get("source"),
+            "last_update": transformed_data.get("last_update"),
+            "ipv4_count": len(transformed_data.get("ipv4", [])),
+            "ipv6_count": len(transformed_data.get("ipv6", [])),
+        }
+        self._merged_providers.append(provider_summary)
+
+    def _save_merged_outputs(self) -> None:
+        if not self.merge_all_providers or not self._merged_providers:
+            return
+
+        generated_at = datetime.now().isoformat()
+        merged_ipv4 = sorted(self._merged_ipv4)
+        merged_ipv6 = sorted(self._merged_ipv6)
+        merged_payload = {
+            "provider": "All Providers",
+            "generated_at": generated_at,
+            "provider_count": len(self._merged_providers),
+            "providers": self._merged_providers,
+            "ipv4": merged_ipv4,
+            "ipv6": merged_ipv6,
+        }
+
+        if "json" in self.output_formats:
+            with open(self.base_url / "all-providers.json", "w") as f:
+                json.dump(merged_payload, f, indent=2)
+
+        if "csv" in self.output_formats:
+            with open(self.base_url / "all-providers.csv", "w") as f:
+                writer = csv.writer(f)
+                writer.writerow(["Type", "Address"])
+                for ip in merged_ipv4:
+                    writer.writerow(["IPv4", ip])
+                for ip in merged_ipv6:
+                    writer.writerow(["IPv6", ip])
+
+        if "txt" in self.output_formats:
+            provider_ids = ", ".join(filter(None, (p.get("provider_id") for p in self._merged_providers)))
+            with open(self.base_url / "all-providers.txt", "w") as f:
+                f.write("# provider: All Providers\n")
+                f.write(f"# providers_count: {len(self._merged_providers)}\n")
+                f.write(f"# provider_ids: {provider_ids}\n")
+                f.write(f"# generated_at: {generated_at}\n")
+
+                addresses: List[str] = []
+                addresses.extend(merged_ipv4)
+                addresses.extend(merged_ipv6)
+                if addresses:
+                    f.write("\n")
+                    f.write("\n".join(addresses))
 
     def _transform_base(self, source_key: str, source_url: Optional[Union[str, list]] = None) -> Dict[str, Any]:
         """Base transformation method for all providers."""
@@ -291,9 +360,12 @@ class CloudIPRanges:
                 if existing_data == new_data:
                     logging.debug("No changes found for %s, skipping other formats", source_key)
                     # Still return statistics even when no changes
+                    self._track_merged_outputs(transformed_data)
                     return len(transformed_data["ipv4"]), len(transformed_data["ipv6"])
 
-        return self._save_result(transformed_data, source_key)
+        counts = self._save_result(transformed_data, source_key)
+        self._track_merged_outputs(transformed_data)
+        return counts
 
     def _audit_transformed_data(self, transformed_data: Dict[str, Any], source_key: str) -> None:
         """Raise on obviously dangerous/broken outputs."""
@@ -435,9 +507,10 @@ class CloudIPRanges:
             format_writers[output_format](transformed_data, filename)
 
             # Log first format as info, others as debug
-            log_message = "Saved %s [IPv4: %d, IPv6: %d]" if x == 0 else "Saved %s"
-            log_level = logging.info if x == 0 else logging.debug
-            log_level(log_message, filename, len(transformed_data["ipv4"]), len(transformed_data["ipv6"]))
+            if x == 0:
+                logging.info("Saved %s [IPv4: %d, IPv6: %d]", filename, len(transformed_data["ipv4"]), len(transformed_data["ipv6"]))
+            else:
+                logging.debug("Saved %s", filename)
 
         # Save detailed metadata files if available
         if self._save_details_files(transformed_data, base_name):
@@ -448,6 +521,8 @@ class CloudIPRanges:
     def fetch_all(self, sources: Optional[Set[str]] = None) -> bool:
         error = False
         self.statistics = {}
+        if self.merge_all_providers:
+            self._reset_merge_tracking()
         try:
             for source in self.sources:
                 if sources is not None and source not in sources:
@@ -464,6 +539,9 @@ class CloudIPRanges:
         except Exception as e:
             logging.error("Error during IP range collection: %s", e)
             raise
+        finally:
+            if self.merge_all_providers:
+                self._save_merged_outputs()
 
         return not error
 
@@ -506,6 +584,11 @@ def main() -> None:
         type=str,
         help="Directory where generated files will be written (defaults to the current working directory)",
     )
+    parser.add_argument(
+        "--merge-all-providers",
+        action="store_true",
+        help="Generate consolidated all-providers files (disabled by default)",
+    )
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     parser.add_argument("--log-file", type=str, help="Log file")
     parser.add_argument("--misc", action="store_true", help="Only process misc providers (user ISP traffic like Starlink)")
@@ -528,6 +611,7 @@ def main() -> None:
         args.only_if_changed,
         max_delta_ratio=args.max_delta_ratio,
         output_dir=output_dir,
+        merge_all_providers=args.merge_all_providers,
     )
 
     # Handle --misc flag: only process misc providers

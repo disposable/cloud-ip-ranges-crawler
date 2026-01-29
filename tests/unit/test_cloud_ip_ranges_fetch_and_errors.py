@@ -188,6 +188,66 @@ def test_fetch_all_propagates_outer_errors(monkeypatch: pytest.MonkeyPatch) -> N
         crawler.fetch_all()
 
 
+def test_fetch_all_writes_merged_outputs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    crawler = CloudIPRanges({"json", "csv", "txt"}, merge_all_providers=True)
+    crawler.base_url = tmp_path
+    crawler.sources = {"dummy": ["https://example.com"]}
+
+    sample = _sample_transformed(["https://example.com"])
+    sample["provider"] = "Dummy"
+    sample["provider_id"] = "dummy"
+
+    def fake_fetch(source_key: str):
+        crawler._track_merged_outputs(sample)
+        return len(sample["ipv4"]), len(sample["ipv6"])
+
+    monkeypatch.setattr(crawler, "_fetch_and_save", fake_fetch)
+
+    assert crawler.fetch_all({"dummy"}) is True
+
+    merged_json_path = tmp_path / "all-providers.json"
+    merged_csv_path = tmp_path / "all-providers.csv"
+    merged_txt_path = tmp_path / "all-providers.txt"
+
+    assert merged_json_path.exists()
+    assert merged_csv_path.exists()
+    assert merged_txt_path.exists()
+
+    merged_json = json.loads(merged_json_path.read_text(encoding="utf-8"))
+    assert merged_json["provider"] == "All Providers"
+    assert merged_json["provider_count"] == 1
+    assert merged_json["providers"][0]["provider_id"] == "dummy"
+    assert merged_json["ipv4"] == sample["ipv4"]
+
+    merged_csv = merged_csv_path.read_text(encoding="utf-8")
+    assert "Type,Address" in merged_csv
+    assert sample["ipv4"][0] in merged_csv
+
+    merged_txt = merged_txt_path.read_text(encoding="utf-8")
+    assert "# provider: All Providers" in merged_txt
+    assert sample["ipv4"][0] in merged_txt
+
+
+def test_fetch_all_skips_merged_outputs_when_disabled(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    crawler = CloudIPRanges({"json"})
+    crawler.base_url = tmp_path
+    crawler.sources = {"dummy": ["https://example.com"]}
+
+    sample = _sample_transformed(["https://example.com"])
+
+    def fake_fetch(source_key: str):
+        crawler._track_merged_outputs(sample)
+        return len(sample["ipv4"]), len(sample["ipv6"])
+
+    monkeypatch.setattr(crawler, "_fetch_and_save", fake_fetch)
+
+    assert crawler.fetch_all({"dummy"}) is True
+
+    assert not (tmp_path / "all-providers.json").exists()
+    assert not (tmp_path / "all-providers.csv").exists()
+    assert not (tmp_path / "all-providers.txt").exists()
+
+
 def test_save_result_unknown_format_logs_first_file(tmp_path: Path) -> None:
     crawler = CloudIPRanges({"json"})
     crawler.base_url = tmp_path
@@ -211,4 +271,6 @@ __all__ = [
     "test_fetch_all_handles_errors",
     "test_fetch_all_propagates_outer_errors",
     "test_save_result_unknown_format_logs_first_file",
+    "test_fetch_all_writes_merged_outputs",
+    "test_fetch_all_skips_merged_outputs_when_disabled",
 ]

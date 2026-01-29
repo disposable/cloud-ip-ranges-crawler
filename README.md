@@ -95,6 +95,7 @@ uv run cloud-ip-ranges --add-env-statistics
 | --- | --- |
 | `--sources ...` | Space-separated list of providers to fetch.
 | `--output-format json csv txt` | Control emitted files (default: JSON only).
+| `--merge-all-providers` | When set, the crawler also emits `all-providers.json`, `all-providers.csv`, and `all-providers.txt` (matching the selected formats). These merged files consolidate every IPv4/IPv6 CIDR plus provider summaries, making it easy to consume the full dataset with a single artifact.
 | `--misc` | Generate ISP-style providers stored under `misc/`.
 | `--only-if-changed` | Writes files only when content differs.
 | `--max-delta-ratio 0.3` | Reject runs with large IP-count swings.
