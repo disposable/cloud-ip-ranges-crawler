@@ -19,6 +19,7 @@ from sources.asn import fetch_and_save_asn_source
 from sources.http import fetch_and_save_http_source
 from sources.seed_cidr import fetch_and_save_seed_cidr_source
 from transforms.common import validate_ip
+from ip_merger import IPMerger
 
 
 class CloudIPRanges:
@@ -132,13 +133,8 @@ class CloudIPRanges:
         self.max_delta_ratio = max_delta_ratio
         self.output_formats = output_formats
         self.merge_all_providers = merge_all_providers
-        self._reset_merge_tracking()
+        self.ip_merger = IPMerger()
         self._sources_with_changes: Set[str] = set()
-
-    def _reset_merge_tracking(self) -> None:
-        self._merged_ipv4: Set[str] = set()
-        self._merged_ipv6: Set[str] = set()
-        self._merged_providers: List[Dict[str, Any]] = []
 
     def _comparable_payload(self, data: Dict[str, Any]) -> Dict[str, Any]:
         comparable = data.copy()
@@ -146,38 +142,11 @@ class CloudIPRanges:
             comparable.pop(key, None)
         return comparable
 
-    def _track_merged_outputs(self, transformed_data: Dict[str, Any]) -> None:
-        if not self.merge_all_providers:
-            return
-        self._merged_ipv4.update(transformed_data.get("ipv4", []))
-        self._merged_ipv6.update(transformed_data.get("ipv6", []))
-
-        provider_summary = {
-            "provider": transformed_data.get("provider"),
-            "provider_id": transformed_data.get("provider_id"),
-            "method": transformed_data.get("method"),
-            "source": transformed_data.get("source"),
-            "last_update": transformed_data.get("last_update"),
-            "ipv4_count": len(transformed_data.get("ipv4", [])),
-            "ipv6_count": len(transformed_data.get("ipv6", [])),
-        }
-        self._merged_providers.append(provider_summary)
-
     def _save_merged_outputs(self) -> None:
-        if not self.merge_all_providers or not self._merged_providers:
+        if not self.merge_all_providers or not self.ip_merger.has_data:
             return
 
-        generated_at = datetime.now().isoformat()
-        merged_ipv4 = sorted(self._merged_ipv4)
-        merged_ipv6 = sorted(self._merged_ipv6)
-        merged_payload = {
-            "provider": "All Providers",
-            "generated_at": generated_at,
-            "provider_count": len(self._merged_providers),
-            "providers": self._merged_providers,
-            "ipv4": merged_ipv4,
-            "ipv6": merged_ipv6,
-        }
+        merged_payload = self.ip_merger.get_merged_output()
 
         if "json" in self.output_formats:
             with open(self.base_url / "all-providers.json", "w") as f:
@@ -186,23 +155,25 @@ class CloudIPRanges:
         if "csv" in self.output_formats:
             with open(self.base_url / "all-providers.csv", "w") as f:
                 writer = csv.writer(f)
-                writer.writerow(["Type", "Address"])
-                for ip in merged_ipv4:
-                    writer.writerow(["IPv4", ip])
-                for ip in merged_ipv6:
-                    writer.writerow(["IPv6", ip])
+                writer.writerow(["Type", "Address", "Providers"])
+                for ip in merged_payload.get("ipv4", []):
+                    providers = ";".join(merged_payload["ip_providers"].get(ip, []))
+                    writer.writerow(["IPv4", ip, providers])
+                for ip in merged_payload.get("ipv6", []):
+                    providers = ";".join(merged_payload["ip_providers"].get(ip, []))
+                    writer.writerow(["IPv6", ip, providers])
 
         if "txt" in self.output_formats:
-            provider_ids = ", ".join(filter(None, (p.get("provider_id") for p in self._merged_providers)))
+            provider_ids = ", ".join(filter(None, (p.get("provider_id") for p in merged_payload.get("providers", []))))
             with open(self.base_url / "all-providers.txt", "w") as f:
                 f.write("# provider: All Providers\n")
-                f.write(f"# providers_count: {len(self._merged_providers)}\n")
+                f.write(f"# providers_count: {merged_payload.get('provider_count', 0)}\n")
                 f.write(f"# provider_ids: {provider_ids}\n")
-                f.write(f"# generated_at: {generated_at}\n")
+                f.write(f"# generated_at: {merged_payload.get('generated_at')}\n")
 
                 addresses: List[str] = []
-                addresses.extend(merged_ipv4)
-                addresses.extend(merged_ipv6)
+                addresses.extend(merged_payload.get("ipv4", []))
+                addresses.extend(merged_payload.get("ipv6", []))
                 if addresses:
                     f.write("\n")
                     f.write("\n".join(addresses))
@@ -362,13 +333,15 @@ class CloudIPRanges:
             if self.only_if_changed and not data_changed:
                 logging.debug("No changes found for %s, skipping other formats", source_key)
                 # Still return statistics even when no changes
-                self._track_merged_outputs(transformed_data)
+                if self.merge_all_providers:
+                    self.ip_merger.add_provider_data(transformed_data)
                 return len(transformed_data["ipv4"]), len(transformed_data["ipv6"])
 
         counts = self._save_result(transformed_data, source_key)
         if data_changed:
             self._sources_with_changes.add(source_key)
-        self._track_merged_outputs(transformed_data)
+        if self.merge_all_providers:
+            self.ip_merger.add_provider_data(transformed_data)
         return counts
 
     def _audit_transformed_data(self, transformed_data: Dict[str, Any], source_key: str) -> None:
@@ -527,7 +500,7 @@ class CloudIPRanges:
         self.statistics = {}
         self._sources_with_changes = set()
         if self.merge_all_providers:
-            self._reset_merge_tracking()
+            self.ip_merger.reset()
         try:
             for source in self.sources:
                 if sources is not None and source not in sources:
