@@ -105,7 +105,7 @@ class CloudIPRanges:
         only_if_changed: bool = False,
         max_delta_ratio: Optional[float] = None,
         output_dir: Optional[Path] = None,
-        merge_all_providers: bool = False
+        merge_all_providers: bool = False,
     ) -> None:
         self.base_url = Path(output_dir).expanduser() if output_dir else Path.cwd()
         self.base_url.mkdir(parents=True, exist_ok=True)
