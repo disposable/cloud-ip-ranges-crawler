@@ -1,10 +1,7 @@
 """Unit tests for seed_rdap_registry.py transform."""
 
-import ipaddress
-import json
 import pytest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 from src.cloud_ip_ranges import CloudIPRanges
 from src.transforms.seed_rdap_registry import _xml_find_text, transform
@@ -43,26 +40,28 @@ def test_transform_seed_rdap_registry_happy_path(tmp_path: Path, monkeypatch: py
     crawler.sources = {"test": ["1.2.3.0/24"]}
 
     # Mock RDAP response
-    rdap_resp = FakeResponse(json_data={
-        "entities": [
-            {"handle": "ORG-EXAMPLE", "roles": ["registrant"]},
-        ]
-    })
-
-    # Mock ARIN org JSON response
-    org_resp = FakeResponse(json_data={
-        "org": {"updateDate": "2025-01-01T00:00:00Z"}
-    })
-
-    # Mock ARIN nets JSON response
-    nets_resp = FakeResponse(json_data={
-        "nets": {
-            "netRef": [
-                {"@startAddress": "1.2.3.0", "@endAddress": "1.2.3.255"},
-                {"startAddress": "2606:4700::", "endAddress": "2606:4700::ffff"},
+    rdap_resp = FakeResponse(
+        json_data={
+            "entities": [
+                {"handle": "ORG-EXAMPLE", "roles": ["registrant"]},
             ]
         }
-    })
+    )
+
+    # Mock ARIN org JSON response
+    org_resp = FakeResponse(json_data={"org": {"updateDate": "2025-01-01T00:00:00Z"}})
+
+    # Mock ARIN nets JSON response
+    nets_resp = FakeResponse(
+        json_data={
+            "nets": {
+                "netRef": [
+                    {"@startAddress": "1.2.3.0", "@endAddress": "1.2.3.255"},
+                    {"startAddress": "2606:4700::", "endAddress": "2606:4700::ffff"},
+                ]
+            }
+        }
+    )
 
     def fake_get(url: str, timeout: int = 10):
         if url.endswith("/registry/ip/1.2.3.0"):
@@ -89,11 +88,13 @@ def test_transform_seed_rdap_registry_xml_fallback(tmp_path: Path, monkeypatch: 
     crawler.base_url = tmp_path
     crawler.sources = {"test": ["1.2.3.0/24"]}
 
-    rdap_resp = FakeResponse(json_data={
-        "entities": [
-            {"handle": "ORG-XML", "roles": ["registrant"]},
-        ]
-    })
+    rdap_resp = FakeResponse(
+        json_data={
+            "entities": [
+                {"handle": "ORG-XML", "roles": ["registrant"]},
+            ]
+        }
+    )
 
     # XML responses
     org_xml = """<?xml version="1.0"?>
@@ -128,11 +129,13 @@ def test_transform_seed_rdap_registry_no_registrant_raises(tmp_path: Path, monke
     crawler.base_url = tmp_path
     crawler.sources = {"test": ["1.2.3.0/24"]}
 
-    rdap_resp = FakeResponse(json_data={
-        "entities": [
-            {"handle": "ORG-TECHNICAL", "roles": ["technical"]},
-        ]
-    })
+    rdap_resp = FakeResponse(
+        json_data={
+            "entities": [
+                {"handle": "ORG-TECHNICAL", "roles": ["technical"]},
+            ]
+        }
+    )
 
     def fake_get(url: str, timeout: int = 10):
         if url.endswith("/registry/ip/1.2.3.0"):
@@ -151,11 +154,13 @@ def test_transform_seed_rdap_registry_nets_json_parsing_error_raises(tmp_path: P
     crawler.base_url = tmp_path
     crawler.sources = {"test": ["1.2.3.0/24"]}
 
-    rdap_resp = FakeResponse(json_data={
-        "entities": [
-            {"handle": "ORG-ERROR", "roles": ["registrant"]},
-        ]
-    })
+    rdap_resp = FakeResponse(
+        json_data={
+            "entities": [
+                {"handle": "ORG-ERROR", "roles": ["registrant"]},
+            ]
+        }
+    )
 
     org_resp = FakeResponse(json_data={"org": {"updateDate": "2025-01-01T00:00:00Z"}})
     nets_resp = FakeResponse(text="not valid json or xml")
@@ -181,21 +186,25 @@ def test_transform_seed_rdap_registry_invalid_ip_skipped(tmp_path: Path, monkeyp
     crawler.base_url = tmp_path
     crawler.sources = {"test": ["1.2.3.0/24"]}
 
-    rdap_resp = FakeResponse(json_data={
-        "entities": [
-            {"handle": "ORG-INVALID", "roles": ["registrant"]},
-        ]
-    })
-
-    org_resp = FakeResponse(json_data={"org": {"updateDate": "2025-01-01T00:00:00Z"}})
-    nets_resp = FakeResponse(json_data={
-        "nets": {
-            "netRef": [
-                {"@startAddress": "invalid.ip", "@endAddress": "1.2.3.255"},
-                {"@startAddress": "3.4.5.0", "@endAddress": "3.4.5.255"},
+    rdap_resp = FakeResponse(
+        json_data={
+            "entities": [
+                {"handle": "ORG-INVALID", "roles": ["registrant"]},
             ]
         }
-    })
+    )
+
+    org_resp = FakeResponse(json_data={"org": {"updateDate": "2025-01-01T00:00:00Z"}})
+    nets_resp = FakeResponse(
+        json_data={
+            "nets": {
+                "netRef": [
+                    {"@startAddress": "invalid.ip", "@endAddress": "1.2.3.255"},
+                    {"@startAddress": "3.4.5.0", "@endAddress": "3.4.5.255"},
+                ]
+            }
+        }
+    )
 
     def fake_get(url: str, timeout: int = 10):
         if url.endswith("/registry/ip/1.2.3.0"):
@@ -219,21 +228,25 @@ def test_transform_seed_rdap_registry_duplicate_ranges_deduped(tmp_path: Path, m
     crawler.base_url = tmp_path
     crawler.sources = {"test": ["1.2.3.0/24"]}
 
-    rdap_resp = FakeResponse(json_data={
-        "entities": [
-            {"handle": "ORG-DUP", "roles": ["registrant"]},
-        ]
-    })
-
-    org_resp = FakeResponse(json_data={"org": {"updateDate": "2025-01-01T00:00:00Z"}})
-    nets_resp = FakeResponse(json_data={
-        "nets": {
-            "netRef": [
-                {"@startAddress": "4.5.6.0", "@endAddress": "4.5.6.255"},
-                {"@startAddress": "4.5.6.0", "@endAddress": "4.5.6.255"},  # duplicate
+    rdap_resp = FakeResponse(
+        json_data={
+            "entities": [
+                {"handle": "ORG-DUP", "roles": ["registrant"]},
             ]
         }
-    })
+    )
+
+    org_resp = FakeResponse(json_data={"org": {"updateDate": "2025-01-01T00:00:00Z"}})
+    nets_resp = FakeResponse(
+        json_data={
+            "nets": {
+                "netRef": [
+                    {"@startAddress": "4.5.6.0", "@endAddress": "4.5.6.255"},
+                    {"@startAddress": "4.5.6.0", "@endAddress": "4.5.6.255"},  # duplicate
+                ]
+            }
+        }
+    )
 
     def fake_get(url: str, timeout: int = 10):
         if url.endswith("/registry/ip/1.2.3.0"):
@@ -256,11 +269,13 @@ def test_transform_seed_rdap_registry_mixed_json_xml_nets(tmp_path: Path, monkey
     crawler.base_url = tmp_path
     crawler.sources = {"test": ["1.2.3.0/24"]}
 
-    rdap_resp = FakeResponse(json_data={
-        "entities": [
-            {"handle": "ORG-MIXED", "roles": ["registrant"]},
-        ]
-    })
+    rdap_resp = FakeResponse(
+        json_data={
+            "entities": [
+                {"handle": "ORG-MIXED", "roles": ["registrant"]},
+            ]
+        }
+    )
 
     org_resp = FakeResponse(json_data={"org": {"updateDate": "2025-01-01T00:00:00Z"}})
 
@@ -291,25 +306,29 @@ def test_transform_seed_rdap_registry_edge_cases(tmp_path: Path, monkeypatch: py
     crawler.sources = {"test": ["1.2.3.0/24"]}
 
     # RDAP with non-dict entity and a valid registrant
-    rdap_resp = FakeResponse(json_data={
-        "entities": [
-            "not-a-dict",  # should be skipped
-            {"handle": "ORG-EDGE", "roles": ["registrant"]},
-        ]
-    })
+    rdap_resp = FakeResponse(
+        json_data={
+            "entities": [
+                "not-a-dict",  # should be skipped
+                {"handle": "ORG-EDGE", "roles": ["registrant"]},
+            ]
+        }
+    )
 
     # Org response that fails both JSON and XML parsing
     org_resp = FakeResponse(text="not valid json or xml")
 
     # Nets JSON with non-dict entries
-    nets_resp = FakeResponse(json_data={
-        "nets": {
-            "netRef": [
-                "not-a-dict",  # should be skipped
-                {"@startAddress": "7.8.9.0", "@endAddress": "7.8.9.255"},
-            ]
+    nets_resp = FakeResponse(
+        json_data={
+            "nets": {
+                "netRef": [
+                    "not-a-dict",  # should be skipped
+                    {"@startAddress": "7.8.9.0", "@endAddress": "7.8.9.255"},
+                ]
+            }
         }
-    })
+    )
 
     def fake_get(url: str, timeout: int = 10):
         if url.endswith("/registry/ip/1.2.3.0"):

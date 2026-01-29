@@ -35,7 +35,7 @@ def test_end_to_end_workflow_single_provider(skip_if_no_internet, rate_limit_del
         assert output_file.exists()
 
         # Validate file content
-        with open(output_file, 'r') as f:
+        with open(output_file, "r") as f:
             saved_data = json.load(f)
 
         assert saved_data["provider"] == "Cloudflare"
@@ -74,7 +74,7 @@ def test_end_to_end_workflow_multiple_providers(skip_if_no_internet, rate_limit_
                 assert csv_file.exists()
 
                 # Validate JSON content
-                with open(json_file, 'r') as f:
+                with open(json_file, "r") as f:
                     saved_data = json.load(f)
                 assert "provider" in saved_data
 
@@ -115,14 +115,14 @@ def test_data_freshness_validation(skip_if_no_internet, rate_limit_delay):
     # Check the output file for timestamp
     output_file = cipr.base_url / "cloudflare.json"
     if output_file.exists():
-        with open(output_file, 'r') as f:
+        with open(output_file, "r") as f:
             saved_data = json.load(f)
 
         # Parse the source_updated_at field if available
         if "source_updated_at" in saved_data and saved_data["source_updated_at"]:
             try:
                 # Try to parse as ISO format
-                updated_at = datetime.fromisoformat(saved_data["source_updated_at"].replace('Z', '+00:00'))
+                updated_at = datetime.fromisoformat(saved_data["source_updated_at"].replace("Z", "+00:00"))
 
                 # Data should be less than 30 days old (reasonable for cloud providers)
                 thirty_days_ago = datetime.now(updated_at.tzinfo) - timedelta(days=30)

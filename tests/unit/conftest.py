@@ -1,5 +1,4 @@
 import json
-from io import BytesIO
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +16,9 @@ class FakeResponse:
     Supports .text, .json(), .content, and .raise_for_status().
     """
 
-    def __init__(self, *, text: str | None = None, json_data: Any | None = None, content: bytes | None = None, status_code: int = 200, url: str | None = None) -> None:
+    def __init__(
+        self, *, text: str | None = None, json_data: Any | None = None, content: bytes | None = None, status_code: int = 200, url: str | None = None
+    ) -> None:
         self._text = text
         self._json = json_data
         self._content = content
@@ -71,15 +72,11 @@ def _load_raw(path: Path) -> FakeResponse:
 
 def _has_valid_ipv4(result: dict[str, Any]) -> bool:
     import ipaddress
-    return any(
-        ipaddress.ip_network(ip, strict=False).version == 4
-        for ip in result.get("ipv4", [])
-    )
+
+    return any(ipaddress.ip_network(ip, strict=False).version == 4 for ip in result.get("ipv4", []))
 
 
 def _has_valid_ipv6(result: dict[str, Any]) -> bool:
     import ipaddress
-    return any(
-        ipaddress.ip_network(ip, strict=False).version == 6
-        for ip in result.get("ipv6", [])
-    )
+
+    return any(ipaddress.ip_network(ip, strict=False).version == 6 for ip in result.get("ipv6", []))

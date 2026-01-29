@@ -2,12 +2,9 @@
 
 import pytest
 import requests
-from pathlib import Path
 
 from src.cloud_ip_ranges import CloudIPRanges
 from src.transforms.registry import get_transform
-
-from .conftest import integration_cipr, skip_if_no_internet, rate_limit_delay, sample_providers
 
 
 @pytest.mark.integration
@@ -46,11 +43,13 @@ def test_live_provider_api(integration_cipr: CloudIPRanges, provider: str, skip_
         # Validate IP ranges format if present
         if normalized_data["ipv4"]:
             import ipaddress
+
             for ip_range in normalized_data["ipv4"]:
                 ipaddress.ip_network(ip_range, strict=False)
 
         if normalized_data["ipv6"]:
             import ipaddress
+
             for ip_range in normalized_data["ipv6"]:
                 ipaddress.ip_network(ip_range, strict=False)
 

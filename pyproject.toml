@@ -32,7 +32,7 @@ dev = [
 
 
 [tool.ruff]
-exclude = ["docs", "tests"]
+exclude = ["docs"]
 line-length = 160
 indent-width = 4  # Same as autopep8 default
 
@@ -43,8 +43,11 @@ line-ending = "lf"  # Keep consistency
 preview = true
 
 [tool.ruff.lint]
-select = ["E9", "F82"]  # Syntax errors + docstrings
+select = ["E9", "F82", "F401", "F841"]  # Syntax errors + docstrings + unused imports/variables
 ignore = ["F821"]  # Ignore specific docstring rules
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["E501"]  # Allow long lines in tests, but check unused imports
 
 [tool.pytest.ini_options]
 addopts = [

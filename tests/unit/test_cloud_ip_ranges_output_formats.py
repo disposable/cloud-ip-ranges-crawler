@@ -1,11 +1,8 @@
 """Additional tests for CloudIPRanges methods to reach coverage threshold."""
 
-import pytest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 from src.cloud_ip_ranges import CloudIPRanges
-from tests.unit.conftest import FakeResponse
 
 
 def test_save_result_with_txt_format(tmp_path: Path) -> None:
