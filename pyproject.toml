@@ -5,6 +5,7 @@ description = "Automated collection of cloud provider IP ranges"
 requires-python = ">=3.10"
 dependencies = [
     "filelock>=3.20.3",
+    "cachetools>=5.5.0",
     "requests>=2.32.5",
     "urllib3>=2.6.3",
     "defusedxml>=0.7.1",
