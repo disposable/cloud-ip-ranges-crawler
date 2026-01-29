@@ -2,7 +2,6 @@
 
 import json
 from pathlib import Path
-from typing import Any
 
 import pytest
 
@@ -34,7 +33,7 @@ def test_cloud_ip_ranges_with_ipmerger_integration(tmp_path: Path, monkeypatch: 
             "last_update": "2024-01-01T00:00:00",
             "ipv4": ["10.0.0.128/25", "203.0.113.0/24"],  # 10.0.0.128/25 overlaps with provider1
             "ipv6": ["2001:db8::/64"],  # Overlaps with provider1
-        }
+        },
     }
 
     call_count = {"fetch_calls": 0}
@@ -86,8 +85,8 @@ def test_ipmerger_real_world_overlapping_scenario(tmp_path: Path) -> None:
             "provider_id": "aws",
             "provider": "Amazon Web Services",
             "ipv4": [
-                "52.94.0.0/16",      # Large range
-                "54.230.0.0/16",     # Another large range
+                "52.94.0.0/16",  # Large range
+                "54.230.0.0/16",  # Another large range
             ],
             "ipv6": [
                 "2600:1f14::/32",
@@ -97,26 +96,26 @@ def test_ipmerger_real_world_overlapping_scenario(tmp_path: Path) -> None:
             "provider_id": "cloudflare",
             "provider": "Cloudflare",
             "ipv4": [
-                "52.94.5.0/24",      # Overlaps with AWS range
-                "103.21.244.0/22",   # Non-overlapping
+                "52.94.5.0/24",  # Overlaps with AWS range
+                "103.21.244.0/22",  # Non-overlapping
             ],
             "ipv6": [
-                "2600:1f14::/36",    # Overlaps with AWS range
-                "2400:cb00::/32",    # Non-overlapping
+                "2600:1f14::/36",  # Overlaps with AWS range
+                "2400:cb00::/32",  # Non-overlapping
             ],
         },
         {
             "provider_id": "google",
             "provider": "Google Cloud",
             "ipv4": [
-                "52.94.6.0/24",      # Also overlaps with AWS range
-                "8.8.8.0/24",        # Non-overlapping
+                "52.94.6.0/24",  # Also overlaps with AWS range
+                "8.8.8.0/24",  # Non-overlapping
             ],
             "ipv6": [
-                "2600:1f14::/40",    # Also overlaps with AWS range
-                "2001:4860::/32",    # Non-overlapping
+                "2600:1f14::/40",  # Also overlaps with AWS range
+                "2001:4860::/32",  # Non-overlapping
             ],
-        }
+        },
     ]
 
     # Add all provider data
@@ -196,7 +195,7 @@ def test_cloud_ip_ranges_merger_disabled(tmp_path: Path, monkeypatch: pytest.Mon
     crawler.base_url = tmp_path
 
     # Should have merger instance but not use it
-    assert hasattr(crawler, 'ip_merger')
+    assert hasattr(crawler, "ip_merger")
     assert crawler.ip_merger is not None
 
     # Mock normal fetch
@@ -228,13 +227,14 @@ def test_ipmerger_performance_with_large_dataset(tmp_path: Path) -> None:
         provider_data = {
             "provider_id": f"provider_{i}",
             "provider": f"Provider {i}",
-            "ipv4": [f"10.{i//256}.{i%256}.0/24"],
+            "ipv4": [f"10.{i // 256}.{i % 256}.0/24"],
             "ipv6": [f"2001:db8:{i:04x}::/64"],
         }
         large_dataset.append(provider_data)
 
     # Add all data
     import time
+
     start_time = time.time()
 
     for data in large_dataset:
@@ -291,16 +291,16 @@ def test_ipmerger_malformed_ip_addresses(tmp_path: Path) -> None:
         "provider_id": "malformed_test",
         "ipv4": [
             "192.168.1.0/24",  # Valid
-            "not.an.ip",         # Invalid
+            "not.an.ip",  # Invalid
             "999.999.999.999/24",  # Invalid
-            "192.168.1.0/33",   # Invalid prefix
-            "10.0.0.0/8",       # Valid
+            "192.168.1.0/33",  # Invalid prefix
+            "10.0.0.0/8",  # Valid
         ],
         "ipv6": [
-            "2001:db8::/32",    # Valid
-            "not:ipv6",         # Invalid
-            "2001:db8::/129",   # Invalid prefix
-            "2001:db8::/64",    # Valid
+            "2001:db8::/32",  # Valid
+            "not:ipv6",  # Invalid
+            "2001:db8::/129",  # Invalid prefix
+            "2001:db8::/64",  # Valid
         ],
     }
 
@@ -355,7 +355,7 @@ def test_cloud_ip_ranges_full_integration_workflow(tmp_path: Path, monkeypatch: 
             "last_update": "2024-01-01T00:00:00",
             "ipv4": ["52.94.6.0/24", "8.8.8.0/24"],  # Overlaps with AWS
             "ipv6": ["2600:1f14::/40", "2001:4860::/32"],  # Overlaps with AWS
-        }
+        },
     }
 
     call_count = {"fetch_calls": 0}
@@ -483,11 +483,11 @@ def test_ipmerger_boundary_conditions(tmp_path: Path) -> None:
     boundary_data = {
         "provider_id": "boundary_test",
         "ipv4": [
-            "0.0.0.0/32",    # Single IPv4 address
+            "0.0.0.0/32",  # Single IPv4 address
             "255.255.255.255/32",  # Last IPv4 address
         ],
         "ipv6": [
-            "::/128",         # Single IPv6 address
+            "::/128",  # Single IPv6 address
             "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/128",  # Last IPv6 address
         ],
     }

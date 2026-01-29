@@ -14,7 +14,7 @@ def test_network_timeout_handling(skip_if_no_internet, rate_limit_delay):
     from unittest.mock import patch
 
     # Test timeout behavior directly
-    with patch('requests.Session.get') as mock_get:
+    with patch("requests.Session.get") as mock_get:
         mock_get.side_effect = requests.exceptions.Timeout("Request timed out")
 
         with pytest.raises(requests.exceptions.Timeout):
@@ -28,7 +28,7 @@ def test_http_error_handling(skip_if_no_internet, rate_limit_delay):
     from unittest.mock import patch
 
     # Test HTTP error behavior directly
-    with patch('requests.Session.get') as mock_get:
+    with patch("requests.Session.get") as mock_get:
         mock_get.side_effect = requests.exceptions.HTTPError("404 Not Found")
 
         with pytest.raises(requests.exceptions.HTTPError):
@@ -41,7 +41,7 @@ def test_connection_error_handling(skip_if_no_internet, rate_limit_delay):
     cipr = CloudIPRanges({"json"})
 
     # Test connection error
-    with patch.object(cipr.session, 'get') as mock_get:
+    with patch.object(cipr.session, "get") as mock_get:
         mock_get.side_effect = requests.exceptions.ConnectionError()
 
         with pytest.raises(requests.exceptions.ConnectionError):
@@ -57,11 +57,11 @@ def test_provider_failure_recovery(skip_if_no_internet, rate_limit_delay):
     # This tests the error handling in the main fetch loop
 
     # Mock a provider to fail
-    with patch.object(cipr, '_fetch_and_save') as mock_fetch:
+    with patch.object(cipr, "_fetch_and_save") as mock_fetch:
         mock_fetch.side_effect = [
-            (10, 5),   # First provider succeeds
+            (10, 5),  # First provider succeeds
             Exception("Network error"),  # Second provider fails
-            (8, 3),    # Third provider succeeds
+            (8, 3),  # Third provider succeeds
         ]
 
         # Should not raise exception despite failures
@@ -77,7 +77,7 @@ def test_invalid_json_handling(skip_if_no_internet, rate_limit_delay):
     cipr = CloudIPRanges({"json"})
 
     # Test with invalid JSON
-    with patch.object(cipr.session, 'get') as mock_get:
+    with patch.object(cipr.session, "get") as mock_get:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
         mock_response.json.side_effect = ValueError("Invalid JSON")
@@ -91,7 +91,7 @@ def test_invalid_json_handling(skip_if_no_internet, rate_limit_delay):
 @pytest.mark.integration
 def test_malformed_data_handling(skip_if_no_internet, rate_limit_delay):
     """Test handling of malformed IP ranges or data."""
-    cipr = CloudIPRanges({"json"})
+    CloudIPRanges({"json"})
 
     # Test with malformed IP range
     from src.transforms.common import validate_ip
@@ -148,7 +148,7 @@ def test_session_retry_configuration():
 
     # Check that session has retry configuration
     # The CloudIPRanges class should configure retries
-    assert hasattr(cipr.session, 'adapters'), "Session should have adapters"
+    assert hasattr(cipr.session, "adapters"), "Session should have adapters"
 
     # Check adapter configuration - different adapters may have different retry implementations
     adapters = list(cipr.session.adapters.values())
@@ -175,10 +175,10 @@ def test_partial_url_failure_multi_url(skip_if_no_internet, rate_limit_delay):
             raise requests.exceptions.ConnectionError("Simulated failure")
         return original_get(url, **kwargs)
 
-    with patch.object(cipr.session, 'get', side_effect=mock_get):
+    with patch.object(cipr.session, "get", side_effect=mock_get):
         try:
             # Should handle partial failures gracefully
-            result = cipr._fetch_and_save(provider)
+            cipr._fetch_and_save(provider)
             # May succeed or fail depending on implementation
         except Exception as e:
             # Should fail gracefully, not crash
@@ -191,7 +191,7 @@ def test_empty_response_handling(skip_if_no_internet, rate_limit_delay):
     cipr = CloudIPRanges({"json"})
 
     # Test with empty response
-    with patch.object(cipr.session, 'get') as mock_get:
+    with patch.object(cipr.session, "get") as mock_get:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
         mock_response.text = ""
@@ -230,7 +230,6 @@ def test_large_response_handling(skip_if_no_internet, rate_limit_delay):
 def test_concurrent_request_safety(skip_if_no_internet, rate_limit_delay):
     """Test that concurrent requests are handled safely."""
     import threading
-    import time
 
     cipr = CloudIPRanges({"json"})
     results = []

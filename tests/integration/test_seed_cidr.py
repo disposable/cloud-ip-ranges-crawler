@@ -30,6 +30,7 @@ def test_vercel_seed_cidr_workflow(skip_if_no_internet, rate_limit_delay):
 
     # Validate IP ranges format
     import ipaddress
+
     for ip_range in result["ipv4"]:
         ipaddress.ip_network(ip_range, strict=False)
 
@@ -83,7 +84,8 @@ def test_seed_cidr_end_to_end(skip_if_no_internet, rate_limit_delay):
 
         # Validate file content
         import json
-        with open(output_file, 'r') as f:
+
+        with open(output_file, "r") as f:
             saved_data = json.load(f)
 
         assert saved_data["provider"] == "Vercel"
@@ -104,6 +106,7 @@ def test_multiple_seed_cidrs(skip_if_no_internet, rate_limit_delay):
 
     # Each seed should be valid CIDR notation
     import ipaddress
+
     for seed in seeds:
         ipaddress.ip_network(seed, strict=False)
         assert "/" in seed, f"Seed {seed} should be in CIDR format"

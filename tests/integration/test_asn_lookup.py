@@ -18,29 +18,30 @@ def test_hackertarget_asn_lookup(skip_if_no_internet, rate_limit_delay):
     response.raise_for_status()
 
     # Validate response format
-    lines = response.text.strip().split('\n')
+    lines = response.text.strip().split("\n")
     assert len(lines) > 1  # Should have header + at least one IP range
 
     # Check header format - hackertarget API may return different formats
     header = lines[0].strip()
     # Accept both "AS,IP" header and actual ASN data as first line
-    assert header == "AS,IP" or ('"' in header and ',' in header), f"Unexpected header format: {header}"
+    assert header == "AS,IP" or ('"' in header and "," in header), f"Unexpected header format: {header}"
 
     # Check data lines - handle both header formats
     data_start = 1 if header == "AS,IP" else 0
     for line in lines[data_start:]:
         if not line.strip():
             continue
-        parts = line.strip().split(',')
+        parts = line.strip().split(",")
         # Handle quoted ASN lines vs regular IP lines
         if len(parts) >= 2 and '"' in parts[0]:
             # This is the ASN info line, skip it
             continue
-        elif '/' in line:
+        elif "/" in line:
             # This is an IP range line
-            assert '/' in line, f"Expected IP range: {line}"
+            assert "/" in line, f"Expected IP range: {line}"
             # Validate IP range format
             import ipaddress
+
             ipaddress.ip_network(line.strip(), strict=False)
 
 
@@ -68,6 +69,7 @@ def test_asn_transform_integration(skip_if_no_internet, rate_limit_delay):
 
     # Validate IP ranges
     import ipaddress
+
     for ip_range in normalized_data["ipv4"]:
         ipaddress.ip_network(ip_range, strict=False)
 

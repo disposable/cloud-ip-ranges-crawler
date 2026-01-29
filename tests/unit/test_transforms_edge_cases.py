@@ -2,7 +2,6 @@
 
 from pathlib import Path
 import pytest
-from unittest.mock import patch
 
 from src.cloud_ip_ranges import CloudIPRanges
 from tests.unit.conftest import FakeResponse
@@ -16,13 +15,15 @@ def test_fetch_and_save_with_extra_sources(tmp_path: Path, monkeypatch: pytest.M
 
     def fake_get(url: str, timeout: int = 10):
         # Return proper AWS JSON structure
-        return FakeResponse(json_data={
-            "createDate": "2024-01-01T00:00:00Z",
-            "prefixes": [
-                {"ip_prefix": "1.2.3.0/24", "region": "us-east-1", "service": "EC2"},
-                {"ipv6_prefix": "2606:4700::/32", "region": "us-east-1", "service": "EC2"}
-            ]
-        })
+        return FakeResponse(
+            json_data={
+                "createDate": "2024-01-01T00:00:00Z",
+                "prefixes": [
+                    {"ip_prefix": "1.2.3.0/24", "region": "us-east-1", "service": "EC2"},
+                    {"ipv6_prefix": "2606:4700::/32", "region": "us-east-1", "service": "EC2"},
+                ],
+            }
+        )
 
     monkeypatch.setattr(crawler.session, "get", fake_get)
 

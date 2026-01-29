@@ -1,10 +1,6 @@
 """Tests for the IPMerger class."""
 
 import ipaddress
-from pathlib import Path
-from typing import Any
-
-import pytest
 
 from src.ip_merger import IPMerger
 
@@ -425,10 +421,7 @@ def test_ip_merger_output_structure_completeness() -> None:
     merged_output = merger.get_merged_output()
 
     # Check all required fields are present
-    required_fields = [
-        "provider", "generated_at", "provider_count",
-        "providers", "ipv4", "ipv6", "ip_providers"
-    ]
+    required_fields = ["provider", "generated_at", "provider_count", "providers", "ipv4", "ipv6", "ip_providers"]
 
     for field in required_fields:
         assert field in merged_output, f"Missing field: {field}"
@@ -566,7 +559,6 @@ def test_ipmerger_neighboring_network_merging() -> None:
     ]
 
     merged_ipv6 = merger.merge_networks(neighboring_ipv6)
-    merged_ipv6_str = [str(net) for net in merged_ipv6]
 
     # Should merge into a larger block
     assert len(merged_ipv6) == 1

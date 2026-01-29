@@ -23,7 +23,7 @@ def test_csv_format_digitalocean(integration_cipr: CloudIPRanges, skip_if_no_int
 
     # Validate it's CSV format
     csv_content = response.text
-    assert ',' in csv_content, "Should contain CSV separators"
+    assert "," in csv_content, "Should contain CSV separators"
 
     # Parse as CSV to validate structure
     csv_reader = csv.reader(csv_content.splitlines())
@@ -74,7 +74,7 @@ def test_csv_format_starlink(integration_cipr: CloudIPRanges, skip_if_no_interne
 
     # Validate CSV structure
     csv_content = response.text
-    assert ',' in csv_content, "Should contain CSV separators"
+    assert "," in csv_content, "Should contain CSV separators"
 
     # Transform and validate
     transform_fn = get_transform(provider)
@@ -96,14 +96,15 @@ def test_txt_format_telegram(integration_cipr: CloudIPRanges, skip_if_no_interne
 
     # Validate it's plain text with CIDR notation
     text_content = response.text.strip()
-    assert '/' in text_content, "Should contain CIDR notation"
-    lines = [line.strip() for line in text_content.split('\n') if line.strip()]
+    assert "/" in text_content, "Should contain CIDR notation"
+    lines = [line.strip() for line in text_content.split("\n") if line.strip()]
     assert len(lines) > 0, "Should have IP range lines"
 
     # Validate CIDR format in lines
     import ipaddress
+
     for line in lines[:5]:  # Check first 5 lines
-        if line and not line.startswith('#'):  # Skip comments
+        if line and not line.startswith("#"):  # Skip comments
             ipaddress.ip_network(line, strict=False)
 
     # Transform and validate
@@ -125,7 +126,7 @@ def test_zip_format_akamai(integration_cipr: CloudIPRanges, skip_if_no_internet,
     response.raise_for_status()
 
     # Validate it's a ZIP file
-    assert response.content.startswith(b'PK'), "Should be a ZIP file"
+    assert response.content.startswith(b"PK"), "Should be a ZIP file"
 
     # Extract and validate ZIP content
     with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
@@ -135,10 +136,10 @@ def test_zip_format_akamai(integration_cipr: CloudIPRanges, skip_if_no_internet,
         # Extract first file (usually .txt)
         first_file = file_list[0]
         with zip_file.open(first_file) as extracted_file:
-            extracted_content = extracted_file.read().decode('utf-8')
+            extracted_content = extracted_file.read().decode("utf-8")
 
             # Should contain IP ranges
-            assert '/' in extracted_content, "Extracted content should contain CIDR notation"
+            assert "/" in extracted_content, "Extracted content should contain CIDR notation"
 
     # Transform and validate
     transform_fn = get_transform(provider)
@@ -252,7 +253,8 @@ def test_mixed_format_end_to_end(skip_if_no_internet, rate_limit_delay):
 
                 # Validate file content
                 import json
-                with open(output_file, 'r') as f:
+
+                with open(output_file, "r") as f:
                     saved_data = json.load(f)
 
                 assert "provider" in saved_data

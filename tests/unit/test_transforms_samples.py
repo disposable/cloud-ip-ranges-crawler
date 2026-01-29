@@ -13,9 +13,11 @@ def _transform_response(cipr: CloudIPRanges, response: List[Any], source_key: st
     """Helper function to replace the removed _transform_response method for tests."""
     if is_asn:
         from src.sources.asn import transform_hackertarget
+
         transformed_data = transform_hackertarget(cipr, response, source_key)
     else:
         from src.transforms.registry import get_transform
+
         transform_fn = get_transform(source_key)
         transformed_data = transform_fn(cipr, response, source_key)
 
@@ -32,6 +34,7 @@ def test_seed_based_download_sample_format() -> None:
 
     # Verify it's valid JSON
     import json
+
     try:
         data = json.loads(content)
     except json.JSONDecodeError as e:
@@ -71,8 +74,6 @@ def test_seed_based_download_sample_format() -> None:
         assert found_valid_entity, "Should have at least one valid entity with handle and roles"
 
 
-
-
 def test_sample_files_are_valid(cipr: CloudIPRanges) -> None:
     """Test that all sample files can be processed without errors."""
     sample_files = list(SAMPLES_DIR.glob("*.raw"))
@@ -92,12 +93,7 @@ def test_sample_files_are_valid(cipr: CloudIPRanges) -> None:
         # Skip vercel as it requires network calls for RDAP/WHOIS lookups
         # Skip akamai as it's a zip file and FakeResponse doesn't handle binary content properly
         # Skip whatsapp as it requires network calls to download zip
-        if (
-            base_key.startswith("microsoft")
-            or base_key.startswith("vercel")
-            or base_key.startswith("akamai")
-            or base_key.startswith("whatsapp")
-        ):
+        if base_key.startswith("microsoft") or base_key.startswith("vercel") or base_key.startswith("akamai") or base_key.startswith("whatsapp"):
             continue
 
         # Map filename prefixes to actual source keys
@@ -117,7 +113,7 @@ def test_sample_files_are_valid(cipr: CloudIPRanges) -> None:
         responses: List[Any] = [FakeResponse(text=f.read_text(encoding="utf-8")) for f in files]
 
         try:
-            result = _transform_response(cipr,responses, source_key, is_asn=False)
+            result = _transform_response(cipr, responses, source_key, is_asn=False)
 
             # Verify basic structure
             assert "provider" in result
@@ -136,6 +132,7 @@ def test_sample_file_consistency() -> None:
     for sample in vercel_samples:
         content = sample.read_text()
         import json
+
         data = json.loads(content)
         # Handle mock wrapper structure
         if "mock_response" in data and "rdap_responses" in data:
@@ -152,12 +149,12 @@ def test_sample_file_consistency() -> None:
         sample_path = SAMPLES_DIR / sample_name
         if sample_path.exists():
             content = sample_path.read_text()
-            lines = content.strip().split('\n')
+            lines = content.strip().split("\n")
             assert len(lines) > 1, f"CSV sample {sample_name} should have multiple lines"
             # Check that at least one line looks like a CIDR
             found_cidr = False
             for line in lines:
-                if '/' in line and not line.startswith('#'):
+                if "/" in line and not line.startswith("#"):
                     found_cidr = True
                     break
             assert found_cidr, f"CSV sample {sample_name} should contain at least one CIDR"
@@ -169,5 +166,6 @@ def test_sample_file_consistency() -> None:
         if sample_path.exists():
             content = sample_path.read_text()
             import json
+
             data = json.loads(content)
             assert isinstance(data, dict), f"JSON sample {sample_name} should be a dictionary"

@@ -12,6 +12,7 @@ sys.path.append(parent_dir)
 
 from src.cloud_ip_ranges import CloudIPRanges
 
+
 def download_raw_samples():
     """Download raw source data for testing transformation methods."""
     # Create the output directory if it doesn't exist
@@ -36,15 +37,9 @@ def download_raw_samples():
                 # Create mock RDAP responses for each seed CIDR
                 mock_responses = []
                 for seed in urls:
-                    seed_ip = seed.split("/")[0]
+                    seed.split("/")[0]
                     # Mock RDAP registry response for the seed IP
-                    mock_rdap = {
-                        "entities": [{
-                            "handle": f"{source.upper()}-ARIN-HANDLE",
-                            "roles": ["registrant"],
-                            "name": f"{source.title()} Inc."
-                        }]
-                    }
+                    mock_rdap = {"entities": [{"handle": f"{source.upper()}-ARIN-HANDLE", "roles": ["registrant"], "name": f"{source.title()} Inc."}]}
                     mock_responses.append(mock_rdap)
 
                 # Create a mock file that contains the array of mock responses
@@ -53,11 +48,11 @@ def download_raw_samples():
                     "source": source,
                     "seeds": urls,
                     "rdap_responses": mock_responses,
-                    "note": f"{source} uses RDAP lookups from seed CIDRs. This mock simulates the ARIN registry responses."
+                    "note": f"{source} uses RDAP lookups from seed CIDRs. This mock simulates the ARIN registry responses.",
                 }
 
                 output_file = output_dir / f"{source}_0.raw"
-                with open(output_file, 'w') as f:
+                with open(output_file, "w") as f:
                     json.dump(mock_data, f, indent=2)
 
                 logging.info(f"Created mock {source} sample with {len(mock_responses)} RDAP responses: {output_file}")
@@ -79,14 +74,14 @@ def download_raw_samples():
                     response.raise_for_status()
 
                     # Save the raw response
-                    if url.endswith('.json'):
+                    if url.endswith(".json"):
                         data = response.json()
                     else:
                         data = response.text
 
                     # Create a filename based on the source and URL index
                     output_file = output_dir / f"{source}_{i}.raw"
-                    with open(output_file, 'w') as f:
+                    with open(output_file, "w") as f:
                         if isinstance(data, dict):
                             json.dump(data, f, indent=2)
                         else:
@@ -100,6 +95,7 @@ def download_raw_samples():
 
         except Exception as e:
             logging.error(f"Error processing {source}: {e}")
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

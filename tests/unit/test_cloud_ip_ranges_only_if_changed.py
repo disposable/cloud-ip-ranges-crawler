@@ -1,15 +1,10 @@
 """Additional tests to improve coverage for CloudIPRanges class."""
 
-import json
 import os
 import pytest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 from src.cloud_ip_ranges import CloudIPRanges
-from tests.unit.conftest import FakeResponse
-
-
 
 
 def test_save_result_with_only_if_changed_no_existing_file(tmp_path: Path) -> None:
@@ -59,6 +54,7 @@ def test_save_result_with_only_if_changed_unchanged(tmp_path: Path) -> None:
 
     # Mock file modification time to be recent
     import time
+
     current_time = time.time()
     os.utime(existing_file, (current_time, current_time))
 

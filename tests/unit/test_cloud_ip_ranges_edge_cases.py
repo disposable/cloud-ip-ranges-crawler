@@ -1,10 +1,8 @@
 """Tests specifically designed to boost coverage to reach 85% threshold."""
 
-import pytest
 from pathlib import Path
 
 from src.cloud_ip_ranges import CloudIPRanges
-from tests.unit.conftest import FakeResponse
 
 
 def test_cloud_ip_ranges_initialization() -> None:
@@ -109,10 +107,7 @@ def test_save_csv_details_with_empty_details() -> None:
     crawler.base_url = Path("/tmp")
 
     # Call with proper transformed_data dict structure
-    transformed_data = {
-        "details_ipv4": [],
-        "details_ipv6": []
-    }
+    transformed_data = {"details_ipv4": [], "details_ipv6": []}
 
     # Should handle empty details gracefully
     crawler._save_csv_details(transformed_data, "test")

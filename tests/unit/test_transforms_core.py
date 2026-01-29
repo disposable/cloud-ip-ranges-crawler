@@ -2,7 +2,6 @@
 
 import pytest
 from pathlib import Path
-from unittest.mock import patch
 import json
 from typing import Any, Dict, List
 
@@ -16,9 +15,11 @@ def _transform_response(cipr: CloudIPRanges, response: List[Any], source_key: st
     """Helper function to replace the removed _transform_response method for tests."""
     if is_asn:
         from src.sources.asn import transform_hackertarget
+
         transformed_data = transform_hackertarget(cipr, response, source_key)
     else:
         from src.transforms.registry import get_transform
+
         transform_fn = get_transform(source_key)
         transformed_data = transform_fn(cipr, response, source_key)
 
@@ -27,7 +28,7 @@ def _transform_response(cipr: CloudIPRanges, response: List[Any], source_key: st
 
 def test_transform_method_selection() -> None:
     """Test transform method selection logic."""
-    crawler = CloudIPRanges({"json"})
+    CloudIPRanges({"json"})
 
     # Transforms are loaded dynamically from src/transforms/<source>.py
     assert callable(get_transform("cloudflare"))
@@ -46,34 +47,38 @@ def test_transform_response_asn_uses_hackertarget(cipr: CloudIPRanges) -> None:
 
 def test_transform_response_apple_private_relay_csv(cipr: CloudIPRanges) -> None:
     r = _load_raw(SAMPLES_DIR / "apple_private_relay_0.raw")
-    res = _transform_response(cipr,[r], "apple_private_relay", is_asn=False)
+    res = _transform_response(cipr, [r], "apple_private_relay", is_asn=False)
     assert res["provider"] == "Apple Private Relay"
     assert _has_valid_ipv4(res) or _has_valid_ipv6(res)
 
 
 def test_atlassian_transform_fallback_heuristic(cipr: CloudIPRanges) -> None:
-    r = FakeResponse(json_data={
-        "created": "2026-01-04T00:00:00Z",
-        "nested": {"prefixes_ipv4": ["5.5.5.0/24"], "prefixes_ipv6": ["2606:4700::/32"]},
-    })
-    res = _transform_response(cipr,[r], "atlassian", is_asn=False)
+    r = FakeResponse(
+        json_data={
+            "created": "2026-01-04T00:00:00Z",
+            "nested": {"prefixes_ipv4": ["5.5.5.0/24"], "prefixes_ipv6": ["2606:4700::/32"]},
+        }
+    )
+    res = _transform_response(cipr, [r], "atlassian", is_asn=False)
     assert res["source_updated_at"] == "2026-01-04T00:00:00Z"
     assert "5.5.5.0/24" in res["ipv4"]
     assert "2606:4700::/32" in res["ipv6"]
 
 
 def test_oracle_cloud_transform_includes_ipv4_ipv6_lists(cipr: CloudIPRanges) -> None:
-    r = FakeResponse(json_data={
-        "regions": [
-            {
-                "region": "region-1",
-                "cidrs": [{"cidr": "1.1.1.0/24"}],
-                "ipv4_cidrs": [{"cidr": "2.2.2.0/24"}],
-                "ipv6_cidrs": [{"cidr": "2606:4700::/32"}],
-            }
-        ]
-    })
-    res = _transform_response(cipr,[r], "oracle_cloud", is_asn=False)
+    r = FakeResponse(
+        json_data={
+            "regions": [
+                {
+                    "region": "region-1",
+                    "cidrs": [{"cidr": "1.1.1.0/24"}],
+                    "ipv4_cidrs": [{"cidr": "2.2.2.0/24"}],
+                    "ipv6_cidrs": [{"cidr": "2606:4700::/32"}],
+                }
+            ]
+        }
+    )
+    res = _transform_response(cipr, [r], "oracle_cloud", is_asn=False)
     assert "1.1.1.0/24" in res["ipv4"]
     assert "2.2.2.0/24" in res["ipv4"]
     assert "2606:4700::/32" in res["ipv6"]
@@ -128,12 +133,7 @@ def test_fetch_and_save_seed_cidr_source_vercel(tmp_path: Path, monkeypatch: pyt
     rdap.status_code = 200
     rdap.headers = {"content-type": "application/rdap+json"}
 
-    org_xml = (
-        "<?xml version='1.0'?>"
-        "<org xmlns='https://www.arin.net/whoisrws/core/v1'>"
-        "<updateDate>2025-12-24T07:44:44-05:00</updateDate>"
-        "</org>"
-    )
+    org_xml = "<?xml version='1.0'?><org xmlns='https://www.arin.net/whoisrws/core/v1'><updateDate>2025-12-24T07:44:44-05:00</updateDate></org>"
     nets_xml = (
         "<?xml version='1.0'?>"
         "<nets xmlns='https://www.arin.net/whoisrws/core/v1'>"
@@ -177,7 +177,7 @@ def test_fetch_and_save_asn_source_merges_multiple_asns(tmp_path: Path, monkeypa
                     "status": "ok",
                     "data": {"queried_at": "2026-01-01T00:00:00Z", "prefixes": [{"prefix": "1.1.1.0/24"}]},
                 },
-                url=url
+                url=url,
             )
         if url.endswith("resource=AS2"):
             return FakeResponse(
@@ -185,7 +185,7 @@ def test_fetch_and_save_asn_source_merges_multiple_asns(tmp_path: Path, monkeypa
                     "status": "ok",
                     "data": {"queried_at": "2026-01-01T00:00:00Z", "prefixes": [{"prefix": "2606:4700::/32"}]},
                 },
-                url=url
+                url=url,
             )
         raise AssertionError(f"Unexpected URL: {url}")
 
@@ -200,7 +200,7 @@ def test_fetch_and_save_asn_source_merges_multiple_asns(tmp_path: Path, monkeypa
 
 
 def test_fetch_and_save_radb_as_set_expands_to_asns(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from sources.asn import radb_resolve_as_set, radb_whois_query
+    from sources.asn import radb_whois_query
 
     crawler = CloudIPRanges({"json"})
     crawler.base_url = tmp_path
@@ -220,7 +220,7 @@ def test_fetch_and_save_radb_as_set_expands_to_asns(tmp_path: Path, monkeypatch:
                     "status": "ok",
                     "data": {"queried_at": "2026-01-01T00:00:00Z", "prefixes": [{"prefix": "2.2.2.0/24"}]},
                 },
-                url=url
+                url=url,
             )
         if url.endswith("resource=AS456"):
             return FakeResponse(
@@ -228,7 +228,7 @@ def test_fetch_and_save_radb_as_set_expands_to_asns(tmp_path: Path, monkeypatch:
                     "status": "ok",
                     "data": {"queried_at": "2026-01-01T00:00:00Z", "prefixes": [{"prefix": "2606:4700::/32"}]},
                 },
-                url=url
+                url=url,
             )
         raise AssertionError(f"Unexpected URL: {url}")
 
@@ -261,7 +261,7 @@ def test_transform_response_linode(cipr: CloudIPRanges) -> None:
         content = f.read()
     response = FakeResponse(text=content)
 
-    result = _transform_response(cipr,[response], "linode", is_asn=False)
+    result = _transform_response(cipr, [response], "linode", is_asn=False)
 
     assert result["provider"] == "Linode"
     assert len(result["ipv4"]) > 0
@@ -273,7 +273,7 @@ def test_transform_response_google_cloud(cipr: CloudIPRanges) -> None:
         content = f.read()
     response = FakeResponse(text=content)
 
-    result = _transform_response(cipr,[response], "google_cloud", is_asn=False)
+    result = _transform_response(cipr, [response], "google_cloud", is_asn=False)
 
     assert result["provider"] == "Google Cloud"
     assert len(result["ipv4"]) > 0
@@ -286,7 +286,7 @@ def test_transform_response_google_bot(cipr: CloudIPRanges) -> None:
         content = f.read()
     response = FakeResponse(text=content)
 
-    result = _transform_response(cipr,[response], "google_bot", is_asn=False)
+    result = _transform_response(cipr, [response], "google_bot", is_asn=False)
 
     assert result["provider"] == "Google Bot"
     assert len(result["ipv4"]) > 0
@@ -299,7 +299,7 @@ def test_transform_response_bing_bot(cipr: CloudIPRanges) -> None:
         content = f.read()
     response = FakeResponse(text=content)
 
-    result = _transform_response(cipr,[response], "bing_bot", is_asn=False)
+    result = _transform_response(cipr, [response], "bing_bot", is_asn=False)
 
     assert result["provider"] == "Bing Bot"
     assert len(result["ipv4"]) > 0
@@ -311,7 +311,7 @@ def test_transform_response_openai(cipr: CloudIPRanges) -> None:
         content = f.read()
     response = FakeResponse(text=content)
 
-    result = _transform_response(cipr,[response], "openai", is_asn=False)
+    result = _transform_response(cipr, [response], "openai", is_asn=False)
 
     assert result["provider"] == "Openai"
     assert len(result["ipv4"]) > 0
@@ -324,7 +324,7 @@ def test_transform_response_perplexity(cipr: CloudIPRanges) -> None:
         content = f.read()
     response = FakeResponse(text=content)
 
-    result = _transform_response(cipr,[response], "perplexity", is_asn=False)
+    result = _transform_response(cipr, [response], "perplexity", is_asn=False)
 
     assert result["provider"] == "Perplexity"
     assert len(result["ipv4"]) > 0
@@ -337,7 +337,7 @@ def test_transform_response_aws(cipr: CloudIPRanges) -> None:
         content = f.read()
     response = FakeResponse(text=content)
 
-    result = _transform_response(cipr,[response], "aws", is_asn=False)
+    result = _transform_response(cipr, [response], "aws", is_asn=False)
 
     assert result["provider"] == "Aws"  # Note: actual provider name is "Aws"
     assert len(result["ipv4"]) > 0
@@ -354,7 +354,7 @@ def test_transform_response_cloudflare(cipr: CloudIPRanges) -> None:
     response_ipv4 = FakeResponse(text=ipv4_content)
     response_ipv6 = FakeResponse(text=ipv6_content)
 
-    result = _transform_response(cipr,[response_ipv4, response_ipv6], "cloudflare", is_asn=False)
+    result = _transform_response(cipr, [response_ipv4, response_ipv6], "cloudflare", is_asn=False)
 
     assert result["provider"] == "Cloudflare"
     assert len(result["ipv4"]) > 0
@@ -368,6 +368,7 @@ def test_transform_response_microsoft_azure(cipr: CloudIPRanges) -> None:
 
 def test_ripestat_announced_prefixes_transform(cipr: CloudIPRanges) -> None:
     from src.sources.asn import transform_ripestat
+
     r = FakeResponse(
         json_data={
             "status": "ok",
@@ -377,9 +378,9 @@ def test_ripestat_announced_prefixes_transform(cipr: CloudIPRanges) -> None:
                     {"prefix": "1.2.3.0/24"},
                     {"prefix": "2606:4700::/32"},
                 ],
-            }
+            },
         },
-        url="https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS12345"
+        url="https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS12345",
     )
     res = transform_ripestat(cipr, [r], "test")
     assert res["method"] == "bgp_announced"

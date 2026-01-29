@@ -51,14 +51,7 @@ def test_radb_whois_query_reads_all_socket_chunks(monkeypatch: pytest.MonkeyPatc
 
 
 def test__radb_extract_members_handles_continuations_and_mixed_cases() -> None:
-    whois = (
-        "members: AS123, as456, AS-FOO\n"
-        "  AS789 RS-BAR\n"
-        "mp-members: rs-extra\n"
-        "\n"
-        "members:   AS999\n"
-        "other: ignored\n"
-    )
+    whois = "members: AS123, as456, AS-FOO\n  AS789 RS-BAR\nmp-members: rs-extra\n\nmembers:   AS999\nother: ignored\n"
     members = asn._radb_extract_members(whois)
     assert members == [
         "AS123",
