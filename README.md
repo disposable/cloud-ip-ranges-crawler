@@ -22,6 +22,7 @@ See `src/sources/` for the latest definitions; new providers usually only requir
 ### Direct API sources
 
 - **Amazon Web Services (AWS)** - Service + region metadata
+- **Microsoft Azure** - Service tag explorer API (covers 60+ clouds/regions)
 - **Cloudflare** - IPv4/IPv6 prefixes
 - **DigitalOcean** - GeoIP CSV export
 - **Google Cloud** - Service-tagged ranges
@@ -32,6 +33,7 @@ See `src/sources/` for the latest definitions; new providers usually only requir
 - **Backblaze** - IP address documentation HTML scrape
 - **Cisco Webex** - Media/meetings network requirements HTML scrape
 - **STACKIT** - API endpoint with JSON/text fallback
+- **Apple Private Relay** - Public egress exit CSV for iCloud Private Relay
 - **Ahrefs**, **Sentry**, **Datadog**, **Branch**, **Perplexity**, **OpenAI**, **Telegram**, **Atlassian**, **Intercom**, **Zendesk**
 - **Linode**, **Vultr**, **Starlink**, **Fastly**, **Akamai**, **Zscaler**
 - **GitHub**, **CircleCI**, **HCP Terraform**, **New Relic Synthetics**, **Grafana Cloud**
@@ -43,16 +45,23 @@ When providers lack published lists, the crawler performs BGP lookups via RIPEst
 
 | Provider | Definition |
 | --- | --- |
-| IBM / Softlayer | `RADB::AS-SOFTLAYER` |
-| Heroku (AWS) | `AS14618` |
-| Fly.io | `AS40509` |
+| IBM / Softlayer (`softlayer_ibm`) | `RADB::AS-SOFTLAYER` |
+| Heroku (AWS) (`heroku_aws`) | `AS14618` |
+| Fly.io (`flyio`) | `AS40509` |
 | Render | `AS397273` |
+| A2 Hosting (`a2hosting`) | `AS55293` |
 | GoDaddy | `AS26496`, `AS30083` |
+| DreamHost (`dreamhost`) | `AS26347` |
 | Alibaba Cloud | `RADB::AS-ALIBABA-CN-NET`, `AS134963` |
 | Tencent Cloud | `RADB::AS132203:AS-TENCENT` |
+| UCloud (`ucloud`) | `AS135377`, `AS59077` |
 | Hetzner / xneelo | `RADB::AS-HETZNER` |
+| Choopa / VULTR parent (`choopa`) | `AS46407`, `AS20473`, `AS133795`, `AS11508` |
 | OVH | `RADB::AS-OVH` |
 | Rackspace | `RADB::AS-RACKSPACE` |
+| Online SAS (`onlinesas`) | `RADB::AS-ONLINESAS` |
+| Huawei Cloud (`huawei_cloud`) | `RADB::AS-HUAWEI` |
+| Meta crawler fleet (`meta_crawler`) | `RADB::AS-FACEBOOK` |
 | UpCloud | `AS202053`, `AS25697` |
 | gridscale | `AS29423` |
 | Aruba Cloud | `AS200185` |
