@@ -21,7 +21,7 @@
         
         
         
-        <script nonce="ExQeMOg0SeMFvoCJmhouRHEpfubj6J9X">
+        <script nonce="2zc2EgI4Fp4p7ArHsWpCWg3jh7RZFNTh">
                             // Define dataLayer and the gtag function.
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
@@ -36,7 +36,7 @@
                 });
                     </script>
                                     <!-- Google Tag Manager -->
-                <script nonce="ExQeMOg0SeMFvoCJmhouRHEpfubj6J9X">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+                <script nonce="2zc2EgI4Fp4p7ArHsWpCWg3jh7RZFNTh">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
                             new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
                         j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                         'https://www.googletagmanager.com/gtm.js?id='+i+dl+ '&gtm_auth=afdbAXrh3-yNk9m3Wq79uw&gtm_preview=env-1&gtm_cookies_win=x';f.parentNode.insertBefore(j,f);
@@ -44,13 +44,13 @@
                 <!-- End Google Tag Manager -->
                     
                 <!-- OneTrust Cookies Consent Notice start for adyen.com -->
-    <script nonce="ExQeMOg0SeMFvoCJmhouRHEpfubj6J9X" src="https://cdn.cookielaw.org/scripttemplates/otSDKStub.js" data-document-language="true" type="text/javascript" charset="UTF-8" data-domain-script="0192d86c-04a9-7967-9a48-20d2b66f78e8"></script>
-    <script nonce="ExQeMOg0SeMFvoCJmhouRHEpfubj6J9X" type="text/javascript">
+    <script nonce="2zc2EgI4Fp4p7ArHsWpCWg3jh7RZFNTh" src="https://cdn.cookielaw.org/scripttemplates/otSDKStub.js" data-document-language="true" type="text/javascript" charset="UTF-8" data-domain-script="0192d86c-04a9-7967-9a48-20d2b66f78e8"></script>
+    <script nonce="2zc2EgI4Fp4p7ArHsWpCWg3jh7RZFNTh" type="text/javascript">
         function OptanonWrapper() { }
     </script>
     <!-- OneTrust Cookies Consent Notice end for adyen.com -->
 
-                <script nonce="ExQeMOg0SeMFvoCJmhouRHEpfubj6J9X">
+                <script nonce="2zc2EgI4Fp4p7ArHsWpCWg3jh7RZFNTh">
             if (typeof Object.assign != 'function') {
                 Object.assign = function(target) {
                     'use strict';
@@ -74,11 +74,11 @@
             }
         </script>
         
-                        <link href="/assets/394ed67ea392a4ee10ff4b4d571b7743.css" type="text/css" rel="stylesheet" integrity="sha256-/obido2gmMb5QfpnoeBXRPwsPTGqZecw0Qx6oezZlBY=">
+                        <link href="/assets/29c7612cca20d096f59cb70d3794aba0.css" type="text/css" rel="stylesheet" integrity="sha256-hiXL5DPQ3321eVSkxKzOFYhcyMyGdbwQrWxGB+aO8Uk=">
 
 
-                                    <script nonce="ExQeMOg0SeMFvoCJmhouRHEpfubj6J9X" src="/assets/82dafa4daeedcc2e4cfdeab0e02552e5.js" integrity="sha256-r7I1a88LwwPmsiQrIeXJ0wKMwfPSCXeNotYAYRshIKE="></script>
-<script nonce="ExQeMOg0SeMFvoCJmhouRHEpfubj6J9X">
+                                    <script nonce="2zc2EgI4Fp4p7ArHsWpCWg3jh7RZFNTh" src="/assets/6dd6bca1cc129e1bf41e355f564eb469.js" integrity="sha256-WYyfa4YpCFBNkaNtDpkX/w1uFhyVMeAVzWOdPWvXQts="></script>
+<script nonce="2zc2EgI4Fp4p7ArHsWpCWg3jh7RZFNTh">
 $(document).ready(function(){
     $('a[rel="lightbox"]').featherlight({
         openSpeed: 250,
@@ -118,9 +118,7 @@ $(document).ready(function(){
         <logo :url="'/'"
               :aria-label="'Go to Adyen Docs homepage'"
               :tab-index="tabIndex"
-              :theme="'docs'"
-              :text="'Docs'"
-              :width="158">
+              :theme="'docs'">
         </logo>
     </template>
 
@@ -156,9 +154,7 @@ $(document).ready(function(){
                     <logo :url="'/'"
                           :aria-label="'Go to Adyen Docs homepage'"
                           :tab-index="tabIndex"
-                          :theme="'docs'"
-                          :text="'Docs'"
-                          :width="158">
+                          :theme="'docs'">
                     </logo>
                 </template>
             </sidebar-menu-section>
@@ -3096,7 +3092,7 @@ $(document).ready(function(){
 
 </div>
 
-<script nonce="ExQeMOg0SeMFvoCJmhouRHEpfubj6J9X" type="text/javascript">
+<script nonce="2zc2EgI4Fp4p7ArHsWpCWg3jh7RZFNTh" type="text/javascript">
     // get current page host
     var protocol = location.protocol;
     var slashes = protocol.concat("//");
@@ -3493,7 +3489,7 @@ $(document).ready(function(){
     </nav>
 
                                         <div class="feedback-component"></div>
-    <script nonce="ExQeMOg0SeMFvoCJmhouRHEpfubj6J9X" type="text/javascript">
+    <script nonce="2zc2EgI4Fp4p7ArHsWpCWg3jh7RZFNTh" type="text/javascript">
         window.addEventListener('DOMContentLoaded', function () {
             new FeedbackComponent( '.feedback-component', {
                 location: 'header',
@@ -3527,7 +3523,7 @@ $(document).ready(function(){
     </script>
     
 </div>
-<script nonce="ExQeMOg0SeMFvoCJmhouRHEpfubj6J9X" type="text/javascript">
+<script nonce="2zc2EgI4Fp4p7ArHsWpCWg3jh7RZFNTh" type="text/javascript">
     var breadcrumb = new Breadcrumb();
 
     $(document).ready( function()
@@ -3687,7 +3683,7 @@ $(document).ready(function(){
                     </article>
 
                                                 <div class="feedback-component__footer"></div>
-    <script nonce="ExQeMOg0SeMFvoCJmhouRHEpfubj6J9X" type="text/javascript">
+    <script nonce="2zc2EgI4Fp4p7ArHsWpCWg3jh7RZFNTh" type="text/javascript">
         window.addEventListener('DOMContentLoaded', function () {
             new FeedbackComponent( '.feedback-component__footer', {
                 location: 'footer',
@@ -3838,10 +3834,10 @@ $(document).ready(function(){
 
         
                                                 
-    <script nonce="ExQeMOg0SeMFvoCJmhouRHEpfubj6J9X" src="/assets/84da0709a34c0b4a586a0e73ff71364d.js" integrity="sha256-zti2XTd+ZxhmLL4REUY9XIDm6N8OzmyYRTBqRA8NfwQ="></script>
+    <script nonce="2zc2EgI4Fp4p7ArHsWpCWg3jh7RZFNTh" src="/assets/8a4165a42a52b5a71ea98abd335776e9.js" integrity="sha256-zti2XTd+ZxhmLL4REUY9XIDm6N8OzmyYRTBqRA8NfwQ="></script>
 
 
     <div style="display:none">
     </div>
-<script nonce="ExQeMOg0SeMFvoCJmhouRHEpfubj6J9X">(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.nonce='ExQeMOg0SeMFvoCJmhouRHEpfubj6J9X';d.innerHTML="window.__CF$cv$params={r:'9c3f5f26fa05b541',t:'MTc2OTQyMzgxMQ=='};var a=document.createElement('script');a.nonce='ExQeMOg0SeMFvoCJmhouRHEpfubj6J9X';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script nonce="2zc2EgI4Fp4p7ArHsWpCWg3jh7RZFNTh">(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.nonce='2zc2EgI4Fp4p7ArHsWpCWg3jh7RZFNTh';d.innerHTML="window.__CF$cv$params={r:'9c5c3a131f6a8909',t:'MTc2OTcyNjM4MA=='};var a=document.createElement('script');a.nonce='2zc2EgI4Fp4p7ArHsWpCWg3jh7RZFNTh';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

@@ -8,7 +8,7 @@ from src.transforms.registry import get_transform
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize("provider", ["cloudflare", "aws", "github"])
+@pytest.mark.parametrize("provider", ["cloudflare", "aws", "github", "exoscale", "backblaze"])
 def test_live_provider_api(integration_cipr: CloudIPRanges, provider: str, skip_if_no_internet, rate_limit_delay):
     """Test fetching and transforming data from live provider APIs."""
     # Get the source URLs for the provider
@@ -75,6 +75,59 @@ def test_cloudflare_live_api(integration_cipr: CloudIPRanges, skip_if_no_interne
     assert normalized_data["provider"] == "Cloudflare"
     assert normalized_data["method"] == "published_list"
     assert len(normalized_data["ipv4"]) > 0 or len(normalized_data["ipv6"]) > 0
+
+
+@pytest.mark.integration
+def test_exoscale_live_api(integration_cipr: CloudIPRanges, skip_if_no_internet, rate_limit_delay):
+    """Test Exoscale JSON API."""
+    url = "https://exoscale-prefixes.sos-ch-dk-2.exo.io/exoscale_prefixes.json"
+
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()
+
+    # Validate Exoscale-specific response structure
+    data = response.json()
+    assert "prefixes" in data
+
+    # Check for IPv4Prefix/IPv6Prefix fields
+    prefixes = data["prefixes"]
+    if prefixes:
+        prefix = prefixes[0]
+        assert "IPv4Prefix" in prefix or "IPv6Prefix" in prefix or "prefix" in prefix
+
+    # Transform and validate
+    transform_fn = get_transform("exoscale")
+    transformed_data = transform_fn(integration_cipr, [response], "exoscale")
+    normalized_data = integration_cipr._normalize_transformed_data(transformed_data, "exoscale")
+
+    assert normalized_data["provider"] == "Exoscale"
+    assert normalized_data["method"] == "published_list"
+    assert len(normalized_data["ipv4"]) > 0 or len(normalized_data["ipv6"]) > 0
+
+
+@pytest.mark.integration
+def test_backblaze_live_api(integration_cipr: CloudIPRanges, skip_if_no_internet, rate_limit_delay):
+    """Test Backblaze HTML documentation."""
+    url = "https://www.backblaze.com/computer-backup/docs/backblaze-ip-addresses"
+
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()
+
+    # Validate HTML response contains CIDR patterns
+    content = response.text
+    assert "45.11.36.0/22" in content  # Known Backblaze range
+
+    # Transform and validate
+    transform_fn = get_transform("backblaze")
+    transformed_data = transform_fn(integration_cipr, [response], "backblaze")
+    normalized_data = integration_cipr._normalize_transformed_data(transformed_data, "backblaze")
+
+    assert normalized_data["provider"] == "Backblaze"
+    assert normalized_data["method"] == "published_list"
+    assert len(normalized_data["ipv4"]) > 0 or len(normalized_data["ipv6"]) > 0
+
+    # Check for known Backblaze ranges
+    assert "45.11.36.0/22" in normalized_data["ipv4"]
 
 
 @pytest.mark.integration

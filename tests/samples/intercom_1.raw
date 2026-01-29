@@ -16,37 +16,27 @@
       "service": "INTERCOM-OUTBOUND"
     },
     {
-      "range": "108.128.110.214/32",
-      "region": "EU",
-      "service": "INTERCOM-GENERAL"
-    },
-    {
       "range": "108.128.253.28/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
     },
     {
-      "range": "108.129.63.114/32",
-      "region": "EU",
-      "service": "INTERCOM-GENERAL"
-    },
-    {
-      "range": "176.34.103.129/32",
-      "region": "EU",
-      "service": "INTERCOM-GENERAL"
-    },
-    {
-      "range": "18.200.141.192/32",
-      "region": "EU",
-      "service": "INTERCOM-GENERAL"
-    },
-    {
-      "range": "18.200.43.125/32",
+      "range": "108.128.29.175/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
     },
     {
       "range": "18.200.58.208/32",
+      "region": "EU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "18.203.133.109/32",
+      "region": "EU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "18.203.23.89/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
     },
@@ -66,17 +56,17 @@
       "service": "INTERCOM-GENERAL"
     },
     {
-      "range": "34.241.225.39/32",
+      "range": "34.240.202.164/32",
+      "region": "EU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "34.240.211.47/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
     },
     {
       "range": "34.242.126.154/32",
-      "region": "EU",
-      "service": "INTERCOM-GENERAL"
-    },
-    {
-      "range": "34.242.163.237/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
     },
@@ -96,12 +86,7 @@
       "service": "INTERCOM-GENERAL"
     },
     {
-      "range": "34.248.166.195/32",
-      "region": "EU",
-      "service": "INTERCOM-GENERAL"
-    },
-    {
-      "range": "34.248.211.68/32",
+      "range": "34.247.125.30/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
     },
@@ -121,11 +106,6 @@
       "service": "INTERCOM-GENERAL"
     },
     {
-      "range": "34.248.65.173/32",
-      "region": "EU",
-      "service": "INTERCOM-GENERAL"
-    },
-    {
       "range": "34.250.125.5/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
@@ -136,7 +116,7 @@
       "service": "INTERCOM-GENERAL"
     },
     {
-      "range": "34.251.147.51/32",
+      "range": "34.252.125.46/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
     },
@@ -161,11 +141,6 @@
       "service": "INTERCOM-GENERAL"
     },
     {
-      "range": "34.255.23.217/32",
-      "region": "EU",
-      "service": "INTERCOM-GENERAL"
-    },
-    {
       "range": "46.137.63.156/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
@@ -176,7 +151,7 @@
       "service": "INTERCOM-GENERAL"
     },
     {
-      "range": "52.16.9.92/32",
+      "range": "52.16.21.23/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
     },
@@ -187,6 +162,21 @@
     },
     {
       "range": "52.17.225.49/32",
+      "region": "EU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "52.18.169.206/32",
+      "region": "EU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "52.19.106.178/32",
+      "region": "EU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "52.19.94.181/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
     },
@@ -216,12 +206,32 @@
       "service": "INTERCOM-GENERAL"
     },
     {
-      "range": "52.214.150.106/32",
+      "range": "52.212.37.191/32",
+      "region": "EU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "52.213.0.95/32",
+      "region": "EU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "52.213.248.135/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
     },
     {
       "range": "52.215.86.223/32",
+      "region": "EU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "52.30.200.220/32",
+      "region": "EU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "52.30.39.152/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
     },
@@ -241,6 +251,11 @@
       "service": "INTERCOM-GENERAL"
     },
     {
+      "range": "52.50.244.106/32",
+      "region": "EU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
       "range": "52.50.249.13/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
@@ -256,12 +271,7 @@
       "service": "INTERCOM-GENERAL"
     },
     {
-      "range": "54.154.83.248/32",
-      "region": "EU",
-      "service": "INTERCOM-GENERAL"
-    },
-    {
-      "range": "54.155.53.96/32",
+      "range": "54.154.9.219/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
     },
@@ -301,6 +311,11 @@
       "service": "INTERCOM-GENERAL"
     },
     {
+      "range": "54.217.3.6/32",
+      "region": "EU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
       "range": "54.220.250.3/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
@@ -331,11 +346,6 @@
       "service": "INTERCOM-GENERAL"
     },
     {
-      "range": "54.73.140.151/32",
-      "region": "EU",
-      "service": "INTERCOM-GENERAL"
-    },
-    {
       "range": "54.73.141.19/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
@@ -346,7 +356,17 @@
       "service": "INTERCOM-GENERAL"
     },
     {
+      "range": "54.73.189.231/32",
+      "region": "EU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
       "range": "54.74.41.96/32",
+      "region": "EU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "54.76.178.92/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
     },
@@ -361,22 +381,27 @@
       "service": "INTERCOM-GENERAL"
     },
     {
+      "range": "54.77.204.44/32",
+      "region": "EU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "54.77.220.27/32",
+      "region": "EU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "54.77.224.225/32",
+      "region": "EU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
       "range": "63.34.15.112/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
     },
     {
-      "range": "63.34.190.132/32",
-      "region": "EU",
-      "service": "INTERCOM-GENERAL"
-    },
-    {
-      "range": "63.34.58.186/32",
-      "region": "EU",
-      "service": "INTERCOM-GENERAL"
-    },
-    {
-      "range": "63.35.145.194/32",
+      "range": "63.34.77.82/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
     },
@@ -386,7 +411,12 @@
       "service": "INTERCOM-GENERAL"
     },
     {
-      "range": "99.81.15.0/32",
+      "range": "79.125.100.178/32",
+      "region": "EU",
+      "service": "INTERCOM-GENERAL"
+    },
+    {
+      "range": "99.80.102.153/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
     },
@@ -396,15 +426,10 @@
       "service": "INTERCOM-GENERAL"
     },
     {
-      "range": "99.81.202.82/32",
-      "region": "EU",
-      "service": "INTERCOM-GENERAL"
-    },
-    {
       "range": "99.81.83.50/32",
       "region": "EU",
       "service": "INTERCOM-GENERAL"
     }
   ],
-  "date": "2026-01-26"
+  "date": "2026-01-29"
 }

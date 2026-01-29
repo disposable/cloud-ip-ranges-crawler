@@ -62,8 +62,8 @@ def download_raw_samples():
                 logging.error(f"Error creating mock {source} data: {e}")
                 continue
 
-        # Skip ASN-based sources (they start with "AS")
-        if urls and urls[0].startswith("AS"):
+        # Skip ASN-based sources (they start with "AS" or "RADB::")
+        if urls and (urls[0].startswith("AS") or urls[0].startswith("RADB::")):
             logging.info(f"Skipping ASN-based source: {source}")
             continue
 

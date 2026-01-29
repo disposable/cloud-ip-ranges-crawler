@@ -4,7 +4,7 @@ Automate the collection of public IP ranges from major cloud providers, bots, an
 
 ## Highlights
 
-- Covers 40+ providers from official documents, BGP lookups, and RDAP expansion
+- Covers 50+ providers from official documents, BGP lookups, and RDAP expansion
 - Consistent metadata (provider id, method, timestamps, HTTP headers)
 - Change detection guards (`--only-if-changed`, `--max-delta-ratio`)
 - Built-in CI/CD hooks through environment statistics output
@@ -27,6 +27,11 @@ See `src/sources/` for the latest definitions; new providers usually only requir
 - **Google Cloud** - Service-tagged ranges
 - **Google Bot / Bing Bot** - Search crawler IPs
 - **Oracle Cloud** - Region-aware IP lists
+- **Exoscale** - JSON feed with zone metadata
+- **Scaleway** - Network documentation HTML scrape
+- **Backblaze** - IP address documentation HTML scrape
+- **Cisco Webex** - Media/meetings network requirements HTML scrape
+- **STACKIT** - API endpoint with JSON/text fallback
 - **Ahrefs**, **Sentry**, **Datadog**, **Branch**, **Perplexity**, **OpenAI**, **Telegram**, **Atlassian**, **Intercom**, **Zendesk**
 - **Linode**, **Vultr**, **Starlink**, **Fastly**, **Akamai**, **Zscaler**
 - **GitHub**, **CircleCI**, **HCP Terraform**, **New Relic Synthetics**, **Grafana Cloud**
@@ -48,10 +53,43 @@ When providers lack published lists, the crawler performs BGP lookups via RIPEst
 | Hetzner / xneelo | `RADB::AS-HETZNER` |
 | OVH | `RADB::AS-OVH` |
 | Rackspace | `RADB::AS-RACKSPACE` |
+| UpCloud | `AS202053`, `AS25697` |
+| gridscale | `AS29423` |
+| Aruba Cloud | `AS200185` |
+| IONOS Cloud | `AS8560` |
+| CYSO Cloud | `AS25151` |
+| Seeweb | `AS12637` |
+| Open Telekom Cloud | `AS6878` |
+| Wasabi | `AS395717` |
+| Kamatera | `AS36007` |
 
 ### Misc providers
 
 Additional ISP-style exports (e.g., Starlink residential ranges) are stored under `misc/` and can be generated via `--misc` flags.
+
+### Recently added providers
+
+The following providers were recently added with enhanced source validation and error handling:
+
+**Direct API sources:**
+- **Exoscale** - Official JSON feed with IPv4/IPv6 prefixes and zone metadata
+- **Scaleway** - HTML scraper for network documentation page with CIDR lists
+- **Backblaze** - HTML scraper for IP address documentation covering B2 and backup services
+- **Cisco Webex** - Multi-page HTML scraper for media and meetings network requirements
+- **STACKIT** - API endpoint parser with JSON/text fallback support
+
+**ASN-based sources:**
+- **UpCloud** - Multi-ASN provider (AS202053, AS25697) with RIPEstat BGP lookups
+- **gridscale** - Single ASN (AS29423) with announced prefix collection
+- **Aruba Cloud** - German cloud provider (AS200185) via BGP announcements
+- **IONOS Cloud** - European provider (AS8560) with comprehensive prefix coverage
+- **CYSO Cloud** - Dutch provider (AS25151) with BGP-derived ranges
+- **Seeweb** - Italian provider (AS12637) via ASN prefix lookup
+- **Open Telekom Cloud** - Deutsche Telekom cloud (AS6878) with scoped ranges
+- **Wasabi** - Storage provider (AS395717) with best-effort IP collection
+- **Kamatera** - Multi-region provider (AS36007) via BGP announcements
+
+All new providers include strict CIDR validation (IPv4: /1-32, IPv6: /1-128), comprehensive error handling, and fallback mechanisms where applicable.
 
 ## Quick start
 

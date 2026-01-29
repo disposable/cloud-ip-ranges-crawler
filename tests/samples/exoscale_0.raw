@@ -1,0 +1,293 @@
+{
+  "creationTime": "2025-11-19T08:14:24.315975+00:00",
+  "prefixes": [
+    {
+      "IPv4Prefix": "89.145.160.0/22",
+      "zone": "de-fra-1"
+    },
+    {
+      "IPv4Prefix": "91.92.116.0/23",
+      "zone": "de-fra-1"
+    },
+    {
+      "IPv4Prefix": "91.92.118.0/23",
+      "zone": "de-fra-1"
+    },
+    {
+      "IPv4Prefix": "91.92.224.0/23",
+      "zone": "de-fra-1"
+    },
+    {
+      "IPv4Prefix": "194.182.168.0/22",
+      "zone": "de-fra-1"
+    },
+    {
+      "IPv4Prefix": "92.39.56.0/22",
+      "zone": "de-fra-1"
+    },
+    {
+      "IPv4Prefix": "85.217.160.0/22",
+      "zone": "ch-gva-2"
+    },
+    {
+      "IPv4Prefix": "89.145.166.0/23",
+      "zone": "ch-gva-2"
+    },
+    {
+      "IPv4Prefix": "91.92.152.0/23",
+      "zone": "ch-gva-2"
+    },
+    {
+      "IPv4Prefix": "91.92.200.0/23",
+      "zone": "ch-gva-2"
+    },
+    {
+      "IPv4Prefix": "159.100.240.0/22",
+      "zone": "ch-gva-2"
+    },
+    {
+      "IPv4Prefix": "159.100.244.0/24",
+      "zone": "ch-gva-2"
+    },
+    {
+      "IPv4Prefix": "185.19.28.0/22",
+      "zone": "ch-gva-2"
+    },
+    {
+      "IPv4Prefix": "194.182.160.0/22",
+      "zone": "ch-gva-2"
+    },
+    {
+      "IPv4Prefix": "92.39.60.0/22",
+      "zone": "ch-gva-2"
+    },
+    {
+      "IPv4Prefix": "151.145.196.0/22",
+      "zone": "ch-gva-2"
+    },
+    {
+      "IPv4Prefix": "194.182.180.0/22",
+      "zone": "de-muc-1"
+    },
+    {
+      "IPv4Prefix": "138.124.216.0/23",
+      "zone": "de-muc-1"
+    },
+    {
+      "IPv4Prefix": "85.217.186.0/23",
+      "zone": "bg-sof-1"
+    },
+    {
+      "IPv4Prefix": "194.182.176.0/22",
+      "zone": "bg-sof-1"
+    },
+    {
+      "IPv4Prefix": "85.217.172.0/23",
+      "zone": "at-vie-1"
+    },
+    {
+      "IPv4Prefix": "85.217.174.0/23",
+      "zone": "at-vie-1"
+    },
+    {
+      "IPv4Prefix": "85.217.184.0/23",
+      "zone": "at-vie-1"
+    },
+    {
+      "IPv4Prefix": "185.150.8.0/22",
+      "zone": "at-vie-1"
+    },
+    {
+      "IPv4Prefix": "194.182.172.0/22",
+      "zone": "at-vie-1"
+    },
+    {
+      "IPv4Prefix": "194.182.184.0/22",
+      "zone": "at-vie-1"
+    },
+    {
+      "IPv4Prefix": "138.124.220.0/22",
+      "zone": "at-vie-1"
+    },
+    {
+      "IPv4Prefix": "138.124.208.0/22",
+      "zone": "at-vie-2"
+    },
+    {
+      "IPv4Prefix": "138.124.212.0/22",
+      "zone": "at-vie-2"
+    },
+    {
+      "IPv4Prefix": "89.145.164.0/23",
+      "zone": "ch-dk-2"
+    },
+    {
+      "IPv4Prefix": "91.92.202.0/23",
+      "zone": "ch-dk-2"
+    },
+    {
+      "IPv4Prefix": "91.92.154.0/23",
+      "zone": "ch-dk-2"
+    },
+    {
+      "IPv4Prefix": "159.100.245.0/24",
+      "zone": "ch-dk-2"
+    },
+    {
+      "IPv4Prefix": "159.100.246.0/23",
+      "zone": "ch-dk-2"
+    },
+    {
+      "IPv4Prefix": "159.100.248.0/21",
+      "zone": "ch-dk-2"
+    },
+    {
+      "IPv4Prefix": "194.182.164.0/22",
+      "zone": "ch-dk-2"
+    },
+    {
+      "IPv4Prefix": "194.182.188.0/22",
+      "zone": "ch-dk-2"
+    },
+    {
+      "IPv4Prefix": "91.92.140.0/23",
+      "zone": "ch-dk-2"
+    },
+    {
+      "IPv4Prefix": "91.92.142.0/23",
+      "zone": "ch-dk-2"
+    },
+    {
+      "IPv4Prefix": "151.145.200.0/22",
+      "zone": "ch-dk-2"
+    },
+    {
+      "IPv4Prefix": "151.145.192.0/22",
+      "zone": "hr-zag-1"
+    },
+    {
+      "IPv6Prefix": "2a04:c41::/32",
+      "zone": "de-fra-1"
+    },
+    {
+      "IPv6Prefix": "2a04:c46::/32",
+      "zone": "de-fra-1"
+    },
+    {
+      "IPv6Prefix": "2a07:6cc0:30::/48",
+      "zone": "de-fra-1"
+    },
+    {
+      "IPv6Prefix": "2a07:6cc0:31::/48",
+      "zone": "de-fra-1"
+    },
+    {
+      "IPv6Prefix": "2a04:c41::/32",
+      "zone": "ch-gva-2"
+    },
+    {
+      "IPv6Prefix": "2a04:c43::/32",
+      "zone": "ch-gva-2"
+    },
+    {
+      "IPv6Prefix": "2a07:6cc0:10::/48",
+      "zone": "ch-gva-2"
+    },
+    {
+      "IPv6Prefix": "2a07:6cc0:11::/48",
+      "zone": "ch-gva-2"
+    },
+    {
+      "IPv6Prefix": "2a07:6cc0:12::/48",
+      "zone": "ch-gva-2"
+    },
+    {
+      "IPv6Prefix": "2a04:c41::/32",
+      "zone": "de-muc-1"
+    },
+    {
+      "IPv6Prefix": "2a04:c42::/32",
+      "zone": "de-muc-1"
+    },
+    {
+      "IPv6Prefix": "2a07:6cc0:50::/48",
+      "zone": "de-muc-1"
+    },
+    {
+      "IPv6Prefix": "2a04:c41::/32",
+      "zone": "bg-sof-1"
+    },
+    {
+      "IPv6Prefix": "2a04:c47::/32",
+      "zone": "bg-sof-1"
+    },
+    {
+      "IPv6Prefix": "2a07:6cc0:60::/48",
+      "zone": "bg-sof-1"
+    },
+    {
+      "IPv6Prefix": "2a04:c41::/32",
+      "zone": "at-vie-1"
+    },
+    {
+      "IPv6Prefix": "2a04:c45::/32",
+      "zone": "at-vie-1"
+    },
+    {
+      "IPv6Prefix": "2a07:6cc0:40::/48",
+      "zone": "at-vie-1"
+    },
+    {
+      "IPv6Prefix": "2a07:6cc0:41::/48",
+      "zone": "at-vie-1"
+    },
+    {
+      "IPv6Prefix": "2a04:c41::/32",
+      "zone": "at-vie-2"
+    },
+    {
+      "IPv6Prefix": "2a07:6cc2::/32",
+      "zone": "at-vie-2"
+    },
+    {
+      "IPv6Prefix": "2a07:6cc0:70::/48",
+      "zone": "at-vie-2"
+    },
+    {
+      "IPv6Prefix": "2a07:6cc0:71::/48",
+      "zone": "at-vie-2"
+    },
+    {
+      "IPv6Prefix": "2a04:c41::/32",
+      "zone": "ch-dk-2"
+    },
+    {
+      "IPv6Prefix": "2a04:c44::/32",
+      "zone": "ch-dk-2"
+    },
+    {
+      "IPv6Prefix": "2a07:6cc0:20::/48",
+      "zone": "ch-dk-2"
+    },
+    {
+      "IPv6Prefix": "2a07:6cc0:21::/48",
+      "zone": "ch-dk-2"
+    },
+    {
+      "IPv6Prefix": "2a04:c41::/32",
+      "zone": "hr-zag-1"
+    },
+    {
+      "IPv6Prefix": "2a07:6cc3::/32",
+      "zone": "hr-zag-1"
+    },
+    {
+      "IPv6Prefix": "2a07:6cc0:80::/48",
+      "zone": "hr-zag-1"
+    },
+    {
+      "IPv6Prefix": "2a07:6cc0:81::/48",
+      "zone": "hr-zag-1"
+    }
+  ]
+}
