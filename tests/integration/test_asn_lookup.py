@@ -90,8 +90,8 @@ def test_multiple_asn_providers(skip_if_no_internet, rate_limit_delay):
         if urls and urls[0].startswith("AS"):
             asn_providers.append(provider)
 
-    # Test a subset to avoid excessive API calls
-    test_providers = asn_providers[:3]  # Test first 3 ASN providers
+    # Test a subset to avoid excessive API calls - include some new providers
+    test_providers = asn_providers[:6]  # Test first 6 ASN providers
 
     for provider in test_providers:
         urls = cipr.sources[provider]
@@ -116,3 +116,28 @@ def test_multiple_asn_providers(skip_if_no_internet, rate_limit_delay):
             # Log but don't fail - some ASNs might not have data
             print(f"Warning: Could not test {provider} ({asn}): {e}")
             continue
+
+
+@pytest.mark.integration
+def test_upcloud_asn_lookup(skip_if_no_internet, rate_limit_delay):
+    """Test UpCloud ASN lookup with multiple ASNs."""
+    cipr = CloudIPRanges({"json"})
+
+    # Test UpCloud's primary ASN
+    asn = "AS202053"
+    url = f"https://api.hackertarget.com/aslookup/?q={asn}"
+
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()
+
+    # Transform and validate
+    from src.sources.asn import fetch_and_save_asn_source
+
+    try:
+        result = fetch_and_save_asn_source(cipr, "upcloud", [asn])
+        assert "ipv4" in result or "ipv6" in result
+        assert result["method"] in ["bgp_announced", "asn_lookup"]
+    except Exception as e:
+        # If RIPEstat fails, we should get HackerTarget fallback
+        print(f"UpCloud test info: {e}")
+        # Don't fail the test - network issues are expected

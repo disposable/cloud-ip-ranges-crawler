@@ -4,7 +4,7 @@ Automate the collection of public IP ranges from major cloud providers, bots, an
 
 ## Highlights
 
-- Covers 40+ providers from official documents, BGP lookups, and RDAP expansion
+- Covers 50+ providers from official documents, BGP lookups, and RDAP expansion
 - Consistent metadata (provider id, method, timestamps, HTTP headers)
 - Change detection guards (`--only-if-changed`, `--max-delta-ratio`)
 - Built-in CI/CD hooks through environment statistics output
@@ -27,6 +27,11 @@ See `src/sources/` for the latest definitions; new providers usually only requir
 - **Google Cloud** - Service-tagged ranges
 - **Google Bot / Bing Bot** - Search crawler IPs
 - **Oracle Cloud** - Region-aware IP lists
+- **Exoscale** - JSON feed with zone metadata
+- **Scaleway** - Network documentation HTML scrape
+- **Backblaze** - IP address documentation HTML scrape
+- **Cisco Webex** - Media/meetings network requirements HTML scrape
+- **STACKIT** - API endpoint with JSON/text fallback
 - **Ahrefs**, **Sentry**, **Datadog**, **Branch**, **Perplexity**, **OpenAI**, **Telegram**, **Atlassian**, **Intercom**, **Zendesk**
 - **Linode**, **Vultr**, **Starlink**, **Fastly**, **Akamai**, **Zscaler**
 - **GitHub**, **CircleCI**, **HCP Terraform**, **New Relic Synthetics**, **Grafana Cloud**
@@ -48,6 +53,15 @@ When providers lack published lists, the crawler performs BGP lookups via RIPEst
 | Hetzner / xneelo | `RADB::AS-HETZNER` |
 | OVH | `RADB::AS-OVH` |
 | Rackspace | `RADB::AS-RACKSPACE` |
+| UpCloud | `AS202053`, `AS25697` |
+| gridscale | `AS29423` |
+| Aruba Cloud | `AS200185` |
+| IONOS Cloud | `AS8560` |
+| CYSO Cloud | `AS25151` |
+| Seeweb | `AS12637` |
+| Open Telekom Cloud | `AS6878` |
+| Wasabi | `AS395717` |
+| Kamatera | `AS36007` |
 
 ### Misc providers
 

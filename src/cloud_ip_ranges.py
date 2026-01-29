@@ -75,6 +75,13 @@ class CloudIPRanges:
         ],
         "fastly": ["https://api.fastly.com/public-ip-list"],
         "microsoft_azure": ["https://azservicetags.azurewebsites.net/"],
+        "exoscale": ["https://exoscale-prefixes.sos-ch-dk-2.exo.io/exoscale_prefixes.json"],
+        "scaleway": ["https://www.scaleway.com/en/docs/account/reference-content/scaleway-network-information/"],
+        "backblaze": ["https://www.backblaze.com/computer-backup/docs/backblaze-ip-addresses"],
+        "cisco_webex": [
+            "https://help.webex.com/article/WBX000028782/Network-Requirements-for-Webex-Teams-Services",
+            "https://help.webex.com/en-us/article/WBX264/How-Do-I-Allow-Webex-Meetings-Traffic-on-My-Network",
+        ],
         "softlayer_ibm": ["RADB::AS-SOFTLAYER"],
         "heroku_aws": ["AS14618"],
         "flyio": ["AS40509"],
@@ -93,6 +100,15 @@ class CloudIPRanges:
         "onlinesas": ["RADB::AS-ONLINESAS"],
         "rackspace": ["RADB::AS-RACKSPACE"],
         "nforce": ["RADB::AS-NFORCE"],
+        "upcloud": ["AS202053", "AS25697"],
+        "gridscale": ["AS29423"],
+        "aruba_cloud": ["AS200185"],
+        "ionos_cloud": ["AS8560"],
+        "cyso_cloud": ["AS25151"],
+        "seeweb": ["AS12637"],
+        "open_telekom_cloud": ["AS6878"],
+        "wasabi": ["AS395717"],
+        "kamatera": ["AS36007"],
     }
 
     # Providers categorized as misc (user ISP traffic, not harmful crawlers)
@@ -231,6 +247,12 @@ class CloudIPRanges:
         return cidrs
 
     def _normalize_transformed_data(self, transformed_data: Dict[str, Any], source_key: str) -> Dict[str, Any]:
+        # Preserve important metadata fields
+        preserved_fields = {}
+        for field in ["method", "coverage_notes", "source_updated_at", "source"]:
+            if field in transformed_data:
+                preserved_fields[field] = transformed_data[field]
+
         ipv4 = set()
         ipv6 = set()
         details_ipv4 = []
@@ -276,6 +298,9 @@ class CloudIPRanges:
             transformed_data["details_ipv4"] = details_ipv4
         if details_ipv6:
             transformed_data["details_ipv6"] = details_ipv6
+
+        # Restore preserved fields
+        transformed_data.update(preserved_fields)
 
         return transformed_data
 

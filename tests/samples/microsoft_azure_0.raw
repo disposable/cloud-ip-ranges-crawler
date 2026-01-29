@@ -45,25 +45,25 @@
             <td><code>Public</code></td>
             <td>385</td>
             <td><a href="https://download.microsoft.com/download/7/1/d/71d86715-5596-4529-9b13-da13a5de5b63/ServiceTags_Public_20260119.json" target="_blank">ServiceTags_Public_20260119.json</a></td>
-            <td title="Sun, 25 Jan 2026 21:15:28 GMT">25 Jan 2026</td>
+            <td title="Thu, 29 Jan 2026 21:19:21 GMT">29 Jan 2026</td>
         </tr>
         <tr>
             <td><code>China</code></td>
             <td>381</td>
             <td><a href="https://download.microsoft.com/download/9/d/0/9d03b7e2-4b80-4bf3-9b91-da8c7d3ee9f9/ServiceTags_China_20260119.json" target="_blank">ServiceTags_China_20260119.json</a></td>
-            <td title="Sun, 25 Jan 2026 21:15:39 GMT">25 Jan 2026</td>
+            <td title="Thu, 29 Jan 2026 21:19:35 GMT">29 Jan 2026</td>
         </tr>
         <tr>
             <td><code>AzureGovernment</code></td>
             <td>382</td>
             <td><a href="https://download.microsoft.com/download/6/4/d/64db03bf-895b-4173-a8b1-ba4ad5d4df22/ServiceTags_AzureGovernment_20260119.json" target="_blank">ServiceTags_AzureGovernment_20260119.json</a></td>
-            <td title="Sun, 25 Jan 2026 21:15:50 GMT">25 Jan 2026</td>
+            <td title="Thu, 29 Jan 2026 21:19:45 GMT">29 Jan 2026</td>
         </tr>
         <tr>
             <td><code>AzureGermany</code></td>
             <td>193</td>
             <td><a href="https://download.microsoft.com/download/0/7/6/076274ab-4b0b-4246-a422-4baf1e03f974/ServiceTags_AzureGermany_20220307.json" target="_blank">ServiceTags_AzureGermany_20220307.json</a></td>
-            <td title="Sun, 25 Jan 2026 21:16:04 GMT">25 Jan 2026</td>
+            <td title="Thu, 29 Jan 2026 21:19:54 GMT">29 Jan 2026</td>
         </tr>
     </tbody>
 </table>
