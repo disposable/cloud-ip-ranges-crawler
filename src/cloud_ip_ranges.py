@@ -133,11 +133,18 @@ class CloudIPRanges:
         self.output_formats = output_formats
         self.merge_all_providers = merge_all_providers
         self._reset_merge_tracking()
+        self._sources_with_changes: Set[str] = set()
 
     def _reset_merge_tracking(self) -> None:
         self._merged_ipv4: Set[str] = set()
         self._merged_ipv6: Set[str] = set()
         self._merged_providers: List[Dict[str, Any]] = []
+
+    def _comparable_payload(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        comparable = data.copy()
+        for key in ("last_update", "generated_at", "source_http"):
+            comparable.pop(key, None)
+        return comparable
 
     def _track_merged_outputs(self, transformed_data: Dict[str, Any]) -> None:
         if not self.merge_all_providers:
@@ -337,6 +344,7 @@ class CloudIPRanges:
         json_filename = "{}.json".format(source_key.replace("_", "-"))
         json_path = self.base_url / json_filename
         existing_data_raw: Optional[Dict[str, Any]] = None
+        data_changed = True
 
         if json_path.exists():
             with open(json_path, "r") as f:
@@ -347,23 +355,19 @@ class CloudIPRanges:
                 self._enforce_max_delta(existing_data_raw, transformed_data, max_ratio=self.max_delta_ratio, source_key=source_key)
                 logging.debug("Delta summary for %s: %s", source_key, json.dumps(self._diff_summary(existing_data_raw, transformed_data)))
 
-            if self.only_if_changed:
-                existing_data = existing_data_raw.copy()
-                existing_data.pop("last_update", None)
-                existing_data.pop("generated_at", None)
-                existing_data.pop("source_http", None)
-                new_data = transformed_data.copy()
-                new_data.pop("last_update", None)
-                new_data.pop("generated_at", None)
-                new_data.pop("source_http", None)
+            comparable_existing = self._comparable_payload(existing_data_raw)
+            comparable_new = self._comparable_payload(transformed_data)
+            data_changed = comparable_existing != comparable_new
 
-                if existing_data == new_data:
-                    logging.debug("No changes found for %s, skipping other formats", source_key)
-                    # Still return statistics even when no changes
-                    self._track_merged_outputs(transformed_data)
-                    return len(transformed_data["ipv4"]), len(transformed_data["ipv6"])
+            if self.only_if_changed and not data_changed:
+                logging.debug("No changes found for %s, skipping other formats", source_key)
+                # Still return statistics even when no changes
+                self._track_merged_outputs(transformed_data)
+                return len(transformed_data["ipv4"]), len(transformed_data["ipv6"])
 
         counts = self._save_result(transformed_data, source_key)
+        if data_changed:
+            self._sources_with_changes.add(source_key)
         self._track_merged_outputs(transformed_data)
         return counts
 
@@ -521,6 +525,7 @@ class CloudIPRanges:
     def fetch_all(self, sources: Optional[Set[str]] = None) -> bool:
         error = False
         self.statistics = {}
+        self._sources_with_changes = set()
         if self.merge_all_providers:
             self._reset_merge_tracking()
         try:
@@ -548,20 +553,18 @@ class CloudIPRanges:
     def add_env_statistics(self) -> None:
         total_ipv4 = 0
         total_ipv6 = 0
-        sources_updated = []
 
         # Calculate totals
-        for source, stats in self.statistics.items():
+        for stats in self.statistics.values():
             total_ipv4 += stats["ipv4"]
             total_ipv6 += stats["ipv6"]
-            sources_updated.append(source)
 
         if github_output := os.getenv("GITHUB_OUTPUT"):
             with open(github_output, "a") as f:
                 f.write(f"total_ipv4={total_ipv4}\n")
                 f.write(f"total_ipv6={total_ipv6}\n")
-                f.write(f"sources_updated={','.join(sources_updated)}\n")
-                f.write(f"sources_count={len(sources_updated)}\n")
+                f.write(f"sources_updated={','.join(sorted(self._sources_with_changes))}\n")
+                f.write(f"sources_count={len(self._sources_with_changes)}\n")
 
 
 def main() -> None:

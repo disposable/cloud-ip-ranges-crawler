@@ -106,6 +106,7 @@ def test_save_result_writes_details_files(tmp_path: Path) -> None:
 def test_add_env_statistics_writes_github_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     crawler = CloudIPRanges({"json"})
     crawler.statistics = {"a": {"ipv4": 1, "ipv6": 2}, "b": {"ipv4": 3, "ipv6": 4}}
+    crawler._sources_with_changes = {"b"}
 
     out = tmp_path / "gh_out.txt"
     monkeypatch.setenv("GITHUB_OUTPUT", str(out))
@@ -114,7 +115,8 @@ def test_add_env_statistics_writes_github_output(tmp_path: Path, monkeypatch: py
     txt = out.read_text(encoding="utf-8")
     assert "total_ipv4=4" in txt
     assert "total_ipv6=6" in txt
-    assert "sources_count=2" in txt
+    assert "sources_updated=b" in txt
+    assert "sources_count=1" in txt
 
 
 def test_fetch_and_save_seed_cidr_source_vercel(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
