@@ -92,8 +92,7 @@ def test_sample_files_are_valid(cipr: CloudIPRanges) -> None:
         # Skip microsoft_azure as it requires network calls to download JSON
         # Skip vercel as it requires network calls for RDAP/WHOIS lookups
         # Skip akamai as it's a zip file and FakeResponse doesn't handle binary content properly
-        # Skip whatsapp as it requires network calls to download zip
-        if base_key.startswith("microsoft") or base_key.startswith("vercel") or base_key.startswith("akamai") or base_key.startswith("whatsapp"):
+        if base_key.startswith("microsoft") or base_key.startswith("vercel") or base_key.startswith("akamai"):
             continue
 
         # Map filename prefixes to actual source keys

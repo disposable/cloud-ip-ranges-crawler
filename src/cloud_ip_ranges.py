@@ -68,7 +68,6 @@ class CloudIPRanges:
         "sentry": ["https://sentry.io/api/0/uptime-ips/"],
         "branch": ["https://help.branch.io/docs/postback-webhook-ip-address-allowlist-expands"],
         "vercel": ["76.76.21.0/24", "198.169.1.0/24", "155.121.0.0/16"],
-        # "whatsapp": ["https://developers.facebook.com/docs/whatsapp/guides/network-requirements/"],  # Temporarily disabled due to page structure changes
         "zscaler": [
             "https://config.zscaler.com/api/zscaler.net/hubs/cidr/json/required",
             "https://config.zscaler.com/api/zscaler.net/hubs/cidr/json/recommended",

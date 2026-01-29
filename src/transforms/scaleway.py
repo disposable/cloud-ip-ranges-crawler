@@ -1,4 +1,5 @@
 import re
+import ipaddress
 from typing import Any, Dict, List
 
 
@@ -9,30 +10,38 @@ def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]
     try:
         html_content = response[0].text
 
-        # Look for CIDR patterns in the HTML content
-        # Scaleway lists IP ranges in bullet points, typically format: x.x.x.x/y or xxxx:xxxx::/y
-        cidr_pattern = r"([0-9]{1,3}(?:\.[0-9]{1,3}){3}/[0-9]{1,2}|[0-9a-fA-F:]+/[0-9]{1,2})"
+        # Extract all text content that might contain IP addresses
+        # Look for patterns that could be IP networks (numbers, colons, slashes)
+        potential_patterns = re.findall(r"[0-9a-fA-F:.]+/[0-9]{1,3}", html_content)
 
-        # Find all CIDR blocks
-        cidrs = re.findall(cidr_pattern, html_content)
+        # Also extract from <code> tags for more precise matches (Scaleway uses these)
+        code_contents = re.findall(r"<code>(.*?)</code>", html_content)
+        potential_patterns.extend(code_contents)
 
-        for cidr in cidrs:
-            cidr = cidr.strip()
-            if not cidr:
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_patterns = []
+        for pattern in potential_patterns:
+            if pattern not in seen:
+                seen.add(pattern)
+                unique_patterns.append(pattern)
+
+        for content in unique_patterns:
+            content = content.strip()
+            if not content:
                 continue
 
-            # Validate and categorize as IPv4 or IPv6
-            if ":" in cidr:
-                # Basic IPv6 validation - prefix length must be 1-128
-                if re.match(r"^[0-9a-fA-F:]+/([1-9]|[1-9][0-9]|1[0-1][0-9]|12[0-8])$", cidr):
-                    result["ipv6"].append(cidr)
-            else:
-                # Basic IPv4 validation - prefix length must be 1-32
-                if re.match(r"^[0-9]{1,3}(?:\.[0-9]{1,3}){3}/([1-9]|[1-2][0-9]|3[0-2])$", cidr):
-                    # Additional validation for octet ranges
-                    octets = cidr.split("/")[0].split(".")
-                    if all(0 <= int(octet) <= 255 for octet in octets):
-                        result["ipv4"].append(cidr)
+            # Use ipaddress module to validate and categorize
+            try:
+                network = ipaddress.ip_network(content, strict=False)
+
+                if isinstance(network, ipaddress.IPv4Network):
+                    result["ipv4"].append(str(network))
+                elif isinstance(network, ipaddress.IPv6Network):
+                    result["ipv6"].append(str(network))
+            except ValueError:
+                # Not a valid IP network, skip it
+                continue
 
     except Exception as e:
         raise ValueError(f"Failed to parse Scaleway HTML response: {e}")

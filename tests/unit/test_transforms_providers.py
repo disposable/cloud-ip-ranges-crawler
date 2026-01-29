@@ -186,26 +186,6 @@ def test_microsoft_azure_transform_with_mocked_downloads(cipr, monkeypatch: pyte
     assert res.get("details_ipv4") is not None
 
 
-def test_whatsapp_transform_with_mocked_zip(cipr, monkeypatch: pytest.MonkeyPatch) -> None:
-    html_page = FakeResponse(text='<a href="https://example.fbcdn.net/sample.zip">zip</a>')
-
-    def build_zip_bytes() -> bytes:
-        bio = BytesIO()
-        with ZipFile(bio, "w") as zf:
-            zf.writestr("whatsapp.txt", "31.13.0.0/16\n2606:4700::/32\n")
-        return bio.getvalue()
-
-    def fake_get(url: str, timeout: int = 10):
-        if url.endswith("sample.zip"):
-            return FakeResponse(content=build_zip_bytes())
-        return html_page
-
-    monkeypatch.setattr(cipr.session, "get", fake_get)
-    res = _transform_response(cipr, [html_page], "whatsapp", is_asn=False)
-    assert res["provider"] == "Whatsapp"
-    assert any("." in ip for ip in res["ipv4"])  # entries parsed from zip
-
-
 def test_zendesk_transform_parses_ingress_and_egress(cipr) -> None:
     r = FakeResponse(
         json_data={
