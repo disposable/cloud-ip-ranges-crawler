@@ -102,7 +102,8 @@ class IPMerger:
     def _sorted_original_items(
         ip_providers: MutableMapping[IPvXNetwork, Set[str]],
         version: Literal[4],
-    ) -> Sequence[Tuple[ipaddress.IPv4Network, Set[str]]]: ...
+    ) -> Sequence[Tuple[ipaddress.IPv4Network, Set[str]]]:
+        pass
 
     @staticmethod
     @overload
