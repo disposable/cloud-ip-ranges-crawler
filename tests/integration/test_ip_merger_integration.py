@@ -227,8 +227,9 @@ def test_ipmerger_performance_with_large_dataset(tmp_path: Path) -> None:
         provider_data = {
             "provider_id": f"provider_{i}",
             "provider": f"Provider {i}",
-            "ipv4": [f"10.{i // 256}.{i % 256}.0/24"],
-            "ipv6": [f"2001:db8:{i:04x}::/64"],
+            # Use even-numbered blocks only so collapse_addresses will not merge distinct entries.
+            "ipv4": [f"10.{(i * 2) // 256}.{(i * 2) % 256}.0/24"],
+            "ipv6": [f"2001:db8:{(i * 2):04x}::/64"],
         }
         large_dataset.append(provider_data)
 
@@ -249,6 +250,7 @@ def test_ipmerger_performance_with_large_dataset(tmp_path: Path) -> None:
     # Should complete in reasonable time (less than 1 second for this dataset)
     assert processing_time < 1.0
     assert merger.provider_count == 100
+    # Canonicalization keeps each /24 and /64 unique
     assert len(merged_output["ipv4"]) == 100
     assert len(merged_output["ipv6"]) == 100
     assert len(merged_output["ip_providers"]) == 200  # 100 IPv4 + 100 IPv6
@@ -415,8 +417,8 @@ def test_ipmerger_concurrent_provider_addition(tmp_path: Path) -> None:
         provider_data = {
             "provider_id": f"concurrent_{i}",
             "provider": f"Concurrent Provider {i}",
-            "ipv4": [f"172.16.{i}.0/24"],
-            "ipv6": [f"fd00:{i:04x}::/64"],
+            "ipv4": [f"172.16.{i * 2}.0/24"],
+            "ipv6": [f"fd00:{(i * 2):04x}::/64"],
         }
         providers.append(provider_data)
 

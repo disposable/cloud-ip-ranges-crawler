@@ -200,7 +200,7 @@ def test_fetch_and_save_asn_source_merges_multiple_asns(tmp_path: Path, monkeypa
 
 
 def test_fetch_and_save_radb_as_set_expands_to_asns(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from sources.asn import radb_whois_query
+    from src.sources.asn import radb_whois_query
 
     crawler = CloudIPRanges({"json"})
     crawler.base_url = tmp_path
@@ -232,7 +232,7 @@ def test_fetch_and_save_radb_as_set_expands_to_asns(tmp_path: Path, monkeypatch:
             )
         raise AssertionError(f"Unexpected URL: {url}")
 
-    monkeypatch.setattr("sources.asn.radb_whois_query", fake_radb_whois_query)
+    monkeypatch.setattr("src.sources.asn.radb_whois_query", fake_radb_whois_query)
     monkeypatch.setattr(crawler.session, "get", fake_get)
     res = crawler._fetch_and_save("fb")
     assert res is not None

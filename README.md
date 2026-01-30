@@ -72,6 +72,8 @@ When providers lack published lists, the crawler performs BGP lookups via RIPEst
 | Wasabi | `AS395717` |
 | Kamatera | `AS36007` |
 
+RIPEstat calls are throttled (default 100ms between requests) and cached per ASN within a run to avoid hammering the API or re-fetching the same prefixes. You can override the defaults with the `RIPESTAT_MIN_INTERVAL` (seconds) and `RIPESTAT_CACHE_SIZE` environment variables when running the crawler.
+
 ### Misc providers
 
 Additional ISP-style exports (e.g., Starlink residential ranges) are stored under `misc/` and can be generated via `--misc` flags.

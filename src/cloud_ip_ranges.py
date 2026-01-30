@@ -6,20 +6,23 @@ import logging
 import os
 import re
 import sys
+import time
 import xml.etree.ElementTree as std_ET  # nosec: B405
 from datetime import datetime
+from operator import attrgetter
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import requests
+from cachetools import LRUCache, cachedmethod
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from sources.asn import fetch_and_save_asn_source
-from sources.http import fetch_and_save_http_source
-from sources.seed_cidr import fetch_and_save_seed_cidr_source
-from transforms.common import validate_ip
-from ip_merger import IPMerger
+from .sources.asn import fetch_and_save_asn_source
+from .sources.http import fetch_and_save_http_source
+from .sources.seed_cidr import fetch_and_save_seed_cidr_source
+from .transforms.common import validate_ip
+from .ip_merger import IPMerger
 
 
 class CloudIPRanges:
@@ -150,6 +153,34 @@ class CloudIPRanges:
         self.merge_all_providers = merge_all_providers
         self.ip_merger = IPMerger()
         self._sources_with_changes: Set[str] = set()
+        cache_size = int(os.getenv("RIPESTAT_CACHE_SIZE", "1024"))
+        self._ripestat_cache: LRUCache[str, Tuple[str, requests.Response]] = LRUCache(maxsize=max(cache_size, 1))
+        self._ripestat_last_request = 0.0
+        # Allow overriding via env (seconds between RIPEstat calls)
+        self._ripestat_min_interval = float(os.getenv("RIPESTAT_MIN_INTERVAL", "0.1"))
+
+    def ripestat_fetch(self, asn: str) -> Tuple[str, requests.Response]:
+        """Fetch RIPEstat announced prefixes for an ASN with caching/rate limiting."""
+        cache_key = asn.strip().upper()
+        if not cache_key.startswith("AS"):
+            raise ValueError(f"Invalid ASN: {asn}")
+
+        return self._ripestat_fetch_uncached(cache_key)
+
+    @cachedmethod(cache=attrgetter("_ripestat_cache"))
+    def _ripestat_fetch_uncached(self, cache_key: str) -> Tuple[str, requests.Response]:
+        now = time.monotonic()
+        elapsed = now - self._ripestat_last_request
+        if elapsed < self._ripestat_min_interval:
+            sleep_time = self._ripestat_min_interval - elapsed
+            logging.debug("Sleeping %.2fs before RIPEstat request", sleep_time)
+            time.sleep(sleep_time)
+
+        ripestat_url = f"https://stat.ripe.net/data/announced-prefixes/data.json?resource={cache_key}"
+        response = self.session.get(ripestat_url, timeout=10)
+        response.raise_for_status()
+        self._ripestat_last_request = time.monotonic()
+        return ripestat_url, response
 
     def _comparable_payload(self, data: Dict[str, Any]) -> Dict[str, Any]:
         comparable = data.copy()

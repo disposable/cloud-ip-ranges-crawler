@@ -1,4 +1,4 @@
-"""Unit tests for src.sources.asn helper functions."""
+"""Unit tests for src.sources.asn helper functions (RADB + ASN helpers)."""
 
 from __future__ import annotations
 

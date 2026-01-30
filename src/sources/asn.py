@@ -6,7 +6,7 @@ import socket
 from functools import lru_cache
 from typing import Any, Dict, List, Set
 
-from transforms.common import validate_ip
+from ..transforms.common import validate_ip
 
 # RADB whois configuration
 _RADB_HOST = "whois.radb.net"
@@ -191,10 +191,8 @@ def fetch_and_save_asn_source(cipr: Any, source_key: str, url: List[str]) -> Dic
 
     used_hackertarget = False
     for asn in asns:
-        ripestat_url = f"https://stat.ripe.net/data/announced-prefixes/data.json?resource={asn}"
         try:
-            r = cipr.session.get(ripestat_url, timeout=10)
-            r.raise_for_status()
+            ripestat_url, r = cipr.ripestat_fetch(asn)
             source_http.append({
                 "url": ripestat_url,
                 "status": r.status_code,
