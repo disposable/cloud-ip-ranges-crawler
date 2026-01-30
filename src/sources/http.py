@@ -3,7 +3,7 @@
 import logging
 from typing import Any, Dict, List
 
-from ..transforms.registry import get_transform
+from transforms.registry import get_transform
 
 
 def fetch_and_save_http_source(cipr: Any, source_key: str, url: List[str]) -> Dict[str, Any]:

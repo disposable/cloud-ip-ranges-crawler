@@ -232,7 +232,7 @@ def test_fetch_and_save_radb_as_set_expands_to_asns(tmp_path: Path, monkeypatch:
             )
         raise AssertionError(f"Unexpected URL: {url}")
 
-    monkeypatch.setattr("src.sources.asn.radb_whois_query", fake_radb_whois_query)
+    monkeypatch.setattr("sources.asn.radb_whois_query", fake_radb_whois_query)
     monkeypatch.setattr(crawler.session, "get", fake_get)
     res = crawler._fetch_and_save("fb")
     assert res is not None

@@ -18,11 +18,11 @@ from cachetools import LRUCache, cachedmethod
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from .sources.asn import fetch_and_save_asn_source
-from .sources.http import fetch_and_save_http_source
-from .sources.seed_cidr import fetch_and_save_seed_cidr_source
-from .transforms.common import validate_ip
-from .ip_merger import IPMerger
+from sources.asn import fetch_and_save_asn_source
+from sources.http import fetch_and_save_http_source
+from sources.seed_cidr import fetch_and_save_seed_cidr_source
+from transforms.common import validate_ip
+from ip_merger import IPMerger
 
 
 class CloudIPRanges:

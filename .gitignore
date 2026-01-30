@@ -182,3 +182,4 @@ cython_debug/
 
 # test json files
 /*.json
+/.windsurf
