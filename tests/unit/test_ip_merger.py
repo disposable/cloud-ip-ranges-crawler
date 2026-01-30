@@ -39,16 +39,15 @@ def test_ip_merger_merge_networks() -> None:
     ]
     merged = merger.merge_networks(overlapping_ipv4)
 
-    # With neighboring network merging, 192.168.1.0/24 and 192.168.2.0/24 merge into 192.168.0.0/22
-    merged_str = [str(net) for net in merged]
-    assert "192.168.0.0/22" in merged_str  # The merged network from neighboring networks
-    assert len(merged) == 1  # All networks merged into one
+    # Exact union should keep only real coverage
+    merged_str = sorted(str(net) for net in merged)
+    assert merged_str == ["192.168.1.0/24", "192.168.2.0/24"]
+    assert "192.168.0.0/22" not in merged_str
 
     # Test static methods directly
     ipv4_only = [net for net in overlapping_ipv4 if net.version == 4]
     merged_ipv4_direct = IPMerger._merge_same_version_v4(ipv4_only)
-    assert len(merged_ipv4_direct) == 1  # With neighboring, all merge into one
-    assert str(ipaddress.IPv4Network("192.168.0.0/22", strict=False)) in [str(net) for net in merged_ipv4_direct]
+    assert [str(net) for net in merged_ipv4_direct] == ["192.168.1.0/24", "192.168.2.0/24"]
 
     # Test overlapping IPv6 networks
     overlapping_ipv6 = [
@@ -59,14 +58,12 @@ def test_ip_merger_merge_networks() -> None:
     merged_ipv6 = merger.merge_networks(overlapping_ipv6)
 
     merged_ipv6_str = [str(net) for net in merged_ipv6]
-    assert "2001:db8::/31" in merged_ipv6_str  # The merged network from neighboring networks
-    assert len(merged_ipv6) == 1  # All networks merged into one
+    assert merged_ipv6_str == ["2001:db8::/31"]
 
     # Test IPv6 static method directly
     ipv6_only = [net for net in overlapping_ipv6 if net.version == 6]
     merged_ipv6_direct = IPMerger._merge_same_version_v6(ipv6_only)
-    assert len(merged_ipv6_direct) == 1  # With neighboring, all merge into one
-    assert str(ipaddress.IPv6Network("2001:db8::/31", strict=False)) in [str(net) for net in merged_ipv6_direct]
+    assert [str(net) for net in merged_ipv6_direct] == ["2001:db8::/31"]
 
 
 def test_ip_merger_empty_networks() -> None:
@@ -109,9 +106,14 @@ def test_ip_merger_get_merged_output() -> None:
     assert "providers" in merged_output
     assert "generated_at" in merged_output
 
-    # Check that providers are tracked
-    assert "192.168.0.0/22" in merged_output["ip_providers"]  # Merged from neighboring networks
-    assert "2001:db8::/32" in merged_output["ip_providers"]
+    # Check that providers are tracked without widening CIDRs
+    ip_providers = merged_output["ip_providers"]
+    assert sorted(merged_output["ipv4"]) == ["10.0.0.0/8", "192.168.1.0/24", "192.168.2.0/24"]
+    assert merged_output["ipv6"] == ["2001:db8::/32"]
+    assert ip_providers["192.168.1.0/24"] == ["provider1", "provider2"]
+    assert ip_providers["192.168.2.0/24"] == ["provider1"]
+    assert ip_providers["10.0.0.0/8"] == ["provider2"]
+    assert ip_providers["2001:db8::/32"] == ["provider1", "provider2"]
 
 
 def test_ip_merger_reset() -> None:
@@ -175,9 +177,8 @@ def test_ip_merger_complex_overlapping() -> None:
     merged = merger.merge_networks(complex_ipv4)
     merged_str = [str(net) for net in merged]
 
-    # Should merge into larger networks with neighboring enabled
-    assert "10.0.0.0/22" in merged_str  # All networks merge into one larger network
-    assert len(merged) == 1
+    # Collapse covers the entire contiguous span
+    assert merged_str == ["10.0.0.0/22"]
 
 
 def test_ip_merger_static_methods_edge_cases() -> None:
@@ -228,15 +229,9 @@ def test_ip_merger_provider_tracking_complex() -> None:
 
     merged_output = merger.get_merged_output()
 
-    # Check that overlapping networks have multiple providers
+    # Check that overlapping networks attribute providers on the collapsed range
     ip_providers = merged_output["ip_providers"]
-
-    # With neighboring enabled, all three networks merge into one
-    providers_for_10_0_0_23 = ip_providers.get("10.0.0.0/23", [])
-    assert "provider1" in providers_for_10_0_0_23
-    assert "provider2" in providers_for_10_0_0_23
-    assert "provider3" in providers_for_10_0_0_23
-    assert len(providers_for_10_0_0_23) == 3
+    assert ip_providers["10.0.0.0/23"] == ["provider1", "provider2", "provider3"]
 
 
 def test_ip_merger_get_merged_output_empty() -> None:
@@ -331,12 +326,12 @@ def test_ip_merger_mixed_version_networks() -> None:
 
     merged = merger.merge_networks(mixed_networks)
 
-    # Should preserve both versions and merge appropriately
-    ipv4_merged = [net for net in merged if net.version == 4]
-    ipv6_merged = [net for net in merged if net.version == 6]
+    # Should preserve both versions without widening
+    ipv4_merged = [str(net) for net in merged if net.version == 4]
+    ipv6_merged = [str(net) for net in merged if net.version == 6]
 
-    assert len(ipv4_merged) == 2  # No overlapping IPv4 networks
-    assert len(ipv6_merged) == 1  # IPv6 networks merge into one due to neighboring
+    assert ipv4_merged == ["10.0.0.0/8", "192.168.1.0/24"]
+    assert ipv6_merged == ["2001:db8::/31"]
 
 
 def test_ip_merger_large_scale_provider_tracking() -> None:
@@ -384,9 +379,8 @@ def test_ip_merger_static_methods_comprehensive() -> None:
 
     merged_ipv4 = IPMerger._merge_same_version_v4(complex_ipv4)
 
-    # Should merge into appropriate networks with neighboring enabled
-    assert len(merged_ipv4) == 1  # All networks merge into one due to neighboring
-    assert str(merged_ipv4[0]) == "10.0.0.0/22"  # The merged network
+    # Collapse should keep exact coverage without widening
+    assert [str(net) for net in merged_ipv4] == ["10.0.0.0/23", "10.0.2.0/24"]
 
     # Test IPv6 static method with complex overlapping
     complex_ipv6 = [
@@ -501,11 +495,8 @@ def test_ip_merger_complex_network_expansion() -> None:
 
     merged_ipv6 = merger.merge_networks(neighboring_ipv6)
 
-    # Should merge into a larger network
-    assert len(merged_ipv6) == 1
-    # The merged network should be a supernet of both original networks
-    merged_net = merged_ipv6[0]
-    assert merged_net.prefixlen < 64  # Should be larger than /64
+    # These are siblings and collapse into their shared supernet
+    assert [str(net) for net in merged_ipv6] == ["2001:db8::/63"]
 
 
 def test_ipmerger_static_methods_complex_expansion() -> None:
@@ -519,8 +510,8 @@ def test_ipmerger_static_methods_complex_expansion() -> None:
 
     merged_ipv4 = IPMerger._merge_same_version_v4(expansion_ipv4)
 
-    # Should merge the first two into a /25 or /24
-    assert len(merged_ipv4) >= 2
+    # First two collapse into /25; third stays separate
+    assert [str(net) for net in merged_ipv4] == ["192.168.1.0/25", "192.168.2.0/24"]
 
     # Test IPv6 static method with expansion
     expansion_ipv6 = [
@@ -531,8 +522,8 @@ def test_ipmerger_static_methods_complex_expansion() -> None:
 
     merged_ipv6 = IPMerger._merge_same_version_v6(expansion_ipv6)
 
-    # Should merge the first two into a larger network
-    assert len(merged_ipv6) >= 2
+    # First two collapse into their shared supernet
+    assert [str(net) for net in merged_ipv6] == ["2001:db8:1::/80", "2001:db8:2::/64"]
 
 
 def test_ipmerger_neighboring_network_merging() -> None:
@@ -546,11 +537,9 @@ def test_ipmerger_neighboring_network_merging() -> None:
     ]
 
     merged_ipv4 = merger.merge_networks(neighboring_ipv4)
-    merged_ipv4_str = [str(net) for net in merged_ipv4]
 
-    # Should merge into /24
-    assert "192.168.1.0/24" in merged_ipv4_str
-    assert len(merged_ipv4) == 1
+    # Sibling /25 blocks collapse into /24
+    assert [str(net) for net in merged_ipv4] == ["192.168.1.0/24"]
 
     # Test IPv6 neighboring networks
     neighboring_ipv6 = [
@@ -560,10 +549,8 @@ def test_ipmerger_neighboring_network_merging() -> None:
 
     merged_ipv6 = merger.merge_networks(neighboring_ipv6)
 
-    # Should merge into a larger block
-    assert len(merged_ipv6) == 1
-    merged_net = merged_ipv6[0]
-    assert merged_net.prefixlen < 125  # Should be larger than /125
+    # These are siblings; collapse into /124
+    assert [str(net) for net in merged_ipv6] == ["2001:db8::/124"]
 
     # Test non-neighboring networks (should not merge)
     non_neighboring = [

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ipaddress
 import logging
 from typing import Any, Dict, List, Optional
@@ -11,7 +13,7 @@ def validate_ip(ip: str) -> Optional[str]:
         if network.is_private or network.is_loopback or network.is_link_local or network.is_multicast:
             return None
 
-        return ip
+        return str(network)
     except ValueError as e:
         logging.warning("Invalid IP address/subnet: %s - %s", ip, str(e))
         return None
