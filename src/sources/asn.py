@@ -6,7 +6,7 @@ import socket
 from functools import lru_cache
 from typing import Any, Dict, List, Set
 
-from ..transforms.common import validate_ip
+from transforms.common import validate_ip
 
 # RADB whois configuration
 _RADB_HOST = "whois.radb.net"

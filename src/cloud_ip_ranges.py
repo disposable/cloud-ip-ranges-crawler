@@ -13,16 +13,21 @@ from operator import attrgetter
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
+# Ensure the src directory (containing this module and its siblings) is importable when run as a script
+CURRENT_DIR = Path(__file__).resolve().parent
+if str(CURRENT_DIR) not in sys.path:
+    sys.path.insert(0, str(CURRENT_DIR))
+
 import requests
 from cachetools import LRUCache, cachedmethod
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from .sources.asn import fetch_and_save_asn_source
-from .sources.http import fetch_and_save_http_source
-from .sources.seed_cidr import fetch_and_save_seed_cidr_source
-from .transforms.common import validate_ip
-from .ip_merger import IPMerger
+from sources.asn import fetch_and_save_asn_source
+from sources.http import fetch_and_save_http_source
+from sources.seed_cidr import fetch_and_save_seed_cidr_source
+from transforms.common import validate_ip
+from ip_merger import IPMerger
 
 
 class CloudIPRanges:
