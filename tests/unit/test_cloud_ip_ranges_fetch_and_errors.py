@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -188,6 +189,31 @@ def test_fetch_all_propagates_outer_errors(monkeypatch: pytest.MonkeyPatch) -> N
         crawler.fetch_all()
 
 
+def test_suppress_retry_warnings_filter_drops_urllib3_retry_noise() -> None:
+    retry_record = logging.LogRecord(
+        name="urllib3.connectionpool",
+        level=logging.WARNING,
+        pathname=__file__,
+        lineno=1,
+        msg='Retrying (Retry(total=4, connect=5, read=4, redirect=None, status=5)) after connection broken by "ReadTimeoutError(...)"',
+        args=(),
+        exc_info=None,
+    )
+    other_record = logging.LogRecord(
+        name="root",
+        level=logging.WARNING,
+        pathname=__file__,
+        lineno=1,
+        msg="Retrying (custom app warning)",
+        args=(),
+        exc_info=None,
+    )
+
+    retry_filter = cloud_module._SuppressRetryWarningsFilter()
+    assert retry_filter.filter(retry_record) is False
+    assert retry_filter.filter(other_record) is True
+
+
 __all__ = [
     "test_normalize_transformed_data_raises_when_no_valid_ips",
     "test_fetch_and_save_routes_seed_cidr",
@@ -199,4 +225,5 @@ __all__ = [
     "test_save_result_unknown_format_raises",
     "test_fetch_all_handles_errors",
     "test_fetch_all_propagates_outer_errors",
+    "test_suppress_retry_warnings_filter_drops_urllib3_retry_noise",
 ]

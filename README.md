@@ -125,6 +125,7 @@ uv run cloud-ip-ranges --add-env-statistics
 | `--only-if-changed` | Writes files only when content differs.
 | `--max-delta-ratio 0.3` | Reject runs with large IP-count swings.
 | `--debug` / `--log-file` | Verbose logging to stdout or a file.
+| `--suppress-retry-warnings` | Hide noisy urllib3 retry warning lines (useful in CI logs/commit messages).
 
 ## Output formats
 

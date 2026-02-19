@@ -25,6 +25,13 @@ from transforms.common import validate_ip
 from ip_merger import IPMerger
 
 
+class _SuppressRetryWarningsFilter(logging.Filter):
+    """Filter out noisy urllib3 retry warnings."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return not (record.name.startswith("urllib3") and "Retrying (" in record.getMessage())
+
+
 class CloudIPRanges:
     sources = {
         "aws": ["https://ip-ranges.amazonaws.com/ip-ranges.json"],
@@ -633,6 +640,11 @@ def main() -> None:
     )
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     parser.add_argument("--log-file", type=str, help="Log file")
+    parser.add_argument(
+        "--suppress-retry-warnings",
+        action="store_true",
+        help="Suppress urllib3 retry warning lines (useful for CI commit logs)",
+    )
     parser.add_argument("--misc", action="store_true", help="Only process misc providers (user ISP traffic like Starlink)")
     args = parser.parse_args()
 
@@ -642,6 +654,10 @@ def main() -> None:
         logging.basicConfig(level=log_level, format="%(asctime)s - %(levelname)s - %(message)s", filename=args.log_file)
     else:
         logging.basicConfig(level=log_level, format="%(asctime)s - %(levelname)s - %(message)s")
+    if args.suppress_retry_warnings:
+        retry_filter = _SuppressRetryWarningsFilter()
+        for handler in logging.getLogger().handlers:
+            handler.addFilter(retry_filter)
 
     # Convert sources to set if specified, otherwise None
     sources = set(args.sources) if args.sources else None
