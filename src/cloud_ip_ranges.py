@@ -423,6 +423,11 @@ class CloudIPRanges:
         }
 
     def _enforce_max_delta(self, old: Dict[str, Any], new: Dict[str, Any], *, max_ratio: float, source_key: str) -> None:
+        # Minimum absolute change below which the ratio check is skipped.
+        # Small sources (e.g. 3 IPv6 prefixes) would fail on a single new prefix
+        # even though the change is clearly legitimate.
+        _MIN_ABS_CHANGE = 5
+
         def ratio(old_n: int, new_n: int) -> float:
             if old_n == 0:
                 return float("inf") if new_n > 0 else 0.0
@@ -432,7 +437,13 @@ class CloudIPRanges:
         r4 = ratio(s["ipv4"]["old"], s["ipv4"]["new"])
         r6 = ratio(s["ipv6"]["old"], s["ipv6"]["new"])
 
-        if (r4 != float("inf") and r4 > max_ratio) or (r6 != float("inf") and r6 > max_ratio):
+        abs4 = s["ipv4"]["added"] + s["ipv4"]["removed"]
+        abs6 = s["ipv6"]["added"] + s["ipv6"]["removed"]
+
+        v4_fail = r4 != float("inf") and r4 > max_ratio and abs4 > _MIN_ABS_CHANGE
+        v6_fail = r6 != float("inf") and r6 > max_ratio and abs6 > _MIN_ABS_CHANGE
+
+        if v4_fail or v6_fail:
             raise RuntimeError(f"Delta check failed for {source_key}: {json.dumps(s)}")
 
     def _save_json(self, transformed_data: Dict[str, Any], filename: str) -> None:
