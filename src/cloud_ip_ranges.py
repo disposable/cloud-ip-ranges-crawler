@@ -32,6 +32,10 @@ class _SuppressRetryWarningsFilter(logging.Filter):
         return not (record.name.startswith("urllib3") and "Retrying (" in record.getMessage())
 
 
+class DeltaCheckError(RuntimeError):
+    """Raised when provider delta exceeds configured ratio."""
+
+
 class CloudIPRanges:
     sources = {
         "aws": ["https://ip-ranges.amazonaws.com/ip-ranges.json"],
@@ -451,7 +455,7 @@ class CloudIPRanges:
         v6_fail = r6 != float("inf") and r6 > max_ratio and abs6 > _MIN_ABS_CHANGE
 
         if v4_fail or v6_fail:
-            raise RuntimeError(f"Delta check failed for {source_key}: {json.dumps(s)}")
+            raise DeltaCheckError(f"Delta check failed for {source_key}: {json.dumps(s)}")
 
     def _save_json(self, transformed_data: Dict[str, Any], filename: str) -> None:
         """Save data in JSON format."""
@@ -582,6 +586,8 @@ class CloudIPRanges:
                     if res := self._fetch_and_save(source):
                         ipv4_count, ipv6_count = res
                         self.statistics[source] = {"ipv4": ipv4_count, "ipv6": ipv6_count}
+                except DeltaCheckError as e:
+                    logging.warning("Skipping %s due to delta guardrail: %s", source, str(e))
                 except Exception as e:
                     logging.error("Failed to fetch %s: %s", source, str(e))
                     logging.exception(e)
