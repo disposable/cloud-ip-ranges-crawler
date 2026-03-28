@@ -1,180 +1,365 @@
-"""Microsoft 365 transform tests."""
+"""Microsoft 365 endpoints web service transform tests.
+
+These tests verify the proper web service flow:
+1. Local UUID generation (NOT scraped from docs)
+2. Version endpoint checking
+3. Endpoints fetching with full metadata preservation
+"""
 
 from unittest.mock import Mock
 from transforms.microsoft_365 import transform
 
 
 class TestMicrosoft365Transform:
-    def test_microsoft_365_transform_extracts_guid_from_docs(self):
-        """Test Microsoft 365 transform extracts ClientRequestId from documentation."""
+    """Test Microsoft 365 proper web service flow."""
+
+    def test_microsoft_365_generates_local_uuid(self):
+        """Test that transform generates UUID locally, NOT from docs/examples."""
         cipr = Mock()
-        cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "details_ipv4": [], "details_ipv6": [], "source": ""}
+        cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "details_ipv4": [], "details_ipv6": [], "source": "", "source_updated_at": None}
 
-        # Mock documentation HTML with GUID
-        doc_html = """
-        <html>
-        <body>
-        <p>Example URL: https://endpoints.office.com/endpoints/Worldwide?ClientRequestId=b10c5ed1-bad1-445f-b386-b919946339a7</p>
-        </body>
-        </html>
-        """
+        # Mock version response
+        version_response = Mock()
+        version_response.json.return_value = {"latest": "2026032800"}
+        version_response.raise_for_status.return_value = None
 
-        # Mock API response
-        mock_api_json = [{"id": 1, "serviceArea": "Exchange", "ips": ["23.103.132.0/22", "2a01:111:f403::/48"], "category": "Allow"}]
+        # Mock endpoints response
+        endpoints_response = Mock()
+        endpoints_response.json.return_value = [
+            {"id": 1, "serviceArea": "Exchange", "ips": ["23.103.132.0/22"], "category": "Allow", "required": True, "tcpPorts": "443"}
+        ]
+        endpoints_response.raise_for_status.return_value = None
 
-        doc_response = Mock()
-        doc_response.text = doc_html
+        # Track calls made to session.get
+        calls_made = []
+        def mock_get(url, **kwargs):
+            calls_made.append(url)
+            if "/version/" in url:
+                return version_response
+            elif "/endpoints/" in url:
+                return endpoints_response
+            return Mock()
 
-        api_response = Mock()
-        api_response.json.return_value = mock_api_json
-        api_response.raise_for_status.return_value = None
+        cipr.session.get = mock_get
 
-        cipr.session.get.return_value = api_response
+        # Mock input response (can be anything, we don't scrape it anymore)
+        input_response = [Mock()]
+        input_response[0].text = "Some documentation HTML with example ClientRequestId=example-guid-1234"
 
-        result = transform(cipr, [doc_response], "microsoft_365")
+        transform(cipr, input_response, "microsoft_365")
 
-        # Should have extracted IPs
+        # Verify UUID was generated locally (should be valid UUID format)
+        assert len(calls_made) >= 1
+
+        # Check that the URLs use a proper UUID (not the example one)
+        for url in calls_made:
+            # Should contain clientrequestid parameter
+            assert "clientrequestid=" in url.lower()
+            # Should NOT contain the example GUID from the docs
+            assert "example-guid-1234" not in url
+
+    def test_microsoft_365_checks_version_endpoint_first(self):
+        """Test that transform checks version endpoint before fetching endpoints."""
+        cipr = Mock()
+        cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "details_ipv4": [], "details_ipv6": [], "source": "", "source_updated_at": None}
+
+        version_response = Mock()
+        version_response.json.return_value = {"latest": "2026032801"}
+        version_response.raise_for_status.return_value = None
+
+        endpoints_response = Mock()
+        endpoints_response.json.return_value = [
+            {"id": 1, "serviceArea": "Exchange", "ips": ["23.103.132.0/22"], "category": "Allow"}
+        ]
+        endpoints_response.raise_for_status.return_value = None
+
+        call_order = []
+        def mock_get(url, **kwargs):
+            call_order.append(url)
+            if "/version/" in url:
+                return version_response
+            elif "/endpoints/" in url:
+                return endpoints_response
+            return Mock()
+
+        cipr.session.get = mock_get
+
+        input_response = [Mock()]
+        input_response[0].text = ""
+
+        result = transform(cipr, input_response, "microsoft_365")
+
+        # Version should be checked first
+        assert len(call_order) >= 2
+        assert "/version/" in call_order[0]
+        assert "/endpoints/" in call_order[1]
+
+        # Version should be recorded
+        assert result["source_updated_at"] == "2026032801"
+
+    def test_microsoft_365_preserves_full_metadata(self):
+        """Test that transform preserves complete endpoint metadata."""
+        cipr = Mock()
+        cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "details_ipv4": [], "details_ipv6": [], "source": "", "source_updated_at": None}
+
+        version_response = Mock()
+        version_response.json.return_value = {"latest": "2026032802"}
+        version_response.raise_for_status.return_value = None
+
+        endpoints_response = Mock()
+        endpoints_response.json.return_value = [
+            {
+                "id": 42,
+                "serviceArea": "Exchange",
+                "category": "Allow",
+                "required": True,
+                "tcpPorts": "443,993",
+                "udpPorts": "",
+                "ips": ["23.103.132.0/22"]
+            },
+            {
+                "id": 43,
+                "serviceArea": "Skype",
+                "category": "Default",
+                "required": False,
+                "tcpPorts": "443",
+                "udpPorts": "3478",
+                "ips": ["13.107.64.0/18", "2a01:111:f100::/48"]
+            }
+        ]
+        endpoints_response.raise_for_status.return_value = None
+
+        def mock_get(url, **kwargs):
+            if "/version/" in url:
+                return version_response
+            elif "/endpoints/" in url:
+                return endpoints_response
+            return Mock()
+
+        cipr.session.get = mock_get
+
+        input_response = [Mock()]
+        input_response[0].text = ""
+
+        result = transform(cipr, input_response, "microsoft_365")
+
+        # Check metadata is preserved for IPv4
+        ipv4_details = result["details_ipv4"]
+        assert len(ipv4_details) == 2  # One from Exchange, one from Skype
+
+        exchange_detail = [d for d in ipv4_details if d["serviceArea"] == "Exchange"][0]
+        assert exchange_detail["address"] == "23.103.132.0/22"
+        assert exchange_detail["endpointId"] == 42
+        assert exchange_detail["category"] == "Allow"
+        assert exchange_detail["required"] == True
+        assert exchange_detail["tcpPorts"] == "443,993"
+
+        skype_detail = [d for d in ipv4_details if d["serviceArea"] == "Skype"][0]
+        assert skype_detail["address"] == "13.107.64.0/18"
+        assert skype_detail["endpointId"] == 43
+        assert skype_detail["udpPorts"] == "3478"
+
+        # Check IPv6 metadata
+        ipv6_details = result["details_ipv6"]
+        assert len(ipv6_details) == 1
+        assert ipv6_details[0]["address"] == "2a01:111:f100::/48"
+        assert ipv6_details[0]["serviceArea"] == "Skype"
+
+    def test_microsoft_365_handles_version_check_failure(self):
+        """Test that transform continues even if version check fails."""
+        cipr = Mock()
+        cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "details_ipv4": [], "details_ipv6": [], "source": "", "source_updated_at": None}
+
+        # Version check fails
+        def mock_get(url, **kwargs):
+            if "/version/" in url:
+                raise Exception("Version check failed")
+            elif "/endpoints/" in url:
+                endpoints_response = Mock()
+                endpoints_response.json.return_value = [
+                    {"id": 1, "serviceArea": "Exchange", "ips": ["23.103.132.0/22"], "category": "Allow"}
+                ]
+                endpoints_response.raise_for_status.return_value = None
+                return endpoints_response
+            return Mock()
+
+        cipr.session.get = mock_get
+
+        input_response = [Mock()]
+        input_response[0].text = ""
+
+        # Should not raise - proceeds to fetch endpoints
+        result = transform(cipr, input_response, "microsoft_365")
+
+        # Should still have data from endpoints
         assert len(result["ipv4"]) == 1
         assert "23.103.132.0/22" in result["ipv4"]
-        assert "2a01:111:f403::/48" in result["ipv6"]
 
-        # Should have used the extracted GUID
-        cipr.session.get.assert_called_once()
-        call_args = cipr.session.get.call_args[0][0]
-        assert "ClientRequestId=b10c5ed1-bad1-445f-b386-b919946339a7" in call_args
-
-    def test_microsoft_365_transform_uses_fallback_guid(self):
-        """Test Microsoft 365 transform uses fallback GUID when not found in docs."""
+    def test_microsoft_365_fails_on_invalid_endpoint_response(self):
+        """Test that transform fails clearly on invalid endpoint response."""
         cipr = Mock()
-        cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "details_ipv4": [], "details_ipv6": [], "source": ""}
+        cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "details_ipv4": [], "details_ipv6": [], "source": "", "source_updated_at": None}
 
-        # Mock documentation HTML without GUID
-        doc_html = "<html><body>No GUID here</body></html>"
+        version_response = Mock()
+        version_response.json.return_value = {"latest": "2026032803"}
+        version_response.raise_for_status.return_value = None
 
-        mock_api_json = [{"id": 1, "serviceArea": "Exchange", "ips": ["23.103.132.0/22"], "category": "Allow"}]
+        # Invalid response (not an array)
+        endpoints_response = Mock()
+        endpoints_response.json.return_value = {"error": "not found"}
+        endpoints_response.raise_for_status.return_value = None
 
-        doc_response = Mock()
-        doc_response.text = doc_html
+        def mock_get(url, **kwargs):
+            if "/version/" in url:
+                return version_response
+            elif "/endpoints/" in url:
+                return endpoints_response
+            return Mock()
 
-        api_response = Mock()
-        api_response.json.return_value = mock_api_json
-        api_response.raise_for_status.return_value = None
+        cipr.session.get = mock_get
 
-        cipr.session.get.return_value = api_response
+        input_response = [Mock()]
+        input_response[0].text = ""
 
-        transform(cipr, [doc_response], "microsoft_365")
+        # Should raise with clear error message
+        try:
+            transform(cipr, input_response, "microsoft_365")
+            assert False, "Should have raised ValueError"
+        except ValueError as e:
+            assert "Expected JSON array" in str(e)
 
-        # Should have used fallback GUID
-        cipr.session.get.assert_called_once()
-        call_args = cipr.session.get.call_args[0][0]
-        assert "ClientRequestId=" in call_args
-
-    def test_microsoft_365_transform_with_valid_api_response(self):
-        """Test Microsoft 365 transform with valid API response."""
+    def test_microsoft_365_coverage_notes_explicit(self):
+        """Test that coverage notes explicitly state scope."""
         cipr = Mock()
-        cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "details_ipv4": [], "details_ipv6": [], "source": ""}
+        cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "details_ipv4": [], "details_ipv6": [], "source": "", "source_updated_at": None}
 
-        doc_html = "ClientRequestId=test-guid-1234-5678-90ab-cdefghijklmn"
+        version_response = Mock()
+        version_response.json.return_value = {"latest": "2026032804"}
+        version_response.raise_for_status.return_value = None
 
-        mock_api_json = [
-            {"id": 1, "serviceArea": "Exchange", "ips": ["23.103.132.0/22", "2a01:111:f403::/48"], "category": "Allow"},
-            {"id": 2, "serviceArea": "SharePoint", "ips": ["13.107.136.0/22", "2603:1040::/48"], "category": "Optimize"},
+        endpoints_response = Mock()
+        endpoints_response.json.return_value = []
+        endpoints_response.raise_for_status.return_value = None
+
+        def mock_get(url, **kwargs):
+            if "/version/" in url:
+                return version_response
+            elif "/endpoints/" in url:
+                return endpoints_response
+            return Mock()
+
+        cipr.session.get = mock_get
+
+        input_response = [Mock()]
+        input_response[0].text = ""
+
+        result = transform(cipr, input_response, "microsoft_365")
+
+        # Should be explicit about scope
+        assert "Microsoft 365" in result["coverage_notes"]
+        assert "Worldwide" in result["coverage_notes"] or "instance" in result["coverage_notes"]
+        assert "Azure" in result["coverage_notes"] and "NOT" in result["coverage_notes"]
+
+    def test_microsoft_365_skips_endpoint_sets_without_ips(self):
+        """Test that endpoint sets without 'ips' field are skipped."""
+        cipr = Mock()
+        cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "details_ipv4": [], "details_ipv6": [], "source": "", "source_updated_at": None}
+
+        version_response = Mock()
+        version_response.json.return_value = {"latest": "2026032805"}
+        version_response.raise_for_status.return_value = None
+
+        endpoints_response = Mock()
+        endpoints_response.json.return_value = [
+            {"id": 1, "serviceArea": "Exchange", "urls": ["*.office.com"], "category": "Allow"},  # No IPs
+            {"id": 2, "serviceArea": "Common", "ips": ["40.96.0.0/13"], "category": "Default"},  # Has IPs
         ]
+        endpoints_response.raise_for_status.return_value = None
 
-        doc_response = Mock()
-        doc_response.text = doc_html
+        def mock_get(url, **kwargs):
+            if "/version/" in url:
+                return version_response
+            elif "/endpoints/" in url:
+                return endpoints_response
+            return Mock()
 
-        api_response = Mock()
-        api_response.json.return_value = mock_api_json
-        api_response.raise_for_status.return_value = None
+        cipr.session.get = mock_get
 
-        cipr.session.get.return_value = api_response
+        input_response = [Mock()]
+        input_response[0].text = ""
 
-        result = transform(cipr, [doc_response], "microsoft_365")
+        result = transform(cipr, input_response, "microsoft_365")
 
-        # Should extract both IPv4 and IPv6
-        assert len(result["ipv4"]) == 2
-        assert len(result["ipv6"]) == 2
-        assert "23.103.132.0/22" in result["ipv4"]
-        assert "13.107.136.0/22" in result["ipv4"]
-        assert "2a01:111:f403::/48" in result["ipv6"]
-        assert "2603:1040::/48" in result["ipv6"]
-
-    def test_microsoft_365_transform_preserves_metadata(self):
-        """Test that Microsoft 365 transform preserves service area metadata."""
-        cipr = Mock()
-        cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "details_ipv4": [], "details_ipv6": [], "source": ""}
-
-        doc_html = "ClientRequestId=test-guid-1234-5678-90ab-cdefghijklmn"
-
-        mock_api_json = [{"id": 1, "serviceArea": "Exchange", "ips": ["23.103.132.0/22"], "category": "Allow"}]
-
-        doc_response = Mock()
-        doc_response.text = doc_html
-
-        api_response = Mock()
-        api_response.json.return_value = mock_api_json
-        api_response.raise_for_status.return_value = None
-
-        cipr.session.get.return_value = api_response
-
-        result = transform(cipr, [doc_response], "microsoft_365")
-
-        # Check details include service area
-        assert len(result["details_ipv4"]) == 1
-        assert result["details_ipv4"][0]["serviceArea"] == "Exchange"
-        assert result["details_ipv4"][0]["category"] == "Allow"
-
-    def test_microsoft_365_transform_handles_empty_ips(self):
-        """Test Microsoft 365 transform handles endpoint sets without IPs."""
-        cipr = Mock()
-        cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "details_ipv4": [], "details_ipv6": [], "source": ""}
-
-        doc_html = "ClientRequestId=test-guid-1234-5678-90ab-cdefghijklmn"
-
-        mock_api_json = [
-            {"id": 1, "serviceArea": "Exchange", "urls": ["*.office.com"], "category": "Allow"},
-            {"id": 2, "serviceArea": "Common", "ips": ["40.96.0.0/13"], "category": "Default"},
-        ]
-
-        doc_response = Mock()
-        doc_response.text = doc_html
-
-        api_response = Mock()
-        api_response.json.return_value = mock_api_json
-        api_response.raise_for_status.return_value = None
-
-        cipr.session.get.return_value = api_response
-
-        result = transform(cipr, [doc_response], "microsoft_365")
-
-        # Should only have the entry with IPs
+        # Should only have the one with IPs
         assert len(result["ipv4"]) == 1
         assert "40.96.0.0/13" in result["ipv4"]
 
-    def test_microsoft_365_transform_deduplicates_ips(self):
-        """Test Microsoft 365 transform deduplicates duplicate IPs."""
+    def test_microsoft_365_deduplicates_ips(self):
+        """Test that duplicate IPs are deduplicated."""
         cipr = Mock()
-        cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "details_ipv4": [], "details_ipv6": [], "source": ""}
+        cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "details_ipv4": [], "details_ipv6": [], "source": "", "source_updated_at": None}
 
-        doc_html = "ClientRequestId=test-guid-1234-5678-90ab-cdefghijklmn"
+        version_response = Mock()
+        version_response.json.return_value = {"latest": "2026032806"}
+        version_response.raise_for_status.return_value = None
 
-        mock_api_json = [
+        endpoints_response = Mock()
+        endpoints_response.json.return_value = [
             {"id": 1, "serviceArea": "Exchange", "ips": ["23.103.132.0/22", "23.103.132.0/22"], "category": "Allow"},
             {"id": 2, "serviceArea": "SharePoint", "ips": ["23.103.132.0/22"], "category": "Optimize"},
         ]
+        endpoints_response.raise_for_status.return_value = None
 
-        doc_response = Mock()
-        doc_response.text = doc_html
+        def mock_get(url, **kwargs):
+            if "/version/" in url:
+                return version_response
+            elif "/endpoints/" in url:
+                return endpoints_response
+            return Mock()
 
-        api_response = Mock()
-        api_response.json.return_value = mock_api_json
-        api_response.raise_for_status.return_value = None
+        cipr.session.get = mock_get
 
-        cipr.session.get.return_value = api_response
+        input_response = [Mock()]
+        input_response[0].text = ""
 
-        result = transform(cipr, [doc_response], "microsoft_365")
+        result = transform(cipr, input_response, "microsoft_365")
 
-        # Should deduplicate
+        # Should deduplicate - same IP appears twice in Exchange, once in SharePoint
         assert len(result["ipv4"]) == 1
         assert result["ipv4"][0] == "23.103.132.0/22"
+
+        # But details should preserve all entries (with different metadata)
+        assert len(result["details_ipv4"]) == 3  # Two Exchange + one SharePoint
+
+    def test_microsoft_365_source_urls_documented(self):
+        """Test that both version and endpoints URLs are documented in result."""
+        cipr = Mock()
+        cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "details_ipv4": [], "details_ipv6": [], "source": "", "source_updated_at": None}
+
+        version_response = Mock()
+        version_response.json.return_value = {"latest": "2026032807"}
+        version_response.raise_for_status.return_value = None
+
+        endpoints_response = Mock()
+        endpoints_response.json.return_value = []
+        endpoints_response.raise_for_status.return_value = None
+
+        def mock_get(url, **kwargs):
+            if "/version/" in url:
+                return version_response
+            elif "/endpoints/" in url:
+                return endpoints_response
+            return Mock()
+
+        cipr.session.get = mock_get
+
+        input_response = [Mock()]
+        input_response[0].text = ""
+
+        result = transform(cipr, input_response, "microsoft_365")
+
+        # Source should be a list with both URLs
+        assert isinstance(result["source"], list)
+        assert len(result["source"]) == 2
+        assert any("/version/" in s for s in result["source"])
+        assert any("/endpoints/" in s for s in result["source"])

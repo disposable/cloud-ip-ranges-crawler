@@ -1,16 +1,25 @@
-"""PagerDuty transform tests."""
+"""PagerDuty webhook IP transform tests.
+
+These tests verify that PagerDuty IPs are tagged with:
+- surface: "webhook" (incoming from PagerDuty)
+- region: "US" or "EU"
+
+And that unrecognized formats fail clearly.
+"""
 
 from unittest.mock import Mock
 from transforms.pagerduty import transform
 
 
 class TestPagerdutyTransform:
+    """Test PagerDuty webhook IP extraction with metadata tagging."""
+
     def test_pagerduty_transform_with_array_of_ips(self):
         """Test PagerDuty transform with simple array of IP strings."""
         cipr = Mock()
         cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "coverage_notes": ""}
 
-        # Mock JSON response with simple array (actual API format)
+        # Mock JSON response with simple array (standard API format)
         mock_json = [
             "44.242.69.192",
             "52.89.71.166",
@@ -103,8 +112,60 @@ class TestPagerdutyTransform:
         assert "44.242.69.192/32" in result["ipv4"]
         assert "18.159.153.65/32" in result["ipv4"]
 
-    def test_pagerduty_transform_coverage_notes(self):
-        """Test PagerDuty transform includes appropriate coverage notes."""
+    def test_pagerduty_transform_metadata_region_and_surface(self):
+        """Test that IPs are tagged with region and surface metadata."""
+        cipr = Mock()
+        cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "coverage_notes": ""}
+
+        us_response = Mock()
+        us_response.json.return_value = ["44.242.69.192"]
+
+        eu_response = Mock()
+        eu_response.json.return_value = ["18.159.153.65"]
+
+        response = [us_response, eu_response]
+
+        result = transform(cipr, response, "pagerduty")
+
+        # Check metadata is preserved
+        assert "details_ipv4" in result
+        details = result["details_ipv4"]
+        assert len(details) == 2
+
+        # Find US entry
+        us_entries = [d for d in details if d.get("region") == "US"]
+        assert len(us_entries) == 1
+        assert us_entries[0]["address"] == "44.242.69.192/32"
+        assert us_entries[0]["surface"] == "webhook"
+
+        # Find EU entry
+        eu_entries = [d for d in details if d.get("region") == "EU"]
+        assert len(eu_entries) == 1
+        assert eu_entries[0]["address"] == "18.159.153.65/32"
+        assert eu_entries[0]["surface"] == "webhook"
+
+    def test_pagerduty_transform_metadata_with_ipv6(self):
+        """Test that IPv6 IPs are also tagged with metadata."""
+        cipr = Mock()
+        cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "coverage_notes": ""}
+
+        us_response = Mock()
+        us_response.json.return_value = {"ipv6": ["2600:1f18::1"]}
+
+        response = [us_response]
+
+        result = transform(cipr, response, "pagerduty")
+
+        # Check IPv6 metadata
+        assert "details_ipv6" in result
+        details = result["details_ipv6"]
+        assert len(details) == 1
+        assert details[0]["address"] == "2600:1f18::1/128"
+        assert details[0]["region"] == "US"
+        assert details[0]["surface"] == "webhook"
+
+    def test_pagerduty_transform_coverage_notes_explicit(self):
+        """Test that coverage notes explicitly state webhook-only scope."""
         cipr = Mock()
         cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "coverage_notes": ""}
 
@@ -113,20 +174,60 @@ class TestPagerdutyTransform:
 
         result = transform(cipr, response, "pagerduty")
 
-        # Should note PagerDuty's recommendation
+        # Should be explicit about scope
+        assert "webhook" in result["coverage_notes"].lower()
+        assert "REST API" in result["coverage_notes"]
+        assert "NOT included" in result["coverage_notes"]
         assert "TLS" in result["coverage_notes"] or "signature" in result["coverage_notes"]
 
-    def test_pagerduty_transform_handles_invalid_content(self):
-        """Test PagerDuty transform handles invalid JSON gracefully."""
+    def test_pagerduty_transform_fails_on_unrecognized_format(self):
+        """Test that transform fails clearly on unrecognized response format."""
+        cipr = Mock()
+        cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "coverage_notes": ""}
+
+        response = [Mock()]
+        response[0].json.return_value = "unexpected string format"
+
+        try:
+            transform(cipr, response, "pagerduty")
+            assert False, "Should have raised ValueError for unrecognized format"
+        except ValueError as e:
+            assert "Unrecognized" in str(e)
+            assert "str" in str(e)  # Should mention the type
+
+    def test_pagerduty_transform_fails_on_invalid_json(self):
+        """Test that transform fails clearly on invalid JSON."""
         cipr = Mock()
         cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "coverage_notes": ""}
 
         response = [Mock()]
         response[0].json.side_effect = ValueError("Invalid JSON")
 
+        try:
+            transform(cipr, response, "pagerduty")
+            assert False, "Should have raised ValueError for invalid JSON"
+        except ValueError as e:
+            assert "Failed to parse" in str(e) or "Invalid JSON" in str(e)
+
+    def test_pagerduty_transform_skips_non_string_items_in_array(self):
+        """Test that non-string items in array are skipped."""
+        cipr = Mock()
+        cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "coverage_notes": ""}
+
+        # Array with mixed types
+        mock_json = [
+            "44.242.69.192",
+            12345,  # Non-string, should be skipped
+            None,   # Non-string, should be skipped
+            "52.89.71.166",
+        ]
+
+        response = [Mock()]
+        response[0].json.return_value = mock_json
+
         result = transform(cipr, response, "pagerduty")
 
-        # Should not crash, just return empty lists
-        assert isinstance(result["ipv4"], list)
-        assert isinstance(result["ipv6"], list)
-        assert len(result["ipv4"]) == 0
+        # Should only have the two valid string IPs
+        assert len(result["ipv4"]) == 2
+        assert "44.242.69.192/32" in result["ipv4"]
+        assert "52.89.71.166/32" in result["ipv4"]

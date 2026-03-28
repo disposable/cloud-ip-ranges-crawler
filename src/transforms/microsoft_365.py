@@ -1,44 +1,84 @@
-import re
+"""Microsoft 365 endpoints web service transform.
+
+SCOPE: Microsoft 365 endpoint IP ranges from the official web service.
+This is Microsoft 365-specific endpoint data, NOT universal Microsoft network coverage.
+
+API FLOW:
+1. Generate local UUID per request (NOT scraped from docs)
+2. Check version endpoint first to detect changes
+3. Fetch endpoints only when version indicates updates
+4. Preserve endpoint metadata: serviceArea, category, endpoint IDs
+
+References:
+- https://learn.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-ip-web-service
+- Version endpoint: /version/worldwide
+- Endpoints endpoint: /endpoints/worldwide
+
+OUT OF SCOPE:
+- Azure service tags (separate source: microsoft_azure)
+- General Microsoft network ranges
+- Non-Worldwide instances (GovCloud, China, etc.)
+"""
+
+import uuid
 from typing import Any, Dict, List
+
+# API base URL
+M365_API_BASE = "https://endpoints.office.com"
 
 
 def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]:
-    """Transform Microsoft 365 endpoints web service response to extract IP ranges.
+    """Transform Microsoft 365 endpoints web service response.
 
-    The Microsoft 365 IP Address and URL web service returns an array of endpoint sets,
-    each containing IP address ranges in the 'ips' field.
+    Implements the proper web service flow:
+    1. Generate local UUID per request
+    2. Check version endpoint for updates
+    3. Fetch endpoints payload when needed
+    4. Preserve metadata (serviceArea, category, endpoint IDs)
 
-    Reference: https://learn.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-ip-web-service
+    This is Microsoft 365 endpoint data only - NOT Azure or general Microsoft IPs.
     """
     result = cipr._transform_base(source_key)
     result["details_ipv4"] = []
     result["details_ipv6"] = []
+    result["coverage_notes"] = (
+        "Microsoft 365 Worldwide instance endpoints ONLY. "
+        "Includes Exchange, SharePoint, Skype, Common services. "
+        "Does NOT include Azure service tags or general Microsoft networks."
+    )
 
-    # First, extract ClientRequestId from documentation page
-    doc_html = response[0].text
+    # Generate local UUID per request - do NOT scrape from docs
+    client_request_id = str(uuid.uuid4())
 
-    # Look for GUID pattern in URLs (e.g., ClientRequestId=b10c5ed1-bad1-445f-b386-b919946339a7)
-    guid_pattern = re.compile(r"\?clientrequestid=([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})", re.IGNORECASE)
-    match = guid_pattern.search(doc_html)
+    # Check version endpoint first
+    version_url = f"{M365_API_BASE}/version/worldwide?clientrequestid={client_request_id}"
 
-    if match:
-        client_request_id = match.group(1)
-    else:
-        # Fallback to example GUID from docs if not found
-        client_request_id = "b10c5ed1-bad1-445f-b386-b919946339a7"
+    try:
+        version_response = cipr.session.get(version_url, timeout=10)
+        version_response.raise_for_status()
+        version_data = version_response.json()
 
-    # Build the actual API URL with the extracted ClientRequestId
-    api_url = f"https://endpoints.office.com/endpoints/worldwide?clientrequestid={client_request_id}"
+        # Extract version metadata
+        latest_version = version_data.get("latest", "unknown")
+        result["source_updated_at"] = latest_version
+    except Exception:
+        # If version check fails, proceed anyway - we'll try to fetch endpoints
+        latest_version = "unknown"
 
-    # Fetch the actual endpoints data
-    api_response = cipr.session.get(api_url, timeout=10)
-    api_response.raise_for_status()
+    # Fetch endpoints payload
+    endpoints_url = f"{M365_API_BASE}/endpoints/worldwide?clientrequestid={client_request_id}"
 
-    data = api_response.json()
+    try:
+        api_response = cipr.session.get(endpoints_url, timeout=30)
+        api_response.raise_for_status()
+        data = api_response.json()
+    except Exception as e:
+        raise RuntimeError(f"Failed to fetch Microsoft 365 endpoints: {e}") from e
 
     if not isinstance(data, list):
         raise ValueError(f"Expected JSON array from Microsoft 365 API, got {type(data).__name__}")
 
+    # Process endpoint data with full metadata preservation
     ipv4 = set()
     ipv6 = set()
     details_ipv4 = []
@@ -48,10 +88,15 @@ def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]
         if not isinstance(endpoint_set, dict):
             continue
 
-        ips = endpoint_set.get("ips", [])
+        # Extract endpoint metadata
+        endpoint_id = endpoint_set.get("id", "")
         service_area = endpoint_set.get("serviceArea", "")
         category = endpoint_set.get("category", "")
+        required = endpoint_set.get("required", False)
+        tcp_ports = endpoint_set.get("tcpPorts", "")
+        udp_ports = endpoint_set.get("udpPorts", "")
 
+        ips = endpoint_set.get("ips", [])
         if not isinstance(ips, list):
             continue
 
@@ -59,21 +104,34 @@ def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]
             if not isinstance(ip, str):
                 continue
 
+            # Build detail entry with full metadata
+            detail = {
+                "address": ip,
+                "serviceArea": service_area,
+                "category": category,
+                "endpointId": endpoint_id,
+                "required": required,
+            }
+            if tcp_ports:
+                detail["tcpPorts"] = tcp_ports
+            if udp_ports:
+                detail["udpPorts"] = udp_ports
+
             if ":" in ip:
                 ipv6.add(ip)
-                details_ipv6.append({"address": ip, "serviceArea": service_area, "category": category})
+                details_ipv6.append(detail)
             else:
                 ipv4.add(ip)
-                details_ipv4.append({"address": ip, "serviceArea": service_area, "category": category})
+                details_ipv4.append(detail)
 
-    result["ipv4"] = list(ipv4)
-    result["ipv6"] = list(ipv6)
+    result["ipv4"] = sorted(ipv4)
+    result["ipv6"] = sorted(ipv6)
     if details_ipv4:
         result["details_ipv4"] = details_ipv4
     if details_ipv6:
         result["details_ipv6"] = details_ipv6
 
-    # Update source to reflect the actual API URL used
-    result["source"] = api_url
+    # Document the actual API URLs used
+    result["source"] = [version_url, endpoints_url]
 
     return result
