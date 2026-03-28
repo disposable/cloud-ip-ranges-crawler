@@ -1,0 +1,46 @@
+[
+  {
+    "id": 1,
+    "serviceArea": "Exchange",
+    "serviceAreaDisplayName": "Exchange Online",
+    "urls": ["*.protection.outlook.com"],
+    "ips": ["13.107.6.152/31", "13.107.18.10/31", "13.107.128.0/22"],
+    "category": "Optimize",
+    "required": true,
+    "tcpPorts": "443",
+    "udpPorts": ""
+  },
+  {
+    "id": 2,
+    "serviceArea": "SharePoint",
+    "serviceAreaDisplayName": "SharePoint Online and OneDrive for Business",
+    "urls": ["*.sharepoint.com", "*.officeapps.live.com"],
+    "ips": ["13.107.136.0/22", "40.108.128.0/17"],
+    "category": "Default",
+    "required": true,
+    "tcpPorts": "443",
+    "udpPorts": ""
+  },
+  {
+    "id": 3,
+    "serviceArea": "Skype",
+    "serviceAreaDisplayName": "Microsoft Teams and Skype for Business Online",
+    "urls": ["*.teams.microsoft.com"],
+    "ips": ["13.107.64.0/18"],
+    "category": "Default",
+    "required": true,
+    "tcpPorts": "443",
+    "udpPorts": "3478,3479,3480,3481"
+  },
+  {
+    "id": 4,
+    "serviceArea": "Common",
+    "serviceAreaDisplayName": "Microsoft 365 Common and Office Online",
+    "urls": ["*.office.com", "*.office365.com"],
+    "ips": [["40.96.0.0/13", "40.104.0.0/13"], "2a01:111:f400::/48"],
+    "category": "Default",
+    "required": true,
+    "tcpPorts": "443",
+    "udpPorts": ""
+  }
+]

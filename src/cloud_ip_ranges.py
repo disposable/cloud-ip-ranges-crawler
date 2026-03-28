@@ -382,7 +382,11 @@ class CloudIPRanges:
                 return False
 
         # Route to appropriate source handler
-        if isinstance(url, list) and url and isinstance(url[0], str) and is_seed_cidr(url[0]):
+        if source_key == "microsoft_365":
+            # Microsoft 365 has its own fetch logic in the transform
+            # Don't pre-fetch the documentation page
+            transformed_data = self._fetch_microsoft_365(source_key)
+        elif isinstance(url, list) and url and isinstance(url[0], str) and is_seed_cidr(url[0]):
             transformed_data = fetch_and_save_seed_cidr_source(self, source_key, url)
         elif isinstance(url, list) and url and isinstance(url[0], str) and (url[0].startswith("AS") or url[0].startswith("RADB::")):
             transformed_data = fetch_and_save_asn_source(self, source_key, url)
@@ -585,6 +589,18 @@ class CloudIPRanges:
             logging.debug("Saved %s-details.(json/csv)", base_name)
 
         return len(transformed_data["ipv4"]), len(transformed_data["ipv6"])
+
+    def _fetch_microsoft_365(self, source_key: str) -> Dict[str, Any]:
+        """Fetch Microsoft 365 data directly without pre-fetching documentation.
+
+        Microsoft 365 has its own web service flow that generates a local UUID
+        and calls the endpoints.office.com API directly. We skip the documentation
+        page fetch since it's not used by the transform.
+        """
+        from transforms.microsoft_365 import transform
+
+        # Call transform with empty response (it makes its own API calls)
+        return transform(self, [], source_key)
 
     def fetch_all(self, sources: Optional[Set[str]] = None) -> bool:
         error = False

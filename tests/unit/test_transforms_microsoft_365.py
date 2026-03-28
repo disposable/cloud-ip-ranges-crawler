@@ -331,8 +331,11 @@ class TestMicrosoft365Transform:
         # But details should preserve all entries (with different metadata)
         assert len(result["details_ipv4"]) == 3  # Two Exchange + one SharePoint
 
-    def test_microsoft_365_source_urls_documented(self):
-        """Test that both version and endpoints URLs are documented in result."""
+    def test_microsoft_365_source_stable_source_http_contains_urls(self):
+        """Test that source is stable (docs URL) and source_http has the UUID URLs.
+
+        This is critical for change detection - source must be stable across runs.
+        """
         cipr = Mock()
         cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "details_ipv4": [], "details_ipv6": [], "source": "", "source_updated_at": None}
 
@@ -358,8 +361,14 @@ class TestMicrosoft365Transform:
 
         result = transform(cipr, input_response, "microsoft_365")
 
-        # Source should be a list with both URLs
-        assert isinstance(result["source"], list)
-        assert len(result["source"]) == 2
-        assert any("/version/" in s for s in result["source"])
-        assert any("/endpoints/" in s for s in result["source"])
+        # Source should be stable documentation URL (no UUID)
+        assert result["source"] == "https://learn.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-ip-web-service"
+
+        # source_http should contain the actual API URLs with UUIDs
+        assert "source_http" in result
+        assert isinstance(result["source_http"], list)
+        assert len(result["source_http"]) == 2
+        assert any("/version/" in s for s in result["source_http"])
+        assert any("/endpoints/" in s for s in result["source_http"])
+        # URLs should have UUIDs (clientrequestid parameter)
+        assert all("clientrequestid=" in s.lower() for s in result["source_http"])

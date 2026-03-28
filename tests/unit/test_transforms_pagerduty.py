@@ -180,20 +180,23 @@ class TestPagerdutyTransform:
         assert "NOT included" in result["coverage_notes"]
         assert "TLS" in result["coverage_notes"] or "signature" in result["coverage_notes"]
 
-    def test_pagerduty_transform_fails_on_unrecognized_format(self):
-        """Test that transform fails clearly on unrecognized response format."""
+    def test_pagerduty_transform_fails_on_dict_without_recognized_keys(self):
+        """Test that transform fails on dict payloads without ipv4/ipv6 keys."""
         cipr = Mock()
         cipr._transform_base.return_value = {"ipv4": [], "ipv6": [], "coverage_notes": ""}
 
+        # Dict with unrecognized keys (no ipv4 or ipv6)
+        mock_json = {"foo": "bar", "baz": 123}
+
         response = [Mock()]
-        response[0].json.return_value = "unexpected string format"
+        response[0].json.return_value = mock_json
 
         try:
             transform(cipr, response, "pagerduty")
-            assert False, "Should have raised ValueError for unrecognized format"
+            assert False, "Should have raised ValueError for dict without recognized keys"
         except ValueError as e:
-            assert "Unrecognized" in str(e)
-            assert "str" in str(e)  # Should mention the type
+            assert "missing 'ipv4' or 'ipv6' keys" in str(e)
+            assert "foo" in str(e)  # Should mention the actual keys received
 
     def test_pagerduty_transform_fails_on_invalid_json(self):
         """Test that transform fails clearly on invalid JSON."""

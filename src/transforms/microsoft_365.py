@@ -26,6 +26,9 @@ from typing import Any, Dict, List
 # API base URL
 M365_API_BASE = "https://endpoints.office.com"
 
+# Stable source reference (no UUID)
+M365_DOCUMENTATION_URL = "https://learn.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-ip-web-service"
+
 
 def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]:
     """Transform Microsoft 365 endpoints web service response.
@@ -131,7 +134,9 @@ def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]
     if details_ipv6:
         result["details_ipv6"] = details_ipv6
 
-    # Document the actual API URLs used
-    result["source"] = [version_url, endpoints_url]
+    # Keep source stable (documentation URL only, no UUID)
+    # Store the actual API URLs with UUIDs in source_http for debugging
+    result["source"] = M365_DOCUMENTATION_URL
+    result["source_http"] = [version_url, endpoints_url]
 
     return result

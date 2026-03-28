@@ -71,16 +71,28 @@ def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]
 
         # Handle object format with ipv4/ipv6 fields (alternative format)
         elif isinstance(data, dict):
-            for ip in data.get("ipv4", []):
-                if isinstance(ip, str):
-                    _add_ip_with_metadata(
-                        ip, region, "webhook", ipv4_set, ipv6_set, ipv4_details, ipv6_details
-                    )
-            for ip in data.get("ipv6", []):
-                if isinstance(ip, str):
-                    _add_ip_with_metadata(
-                        ip, region, "webhook", ipv4_set, ipv6_set, ipv4_details, ipv6_details
-                    )
+            # Must have at least one recognized key to be valid
+            has_ipv4 = "ipv4" in data and isinstance(data.get("ipv4"), list)
+            has_ipv6 = "ipv6" in data and isinstance(data.get("ipv6"), list)
+
+            if not has_ipv4 and not has_ipv6:
+                raise ValueError(
+                    f"Unrecognized PagerDuty {region} dict format: missing 'ipv4' or 'ipv6' keys. "
+                    f"Got keys: {list(data.keys())}"
+                )
+
+            if has_ipv4:
+                for ip in data["ipv4"]:
+                    if isinstance(ip, str):
+                        _add_ip_with_metadata(
+                            ip, region, "webhook", ipv4_set, ipv6_set, ipv4_details, ipv6_details
+                        )
+            if has_ipv6:
+                for ip in data["ipv6"]:
+                    if isinstance(ip, str):
+                        _add_ip_with_metadata(
+                            ip, region, "webhook", ipv4_set, ipv6_set, ipv4_details, ipv6_details
+                        )
 
         else:
             # Fail clearly on unrecognized format

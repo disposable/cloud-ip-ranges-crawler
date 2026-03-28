@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head><title>GitLab.com settings | GitLab</title></head>
+<body>
+<h1>GitLab.com settings</h1>
+
+<h2>Cloudflare Integration</h2>
+<p>GitLab.com uses Cloudflare IPs like 104.16.0.0/12 and 162.158.0.0/16</p>
+
+<h2>Web/API fleet</h2>
+<p>The following IP ranges are solely allocated to GitLab for Web/API traffic:</p>
+<ul>
+<li>34.74.90.64/28</li>
+<li>34.74.226.0/24</li>
+</ul>
+<p>These ranges are used for webhook traffic and repository mirroring.</p>
+
+<h2>Other Services</h2>
+<p>Some other services use 192.168.1.0/24 or 10.0.0.0/8</p>
+
+<p>NOTE: GitLab-hosted runners do NOT have static egress IPs.</p>
+</body>
+</html>
