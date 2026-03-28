@@ -96,6 +96,12 @@ class CloudIPRanges:
         ],
         "fastly": ["https://api.fastly.com/public-ip-list"],
         "microsoft_azure": ["https://azservicetags.azurewebsites.net/"],
+        "microsoft_365": ["https://learn.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-ip-web-service"],
+        "gitlab": ["https://docs.gitlab.com/user/gitlab_com/"],
+        "pagerduty": [
+            "https://developer.pagerduty.com/ip-safelists/webhooks-us-service-region-json",
+            "https://developer.pagerduty.com/ip-safelists/webhooks-eu-service-region-json",
+        ],
         "exoscale": ["https://exoscale-prefixes.sos-ch-dk-2.exo.io/exoscale_prefixes.json"],
         "scaleway": ["https://www.scaleway.com/en/docs/account/reference-content/scaleway-network-information/"],
         "backblaze": ["https://www.backblaze.com/computer-backup/docs/backblaze-ip-addresses"],

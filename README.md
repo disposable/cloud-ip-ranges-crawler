@@ -36,6 +36,9 @@ See `src/sources/` for the latest definitions; new providers usually only requir
 - **Apple Private Relay** - Public egress exit CSV for iCloud Private Relay
 - **Ahrefs**, **Sentry**, **Datadog**, **Branch**, **Perplexity**, **OpenAI**, **Telegram**, **Atlassian**, **Intercom**, **Zendesk**
 - **Linode**, **Vultr**, **Starlink**, **Fastly**, **Akamai**, **Zscaler**
+- **Microsoft 365** - IP Address and URL web service endpoints (Worldwide instance)
+- **GitLab.com Web/API fleet** - Dedicated CIDRs for webhooks and repository mirroring
+- **PagerDuty** - Webhook and REST API IP ranges
 - **GitHub**, **CircleCI**, **HCP Terraform**, **New Relic Synthetics**, **Grafana Cloud**
 - **Okta**, **Stripe**, **Adyen**, **Salesforce Hyperforce**, **Vercel** (registry-owned blocks)
 
