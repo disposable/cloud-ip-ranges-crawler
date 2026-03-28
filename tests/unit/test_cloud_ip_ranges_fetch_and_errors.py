@@ -144,8 +144,10 @@ def test_audit_transformed_data_detects_ipv6_default_route() -> None:
 
 def test_enforce_max_delta_raises_when_ratio_exceeded() -> None:
     crawler = CloudIPRanges({"json"})
-    old = {"ipv4": ["198.51.100.0/24"], "ipv6": []}
-    new = {"ipv4": ["198.51.100.0/24", "203.0.113.0/24"], "ipv6": []}
+    old_ipv4 = [f"198.51.100.{i}/32" for i in range(10)]
+    new_ipv4 = old_ipv4 + [f"203.0.113.{i}/32" for i in range(6)]  # >5 absolute additions
+    old = {"ipv4": old_ipv4, "ipv6": []}
+    new = {"ipv4": new_ipv4, "ipv6": []}
 
     with pytest.raises(RuntimeError, match="Delta check failed"):
         crawler._enforce_max_delta(old, new, max_ratio=0.2, source_key="test")
