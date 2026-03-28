@@ -3,27 +3,38 @@ from typing import Any, Dict, List
 
 def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]:
     result = cipr._transform_base(source_key)
+    ipv4: set[str] = set()
+    ipv6: set[str] = set()
 
-    try:
-        # Cloudflare API returns JSON with ipv4_cidrs and ipv6_cidrs
-        data = response[0].json()
+    for r in response:
+        try:
+            # Cloudflare API returns JSON with ipv4_cidrs and ipv6_cidrs.
+            data = r.json()
+            if isinstance(data, dict) and "result" in data:
+                api_result = data.get("result", {})
+                ipv4.update(api_result.get("ipv4_cidrs", []) or [])
+                ipv6.update(api_result.get("ipv6_cidrs", []) or [])
+                # JD Cloud endpoint can return cidrs in jdcloud_cidrs.
+                for cidr in api_result.get("jdcloud_cidrs", []) or []:
+                    if ":" in cidr:
+                        ipv6.add(cidr)
+                    else:
+                        ipv4.add(cidr)
+                continue
+        except (ValueError, AttributeError, KeyError, TypeError):
+            pass
 
-        if "result" in data:
-            result["ipv4"] = data["result"].get("ipv4_cidrs", [])
-            result["ipv6"] = data["result"].get("ipv6_cidrs", [])
-        else:
-            # Fallback for legacy format
-            text_data = [r.text for r in response]
-            if isinstance(text_data[0], str):
-                result["ipv4"] = text_data[0].splitlines()
-            if len(text_data) > 1 and isinstance(text_data[1], str):
-                result["ipv6"] = text_data[1].splitlines()
-    except (ValueError, AttributeError, KeyError):
-        # Fallback: treat response as plain text
-        text_data = [r.text for r in response]
-        if isinstance(text_data[0], str):
-            result["ipv4"] = text_data[0].splitlines()
-        if len(text_data) > 1 and isinstance(text_data[1], str):
-            result["ipv6"] = text_data[1].splitlines()
+        # Text endpoints (ips-v4 / ips-v6) return one CIDR per line.
+        for line in (r.text or "").splitlines():
+            cidr = line.strip()
+            if not cidr:
+                continue
+            if ":" in cidr:
+                ipv6.add(cidr)
+            else:
+                ipv4.add(cidr)
+
+    result["ipv4"] = sorted(ipv4)
+    result["ipv6"] = sorted(ipv6)
 
     return result

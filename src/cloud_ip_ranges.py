@@ -39,10 +39,18 @@ class DeltaCheckError(RuntimeError):
 class CloudIPRanges:
     sources = {
         "aws": ["https://ip-ranges.amazonaws.com/ip-ranges.json"],
-        "cloudflare": ["https://www.cloudflare.com/ips-v4", "https://www.cloudflare.com/ips-v6"],
+        "cloudflare": [
+            "https://www.cloudflare.com/ips-v4",
+            "https://www.cloudflare.com/ips-v6",
+            "https://api.cloudflare.com/client/v4/ips?networks=jdcloud",
+        ],
         "digitalocean": ["https://digitalocean.com/geo/google.csv"],
-        "google_cloud": ["https://www.gstatic.com/ipranges/cloud.json"],
-        "google_bot": ["https://developers.google.com/static/search/apis/ipranges/googlebot.json"],
+        "google_cloud": ["https://www.gstatic.com/ipranges/cloud.json", "https://www.gstatic.com/ipranges/goog.json"],
+        "google_bot": [
+            "https://developers.google.com/static/search/apis/ipranges/googlebot.json",
+            "https://developers.google.com/search/apis/ipranges/special-crawlers.json",
+            "https://developers.google.com/search/apis/ipranges/user-triggered-fetchers.json",
+        ],
         "bing_bot": ["https://www.bing.com/toolbox/bingbot.json"],
         "oracle_cloud": ["https://docs.oracle.com/iaas/tools/public_ip_ranges.json"],
         "ahrefs": ["https://api.ahrefs.com/v3/public/crawler-ips"],

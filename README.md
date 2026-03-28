@@ -23,10 +23,10 @@ See `src/sources/` for the latest definitions; new providers usually only requir
 
 - **Amazon Web Services (AWS)** - Service + region metadata
 - **Microsoft Azure** - Service tag explorer API (covers 60+ clouds/regions)
-- **Cloudflare** - IPv4/IPv6 prefixes
+- **Cloudflare** - IPv4/IPv6 prefixes (+ JD Cloud network feed)
 - **DigitalOcean** - GeoIP CSV export
-- **Google Cloud** - Service-tagged ranges
-- **Google Bot / Bing Bot** - Search crawler IPs
+- **Google Cloud** - Service-tagged ranges (+ `goog.json` Google services feed)
+- **Google Bot / Bing Bot** - Search crawler IPs (includes special crawlers + user-triggered fetchers feeds)
 - **Oracle Cloud** - Region-aware IP lists
 - **Exoscale** - JSON feed with zone metadata
 - **Scaleway** - Network documentation HTML scrape

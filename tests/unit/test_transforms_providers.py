@@ -44,11 +44,34 @@ def test_google_cloud_transform_has_details(cipr) -> None:
     assert res["details_ipv6"] and {"address", "service", "scope"}.issubset(res["details_ipv6"][0].keys())
 
 
+def test_google_cloud_transform_merges_cloud_and_goog_feeds(cipr) -> None:
+    rs = [
+        FakeResponse(json_data={"creationTime": "2026-01-01T00:00:00Z", "prefixes": [{"ipv4Prefix": "1.1.1.0/24"}]}),
+        FakeResponse(json_data={"creationTime": "2026-01-02T00:00:00Z", "prefixes": [{"ipv4Prefix": "8.8.8.0/24"}]}),
+    ]
+    res = _transform_response(cipr, rs, "google_cloud", is_asn=False)
+    assert "1.1.1.0/24" in res["ipv4"]
+    assert "8.8.8.0/24" in res["ipv4"]
+
+
 def test_google_bot_transform(cipr) -> None:
     r = _load_raw(SAMPLES_DIR / "google_bot_0.raw")
     res = _transform_response(cipr, [r], "google_bot", is_asn=False)
     assert res["provider"] == "Google Bot"
     assert _has_valid_ipv4(res) or _has_valid_ipv6(res)
+
+
+def test_google_bot_transform_merges_multiple_google_feeds(cipr) -> None:
+    rs = [
+        FakeResponse(json_data={"creationTime": "2026-01-01T00:00:00Z", "prefixes": [{"ipv4Prefix": "1.1.1.0/24"}]}),
+        FakeResponse(json_data={"creationTime": "2026-01-02T00:00:00Z", "prefixes": [{"ipv4Prefix": "8.8.8.0/24"}]}),
+        FakeResponse(json_data={"creationTime": "2026-01-03T00:00:00Z", "prefixes": [{"ipv6Prefix": "2606:4700::/32"}]}),
+    ]
+    res = _transform_response(cipr, rs, "google_bot", is_asn=False)
+    assert "1.1.1.0/24" in res["ipv4"]
+    assert "8.8.8.0/24" in res["ipv4"]
+    assert "2606:4700::/32" in res["ipv6"]
+    assert res["last_update"] == "2026-01-03T00:00:00Z"
 
 
 def test_bing_bot_transform(cipr) -> None:

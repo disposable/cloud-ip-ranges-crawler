@@ -146,3 +146,13 @@ def test_normalize_transformed_data_with_missing_keys() -> None:
     # Missing details keys should remain None (not added)
     assert result.get("details_ipv4") is None
     assert result.get("details_ipv6") is None
+
+
+def test_sources_include_cloudiplookup_parity_endpoints() -> None:
+    """Ensure endpoints mirrored from cloudiplookup are present."""
+    crawler = CloudIPRanges({"json"})
+
+    assert "https://www.gstatic.com/ipranges/goog.json" in crawler.sources["google_cloud"]
+    assert "https://developers.google.com/search/apis/ipranges/special-crawlers.json" in crawler.sources["google_bot"]
+    assert "https://developers.google.com/search/apis/ipranges/user-triggered-fetchers.json" in crawler.sources["google_bot"]
+    assert "https://api.cloudflare.com/client/v4/ips?networks=jdcloud" in crawler.sources["cloudflare"]
