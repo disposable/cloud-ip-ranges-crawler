@@ -24,9 +24,7 @@ class TestCloudflareTransform:
         """Test Cloudflare transform with real sample data."""
         r_v4 = _load_raw(SAMPLES_DIR / "cloudflare_0.raw")
         r_v6 = _load_raw(SAMPLES_DIR / "cloudflare_1.raw")
-        r_jd = FakeResponse(
-            json_data={"result": {"ipv4_cidrs": ["101.33.20.0/23"], "ipv6_cidrs": [], "jdcloud_cidrs": ["1.2.3.0/24"]}}
-        )
+        r_jd = FakeResponse(json_data={"result": {"ipv4_cidrs": ["101.33.20.0/23"], "ipv6_cidrs": [], "jdcloud_cidrs": ["1.2.3.0/24"]}})
         res = _transform_response(cipr, [r_v4, r_v6, r_jd], "cloudflare", is_asn=False)
 
         assert res["provider"] == "Cloudflare"
