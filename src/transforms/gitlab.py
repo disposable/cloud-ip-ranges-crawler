@@ -69,7 +69,7 @@ def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]
     return result
 
 
-def _extract_webapi_section(html: str) -> str:
+def _extract_webapi_section(_html: str) -> str:
     """Extract the Web/API fleet section from HTML - DISABLED.
 
     NOTE: This function is intentionally not used. HTML extraction is disabled
@@ -86,7 +86,7 @@ def _extract_webapi_section(html: str) -> str:
     return ""
 
 
-def _extract_cidrs_from_section(section: str) -> List[str]:
+def _extract_cidrs_from_section(_section: str) -> List[str]:
     """Extract CIDRs from a specific HTML section - DISABLED.
 
     NOTE: This function is intentionally not used.
