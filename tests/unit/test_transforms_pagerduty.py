@@ -221,7 +221,7 @@ class TestPagerdutyTransform:
         mock_json = [
             "44.242.69.192",
             12345,  # Non-string, should be skipped
-            None,   # Non-string, should be skipped
+            None,  # Non-string, should be skipped
             "52.89.71.166",
         ]
 

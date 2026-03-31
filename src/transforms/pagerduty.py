@@ -65,9 +65,7 @@ def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]
             for ip in data:
                 if not isinstance(ip, str):
                     continue
-                _add_ip_with_metadata(
-                    ip, region, "webhook", ipv4_set, ipv6_set, ipv4_details, ipv6_details
-                )
+                _add_ip_with_metadata(ip, region, "webhook", ipv4_set, ipv6_set, ipv4_details, ipv6_details)
 
         # Handle object format with ipv4/ipv6 fields (alternative format)
         elif isinstance(data, dict):
@@ -76,30 +74,20 @@ def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]
             has_ipv6 = "ipv6" in data and isinstance(data.get("ipv6"), list)
 
             if not has_ipv4 and not has_ipv6:
-                raise ValueError(
-                    f"Unrecognized PagerDuty {region} dict format: missing 'ipv4' or 'ipv6' keys. "
-                    f"Got keys: {list(data.keys())}"
-                )
+                raise ValueError(f"Unrecognized PagerDuty {region} dict format: missing 'ipv4' or 'ipv6' keys. Got keys: {list(data.keys())}")
 
             if has_ipv4:
                 for ip in data["ipv4"]:
                     if isinstance(ip, str):
-                        _add_ip_with_metadata(
-                            ip, region, "webhook", ipv4_set, ipv6_set, ipv4_details, ipv6_details
-                        )
+                        _add_ip_with_metadata(ip, region, "webhook", ipv4_set, ipv6_set, ipv4_details, ipv6_details)
             if has_ipv6:
                 for ip in data["ipv6"]:
                     if isinstance(ip, str):
-                        _add_ip_with_metadata(
-                            ip, region, "webhook", ipv4_set, ipv6_set, ipv4_details, ipv6_details
-                        )
+                        _add_ip_with_metadata(ip, region, "webhook", ipv4_set, ipv6_set, ipv4_details, ipv6_details)
 
         else:
             # Fail clearly on unrecognized format
-            raise ValueError(
-                f"Unrecognized PagerDuty {region} response format: {type(data).__name__}. "
-                f"Expected list or dict."
-            )
+            raise ValueError(f"Unrecognized PagerDuty {region} response format: {type(data).__name__}. Expected list or dict.")
 
     result["ipv4"] = sorted(ipv4_set)
     result["ipv6"] = sorted(ipv6_set)
@@ -111,15 +99,7 @@ def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]
     return result
 
 
-def _add_ip_with_metadata(
-    ip: str,
-    region: str,
-    surface: str,
-    ipv4_set: set,
-    ipv6_set: set,
-    ipv4_details: List[Dict],
-    ipv6_details: List[Dict]
-) -> None:
+def _add_ip_with_metadata(ip: str, region: str, surface: str, ipv4_set: set, ipv6_set: set, ipv4_details: List[Dict], ipv6_details: List[Dict]) -> None:
     """Add IP with surface and region metadata.
 
     Args:

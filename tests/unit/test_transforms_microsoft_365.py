@@ -32,6 +32,7 @@ class TestMicrosoft365Transform:
 
         # Track calls made to session.get
         calls_made = []
+
         def mock_get(url, **kwargs):
             calls_made.append(url)
             if "/version/" in url:
@@ -68,12 +69,11 @@ class TestMicrosoft365Transform:
         version_response.raise_for_status.return_value = None
 
         endpoints_response = Mock()
-        endpoints_response.json.return_value = [
-            {"id": 1, "serviceArea": "Exchange", "ips": ["23.103.132.0/22"], "category": "Allow"}
-        ]
+        endpoints_response.json.return_value = [{"id": 1, "serviceArea": "Exchange", "ips": ["23.103.132.0/22"], "category": "Allow"}]
         endpoints_response.raise_for_status.return_value = None
 
         call_order = []
+
         def mock_get(url, **kwargs):
             call_order.append(url)
             if "/version/" in url:
@@ -108,15 +108,7 @@ class TestMicrosoft365Transform:
 
         endpoints_response = Mock()
         endpoints_response.json.return_value = [
-            {
-                "id": 42,
-                "serviceArea": "Exchange",
-                "category": "Allow",
-                "required": True,
-                "tcpPorts": "443,993",
-                "udpPorts": "",
-                "ips": ["23.103.132.0/22"]
-            },
+            {"id": 42, "serviceArea": "Exchange", "category": "Allow", "required": True, "tcpPorts": "443,993", "udpPorts": "", "ips": ["23.103.132.0/22"]},
             {
                 "id": 43,
                 "serviceArea": "Skype",
@@ -124,8 +116,8 @@ class TestMicrosoft365Transform:
                 "required": False,
                 "tcpPorts": "443",
                 "udpPorts": "3478",
-                "ips": ["13.107.64.0/18", "2a01:111:f100::/48"]
-            }
+                "ips": ["13.107.64.0/18", "2a01:111:f100::/48"],
+            },
         ]
         endpoints_response.raise_for_status.return_value = None
 
@@ -176,9 +168,7 @@ class TestMicrosoft365Transform:
                 raise Exception("Version check failed")
             elif "/endpoints/" in url:
                 endpoints_response = Mock()
-                endpoints_response.json.return_value = [
-                    {"id": 1, "serviceArea": "Exchange", "ips": ["23.103.132.0/22"], "category": "Allow"}
-                ]
+                endpoints_response.json.return_value = [{"id": 1, "serviceArea": "Exchange", "ips": ["23.103.132.0/22"], "category": "Allow"}]
                 endpoints_response.raise_for_status.return_value = None
                 return endpoints_response
             return Mock()
