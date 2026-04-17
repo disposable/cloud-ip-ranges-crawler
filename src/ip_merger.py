@@ -67,19 +67,6 @@ class IPMerger:
         return merged_ipv4 + merged_ipv6
 
     @staticmethod
-    def _networks_are_neighboring(net1: IPvXNetwork, net2: IPvXNetwork) -> bool:
-        """Check if two networks are directly adjacent.
-
-        Kept for drop-in compatibility; not used by the new collapsing algorithm.
-        """
-        if net1.version != net2.version:
-            return False
-        try:
-            return int(net1.broadcast_address) + 1 == int(net2.network_address) or int(net2.broadcast_address) + 1 == int(net1.network_address)
-        except (ipaddress.AddressValueError, OverflowError):
-            return False
-
-    @staticmethod
     def _merge_same_version_v4(networks_list: List[ipaddress.IPv4Network]) -> List[ipaddress.IPv4Network]:
         """Collapse IPv4 networks without widening coverage."""
         if not networks_list:

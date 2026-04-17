@@ -48,6 +48,6 @@ def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]
         result["ipv6"] = [ip for ip in result["ipv6"] if ip]
 
     except (ValueError, AttributeError, KeyError) as e:
-        raise ValueError(f"Failed to parse Exoscale JSON response: {e}")
+        raise ValueError(f"Failed to parse Exoscale JSON response: {e}") from e
 
     return result

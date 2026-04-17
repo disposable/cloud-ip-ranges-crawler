@@ -44,6 +44,6 @@ def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]
                 continue
 
     except Exception as e:
-        raise ValueError(f"Failed to parse Backblaze HTML response: {e}")
+        raise ValueError(f"Failed to parse Backblaze HTML response: {e}") from e
 
     return result

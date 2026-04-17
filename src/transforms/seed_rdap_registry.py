@@ -81,7 +81,7 @@ def _parse_nets_response(nets_r: Any, handle: str) -> List[Tuple[str, str]]:
         except Exception as e:
             logging.error("Failed to parse ARIN nets for %s (both JSON and XML): %s", handle, e)
             logging.error("Response body: %s", nets_r.text[:500])
-            raise RuntimeError(f"ARIN nets could not be parsed for {handle}")
+            raise RuntimeError(f"ARIN nets could not be parsed for {handle}") from e
 
     return all_nets
 

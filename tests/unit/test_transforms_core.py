@@ -87,7 +87,7 @@ def test_oracle_cloud_transform_includes_ipv4_ipv6_lists(cipr: CloudIPRanges) ->
 
 def test_save_result_writes_details_files(tmp_path: Path) -> None:
     crawler = CloudIPRanges({"json", "csv"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
     data = {
         "provider": "Test",
         "provider_id": "test",
@@ -126,7 +126,7 @@ def test_add_env_statistics_writes_github_output(tmp_path: Path, monkeypatch: py
 
 def test_fetch_and_save_seed_cidr_source_vercel(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     crawler = CloudIPRanges({"json"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
     crawler.sources = {"vercel": ["76.76.21.0/24"]}
 
     rdap = FakeResponse(json_data={"entities": [{"handle": "ZEITI", "roles": ["registrant"]}]})
@@ -167,7 +167,7 @@ def test_fetch_and_save_seed_cidr_source_vercel(tmp_path: Path, monkeypatch: pyt
 
 def test_fetch_and_save_asn_source_merges_multiple_asns(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     crawler = CloudIPRanges({"json"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
     crawler.sources = {"multi": ["AS1", "AS2"]}
 
     def fake_get(url: str, timeout: int = 10):
@@ -203,7 +203,7 @@ def test_fetch_and_save_radb_as_set_expands_to_asns(tmp_path: Path, monkeypatch:
     from src.sources.asn import radb_whois_query
 
     crawler = CloudIPRanges({"json"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
     crawler.sources = {"fb": ["RADB::AS-FOO"]}
 
     radb_whois_query.cache_clear()

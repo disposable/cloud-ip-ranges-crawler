@@ -17,7 +17,7 @@ def test_csv_output_format(skip_if_no_internet, rate_limit_delay):
         temp_path = Path(temp_dir)
 
         cipr = CloudIPRanges({"csv"})
-        cipr.base_url = temp_path
+        cipr.output_dir = temp_path
 
         # Test with Cloudflare
         provider = "cloudflare"
@@ -63,7 +63,7 @@ def test_txt_output_format(skip_if_no_internet, rate_limit_delay):
         temp_path = Path(temp_dir)
 
         cipr = CloudIPRanges({"txt"})
-        cipr.base_url = temp_path
+        cipr.output_dir = temp_path
 
         # Test with Cloudflare
         provider = "cloudflare"
@@ -105,7 +105,7 @@ def test_multiple_output_formats(skip_if_no_internet, rate_limit_delay):
         temp_path = Path(temp_dir)
 
         cipr = CloudIPRanges({"json", "csv", "txt"})
-        cipr.base_url = temp_path
+        cipr.output_dir = temp_path
 
         # Test with Cloudflare
         provider = "cloudflare"
@@ -148,7 +148,7 @@ def test_output_format_consistency(skip_if_no_internet, rate_limit_delay):
         temp_path = Path(temp_dir)
 
         cipr = CloudIPRanges({"json", "csv", "txt"})
-        cipr.base_url = temp_path
+        cipr.output_dir = temp_path
 
         # Test with AWS (has many IP ranges)
         provider = "aws"
@@ -224,7 +224,7 @@ def test_output_format_metadata(skip_if_no_internet, rate_limit_delay):
         temp_path = Path(temp_dir)
 
         cipr = CloudIPRanges({"json", "csv", "txt"})
-        cipr.base_url = temp_path
+        cipr.output_dir = temp_path
 
         # Test with GitHub
         provider = "github"
@@ -271,7 +271,7 @@ def test_output_format_error_handling(skip_if_no_internet, rate_limit_delay):
 
         try:
             cipr = CloudIPRanges({"json"})
-            cipr.base_url = readonly_dir
+            cipr.output_dir = readonly_dir
 
             # Should handle write errors gracefully
             result = cipr._fetch_and_save("cloudflare")
@@ -296,7 +296,7 @@ def test_empty_data_output_formats(skip_if_no_internet, rate_limit_delay):
         temp_path = Path(temp_dir)
 
         cipr = CloudIPRanges({"json", "csv", "txt"})
-        cipr.base_url = temp_path
+        cipr.output_dir = temp_path
 
         # Create minimal test data
         minimal_data = {

@@ -68,7 +68,7 @@ def test_seed_cidr_end_to_end(skip_if_no_internet, rate_limit_delay):
         temp_path = Path(temp_dir)
 
         cipr = CloudIPRanges({"json"})
-        cipr.base_url = temp_path
+        cipr.output_dir = temp_path
 
         # Test Vercel (seed CIDR provider)
         provider = "vercel"

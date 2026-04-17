@@ -36,7 +36,7 @@ def test_xml_find_text_missing() -> None:
 def test_transform_seed_rdap_registry_happy_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test full happy path with JSON responses."""
     crawler = CloudIPRanges({"json"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
     crawler.sources = {"test": ["1.2.3.0/24"]}
 
     # Mock RDAP response
@@ -85,7 +85,7 @@ def test_transform_seed_rdap_registry_happy_path(tmp_path: Path, monkeypatch: py
 def test_transform_seed_rdap_registry_xml_fallback(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test XML fallback when JSON parsing fails."""
     crawler = CloudIPRanges({"json"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
     crawler.sources = {"test": ["1.2.3.0/24"]}
 
     rdap_resp = FakeResponse(
@@ -126,7 +126,7 @@ def test_transform_seed_rdap_registry_xml_fallback(tmp_path: Path, monkeypatch: 
 def test_transform_seed_rdap_registry_no_registrant_raises(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test error when no registrant entity is found."""
     crawler = CloudIPRanges({"json"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
     crawler.sources = {"test": ["1.2.3.0/24"]}
 
     rdap_resp = FakeResponse(
@@ -151,7 +151,7 @@ def test_transform_seed_rdap_registry_no_registrant_raises(tmp_path: Path, monke
 def test_transform_seed_rdap_registry_nets_json_parsing_error_raises(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test error when both JSON and XML parsing fail for nets."""
     crawler = CloudIPRanges({"json"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
     crawler.sources = {"test": ["1.2.3.0/24"]}
 
     rdap_resp = FakeResponse(
@@ -183,7 +183,7 @@ def test_transform_seed_rdap_registry_nets_json_parsing_error_raises(tmp_path: P
 def test_transform_seed_rdap_registry_invalid_ip_skipped(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that invalid IP addresses are skipped."""
     crawler = CloudIPRanges({"json"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
     crawler.sources = {"test": ["1.2.3.0/24"]}
 
     rdap_resp = FakeResponse(
@@ -225,7 +225,7 @@ def test_transform_seed_rdap_registry_invalid_ip_skipped(tmp_path: Path, monkeyp
 def test_transform_seed_rdap_registry_duplicate_ranges_deduped(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that duplicate ranges are deduplicated."""
     crawler = CloudIPRanges({"json"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
     crawler.sources = {"test": ["1.2.3.0/24"]}
 
     rdap_resp = FakeResponse(
@@ -266,7 +266,7 @@ def test_transform_seed_rdap_registry_duplicate_ranges_deduped(tmp_path: Path, m
 def test_transform_seed_rdap_registry_mixed_json_xml_nets(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test mixed JSON org and XML nets."""
     crawler = CloudIPRanges({"json"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
     crawler.sources = {"test": ["1.2.3.0/24"]}
 
     rdap_resp = FakeResponse(
@@ -302,7 +302,7 @@ def test_transform_seed_rdap_registry_mixed_json_xml_nets(tmp_path: Path, monkey
 def test_transform_seed_rdap_registry_edge_cases(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test edge cases: non-dict entities, org parse failure, non-dict nets."""
     crawler = CloudIPRanges({"json"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
     crawler.sources = {"test": ["1.2.3.0/24"]}
 
     # RDAP with non-dict entity and a valid registrant

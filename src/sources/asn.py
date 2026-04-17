@@ -210,19 +210,23 @@ def fetch_and_save_asn_source(cipr: Any, source_key: str, url: List[str]) -> Dic
             logging.warning("RIPEstat lookup failed for %s %s (%s), falling back to HackerTarget", source_key, asn, str(e))
             used_hackertarget = True
             ht_url = f"https://api.hackertarget.com/aslookup/?q={asn}"
-            r = cipr.session.get(ht_url, timeout=10)
-            r.raise_for_status()
-            source_http.append({
-                "url": ht_url,
-                "status": r.status_code,
-                "content_type": r.headers.get("content-type"),
-                "etag": r.headers.get("etag"),
-                "last_modified": r.headers.get("last-modified"),
-            })
-            tmp = transform_hackertarget(cipr, [r], source_key)
-            transformed_data["ipv4"].extend(tmp.get("ipv4", []))
-            transformed_data["ipv6"].extend(tmp.get("ipv6", []))
-            source_list.append(ht_url)
+            try:
+                r = cipr.session.get(ht_url, timeout=10)
+                r.raise_for_status()
+                source_http.append({
+                    "url": ht_url,
+                    "status": r.status_code,
+                    "content_type": r.headers.get("content-type"),
+                    "etag": r.headers.get("etag"),
+                    "last_modified": r.headers.get("last-modified"),
+                })
+                tmp = transform_hackertarget(cipr, [r], source_key)
+                transformed_data["ipv4"].extend(tmp.get("ipv4", []))
+                transformed_data["ipv6"].extend(tmp.get("ipv6", []))
+                source_list.append(ht_url)
+            except Exception as fallback_e:
+                logging.error("HackerTarget fallback also failed for %s %s (%s)", source_key, asn, str(fallback_e))
+                # Continue to next ASN rather than aborting entire source
 
     if used_hackertarget:
         transformed_data["method"] = "asn_lookup"

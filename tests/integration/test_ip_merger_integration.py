@@ -12,7 +12,7 @@ from src.ip_merger import IPMerger
 def test_cloud_ip_ranges_with_ipmerger_integration(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test CloudIPRanges integration with IPMerger for merged outputs."""
     crawler = CloudIPRanges({"json", "csv"}, merge_all_providers=True)
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
 
     # Mock source data with overlapping IPs from different providers
     mock_data = {
@@ -192,7 +192,7 @@ def test_ipmerger_output_formats_integration(tmp_path: Path) -> None:
 def test_cloud_ip_ranges_merger_disabled(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that CloudIPRanges works normally when merger is disabled."""
     crawler = CloudIPRanges({"json"}, merge_all_providers=False)
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
 
     # Should have merger instance but not use it
     assert hasattr(crawler, "ip_merger")
@@ -327,7 +327,7 @@ def test_ipmerger_malformed_ip_addresses(tmp_path: Path) -> None:
 def test_cloud_ip_ranges_full_integration_workflow(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test complete workflow with multiple providers and output formats."""
     crawler = CloudIPRanges({"json", "csv", "txt"}, merge_all_providers=True)
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
 
     # Mock multiple providers with overlapping IPs
     providers_data = {
@@ -509,7 +509,7 @@ def test_ipmerger_boundary_conditions(tmp_path: Path) -> None:
 def test_cloud_ip_ranges_merger_disabled_integration(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test CloudIPRanges integration when merger is disabled."""
     crawler = CloudIPRanges({"json", "csv"}, merge_all_providers=False)
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
 
     # Mock provider data
     provider_data = {
@@ -542,16 +542,16 @@ def test_cloud_ip_ranges_merger_disabled_integration(tmp_path: Path, monkeypatch
 
 
 __all__ = [
-    "test_cloud_ip_ranges_with_ipmerger_integration",
-    "test_ipmerger_real_world_overlapping_scenario",
-    "test_ipmerger_output_formats_integration",
+    "test_cloud_ip_ranges_full_integration_workflow",
     "test_cloud_ip_ranges_merger_disabled",
-    "test_ipmerger_performance_with_large_dataset",
+    "test_cloud_ip_ranges_merger_disabled_integration",
+    "test_cloud_ip_ranges_with_ipmerger_integration",
+    "test_ipmerger_boundary_conditions",
+    "test_ipmerger_concurrent_provider_addition",
     "test_ipmerger_edge_case_empty_provider_data",
     "test_ipmerger_malformed_ip_addresses",
-    "test_cloud_ip_ranges_full_integration_workflow",
-    "test_ipmerger_concurrent_provider_addition",
+    "test_ipmerger_output_formats_integration",
+    "test_ipmerger_performance_with_large_dataset",
+    "test_ipmerger_real_world_overlapping_scenario",
     "test_ipmerger_reset_functionality",
-    "test_ipmerger_boundary_conditions",
-    "test_cloud_ip_ranges_merger_disabled_integration",
 ]

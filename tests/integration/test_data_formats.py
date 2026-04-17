@@ -211,7 +211,7 @@ def test_format_detection_and_routing(skip_if_no_internet, rate_limit_delay):
         # Test that the provider is routed to correct handler
         url = urls[0]
 
-        if url.startswith("AS") or "/" in url and not url.startswith("http"):
+        if url.startswith("AS") or ("/" in url and not url.startswith("http")):
             # ASN or seed CIDR - different routing
             continue
 
@@ -233,7 +233,7 @@ def test_mixed_format_end_to_end(skip_if_no_internet, rate_limit_delay):
         temp_path = Path(temp_dir)
 
         cipr = CloudIPRanges({"json"})
-        cipr.base_url = temp_path
+        cipr.output_dir = temp_path
 
         # Test providers with different formats
         format_providers = [

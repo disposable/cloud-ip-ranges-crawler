@@ -10,7 +10,7 @@ def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]
         if not isinstance(data, dict):
             continue
 
-        for key, values in data.items():
+        for _key, values in data.items():
             if not isinstance(values, list):
                 continue
             for ip in values:

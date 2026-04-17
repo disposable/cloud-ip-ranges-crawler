@@ -17,7 +17,7 @@ def test_end_to_end_workflow_single_provider(skip_if_no_internet, rate_limit_del
 
         # Initialize CloudIPRanges with JSON output
         cipr = CloudIPRanges({"json"})
-        cipr.base_url = temp_path
+        cipr.output_dir = temp_path
 
         # Test with Cloudflare (reliable, fast API)
         provider = "cloudflare"
@@ -50,7 +50,7 @@ def test_end_to_end_workflow_multiple_providers(skip_if_no_internet, rate_limit_
 
         # Initialize CloudIPRanges with multiple output formats
         cipr = CloudIPRanges({"json", "csv"})
-        cipr.base_url = temp_path
+        cipr.output_dir = temp_path
 
         # Test with a small subset of reliable providers
         providers = ["cloudflare", "github"]
@@ -106,20 +106,20 @@ def test_data_freshness_validation(skip_if_no_internet, rate_limit_delay):
     from datetime import datetime, timedelta
 
     cipr = CloudIPRanges({"json"})
-    cipr.base_url = Path(tempfile.gettempdir())
+    cipr.output_dir = Path(tempfile.gettempdir())
 
     # Test with Cloudflare (should have recent data)
     result = cipr._fetch_and_save("cloudflare")
     assert result is not None
 
     # Check the output file for timestamp
-    output_file = cipr.base_url / "cloudflare.json"
+    output_file = cipr.output_dir / "cloudflare.json"
     if output_file.exists():
         with open(output_file, "r") as f:
             saved_data = json.load(f)
 
         # Parse the source_updated_at field if available
-        if "source_updated_at" in saved_data and saved_data["source_updated_at"]:
+        if saved_data.get("source_updated_at"):
             try:
                 # Try to parse as ISO format
                 updated_at = datetime.fromisoformat(saved_data["source_updated_at"].replace("Z", "+00:00"))

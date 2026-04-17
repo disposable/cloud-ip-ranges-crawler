@@ -12,6 +12,9 @@ def fetch_and_save_seed_cidr_source(cipr: Any, source_key: str, seeds: List[str]
     response: List[Any] = []
 
     for seed in seeds:
+        # RDAP takes an IP (not CIDR), so we use the first address of the seed block.
+        # Note: The transform (e.g., seed_rdap_registry) re-derives URLs from cipr.sources
+        # rather than using the response list passed here. Both files are tightly coupled.
         rdap_url = f"https://rdap.arin.net/registry/ip/{seed.split('/')[0]}"
         try:
             r = cipr.session.get(rdap_url, timeout=10)

@@ -46,7 +46,7 @@ def test_normalize_transformed_data_raises_when_no_valid_ips() -> None:
 
 def test_fetch_and_save_routes_seed_cidr(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     crawler = CloudIPRanges({"json"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
     crawler.sources = {"seed": ["192.0.2.0/24"]}
 
     called = {}
@@ -66,7 +66,7 @@ def test_fetch_and_save_routes_seed_cidr(tmp_path: Path, monkeypatch: pytest.Mon
 
 def test_fetch_and_save_routes_http_when_seed_detection_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     crawler = CloudIPRanges({"json"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
     crawler.sources = {"http": ["198.51.100.bad/24"]}
 
     called = {}
@@ -86,7 +86,7 @@ def test_fetch_and_save_routes_http_when_seed_detection_fails(tmp_path: Path, mo
 
 def test_fetch_and_save_routes_asn(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     crawler = CloudIPRanges({"json"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
     crawler.sources = {"asn": ["AS65000"]}
 
     called = {}
@@ -106,7 +106,7 @@ def test_fetch_and_save_routes_asn(tmp_path: Path, monkeypatch: pytest.MonkeyPat
 
 def test_fetch_and_save_only_if_changed_skips_save(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     crawler = CloudIPRanges({"json"}, only_if_changed=True, max_delta_ratio=0.1)
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
     crawler.sources = {"dup": ["https://example.com/data.json"]}
 
     payload = _sample_transformed(["https://example.com/data.json"])
@@ -155,7 +155,7 @@ def test_enforce_max_delta_raises_when_ratio_exceeded() -> None:
 
 def test_save_result_unknown_format_raises(tmp_path: Path) -> None:
     crawler = CloudIPRanges({"json"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
     crawler.output_formats = {"json", "yaml"}
 
     with pytest.raises(ValueError, match="Unknown output format"):
@@ -217,15 +217,15 @@ def test_suppress_retry_warnings_filter_drops_urllib3_retry_noise() -> None:
 
 
 __all__ = [
-    "test_normalize_transformed_data_raises_when_no_valid_ips",
-    "test_fetch_and_save_routes_seed_cidr",
-    "test_fetch_and_save_routes_http_when_seed_detection_fails",
-    "test_fetch_and_save_routes_asn",
-    "test_fetch_and_save_only_if_changed_skips_save",
     "test_audit_transformed_data_detects_ipv6_default_route",
     "test_enforce_max_delta_raises_when_ratio_exceeded",
-    "test_save_result_unknown_format_raises",
     "test_fetch_all_handles_errors",
     "test_fetch_all_propagates_outer_errors",
+    "test_fetch_and_save_only_if_changed_skips_save",
+    "test_fetch_and_save_routes_asn",
+    "test_fetch_and_save_routes_http_when_seed_detection_fails",
+    "test_fetch_and_save_routes_seed_cidr",
+    "test_normalize_transformed_data_raises_when_no_valid_ips",
+    "test_save_result_unknown_format_raises",
     "test_suppress_retry_warnings_filter_drops_urllib3_retry_noise",
 ]

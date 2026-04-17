@@ -6,12 +6,13 @@ import logging
 import os
 import re
 import sys
+import threading
 import time
 import xml.etree.ElementTree as std_ET  # nosec: B405
 from datetime import datetime
 from operator import attrgetter
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, ClassVar, Optional, Union
 
 import requests
 from cachetools import LRUCache, cachedmethod
@@ -37,7 +38,7 @@ class DeltaCheckError(RuntimeError):
 
 
 class CloudIPRanges:
-    sources = {
+    sources: ClassVar[dict[str, list[str]]] = {
         "aws": ["https://ip-ranges.amazonaws.com/ip-ranges.json"],
         "cloudflare": [
             "https://www.cloudflare.com/ips-v4",
@@ -139,20 +140,20 @@ class CloudIPRanges:
     }
 
     # Providers categorized as misc (user ISP traffic, not harmful crawlers)
-    misc_providers = {
+    misc_providers: ClassVar[set[str]] = {
         "starlink",
     }
 
     def __init__(
         self,
-        output_formats: Set[str],
+        output_formats: set[str],
         only_if_changed: bool = False,
         max_delta_ratio: Optional[float] = None,
         output_dir: Optional[Path] = None,
         merge_all_providers: bool = False,
     ) -> None:
-        self.base_url = Path(output_dir).expanduser() if output_dir else Path.cwd()
-        self.base_url.mkdir(parents=True, exist_ok=True)
+        self.output_dir = Path(output_dir).expanduser() if output_dir else Path.cwd()
+        self.output_dir.mkdir(parents=True, exist_ok=True)
         self.session = requests.Session()
         self.session.headers.update({
             "User-Agent": "cloud-ip-ranges-crawler/1.0 (+https://github.com/disposable/cloud-ip-ranges)",
@@ -177,37 +178,45 @@ class CloudIPRanges:
         self.output_formats = output_formats
         self.merge_all_providers = merge_all_providers
         self.ip_merger = IPMerger()
-        self._sources_with_changes: Set[str] = set()
+        self._sources_with_changes: set[str] = set()
         cache_size = int(os.getenv("RIPESTAT_CACHE_SIZE", "1024"))
-        self._ripestat_cache: LRUCache[str, Tuple[str, requests.Response]] = LRUCache(maxsize=max(cache_size, 1))
+        self._ripestat_cache: LRUCache[str, tuple[str, requests.Response]] = LRUCache(maxsize=max(cache_size, 1))
         self._ripestat_last_request = 0.0
         # Allow overriding via env (seconds between RIPEstat calls)
         self._ripestat_min_interval = float(os.getenv("RIPESTAT_MIN_INTERVAL", "0.1"))
+        self._ripestat_lock = threading.Lock()
 
-    def ripestat_fetch(self, asn: str) -> Tuple[str, requests.Response]:
+    def ripestat_fetch(self, asn: str) -> tuple[str, requests.Response]:
         """Fetch RIPEstat announced prefixes for an ASN with caching/rate limiting."""
         cache_key = asn.strip().upper()
         if not cache_key.startswith("AS"):
             raise ValueError(f"Invalid ASN: {asn}")
 
+        # Check cache first (outside lock for performance)
+        cached = self._ripestat_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        # Rate limiting with lock to prevent concurrent calls from racing
+        with self._ripestat_lock:
+            now = time.monotonic()
+            elapsed = now - self._ripestat_last_request
+            if elapsed < self._ripestat_min_interval:
+                sleep_time = self._ripestat_min_interval - elapsed
+                logging.debug("Sleeping %.2fs before RIPEstat request", sleep_time)
+                time.sleep(sleep_time)
+            self._ripestat_last_request = time.monotonic()
+
         return self._ripestat_fetch_uncached(cache_key)
 
     @cachedmethod(cache=attrgetter("_ripestat_cache"))
-    def _ripestat_fetch_uncached(self, cache_key: str) -> Tuple[str, requests.Response]:
-        now = time.monotonic()
-        elapsed = now - self._ripestat_last_request
-        if elapsed < self._ripestat_min_interval:
-            sleep_time = self._ripestat_min_interval - elapsed
-            logging.debug("Sleeping %.2fs before RIPEstat request", sleep_time)
-            time.sleep(sleep_time)
-
+    def _ripestat_fetch_uncached(self, cache_key: str) -> tuple[str, requests.Response]:
         ripestat_url = f"https://stat.ripe.net/data/announced-prefixes/data.json?resource={cache_key}"
         response = self.session.get(ripestat_url, timeout=10)
         response.raise_for_status()
-        self._ripestat_last_request = time.monotonic()
         return ripestat_url, response
 
-    def _comparable_payload(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _comparable_payload(self, data: dict[str, Any]) -> dict[str, Any]:
         comparable = data.copy()
         for key in ("last_update", "generated_at", "source_http"):
             comparable.pop(key, None)
@@ -220,11 +229,11 @@ class CloudIPRanges:
         merged_payload = self.ip_merger.get_merged_output()
 
         if "json" in self.output_formats:
-            with open(self.base_url / "all-providers.json", "w") as f:
+            with open(self.output_dir / "all-providers.json", "w") as f:
                 json.dump(merged_payload, f, indent=2)
 
         if "csv" in self.output_formats:
-            with open(self.base_url / "all-providers.csv", "w") as f:
+            with open(self.output_dir / "all-providers.csv", "w") as f:
                 writer = csv.writer(f)
                 writer.writerow(["Type", "Address", "Providers"])
                 for ip in merged_payload.get("ipv4", []):
@@ -236,20 +245,25 @@ class CloudIPRanges:
 
         if "txt" in self.output_formats:
             provider_ids = ", ".join(filter(None, (p.get("provider_id") for p in merged_payload.get("providers", []))))
-            with open(self.base_url / "all-providers.txt", "w") as f:
+            with open(self.output_dir / "all-providers.txt", "w") as f:
                 f.write("# provider: All Providers\n")
                 f.write(f"# providers_count: {merged_payload.get('provider_count', 0)}\n")
                 f.write(f"# provider_ids: {provider_ids}\n")
                 f.write(f"# generated_at: {merged_payload.get('generated_at')}\n")
 
-                addresses: List[str] = []
-                addresses.extend(merged_payload.get("ipv4", []))
-                addresses.extend(merged_payload.get("ipv6", []))
-                if addresses:
+                ipv4_list = merged_payload.get("ipv4", [])
+                ipv6_list = merged_payload.get("ipv6", [])
+                f.write("\n")
+                if ipv4_list:
+                    f.write("\n".join(ipv4_list))
                     f.write("\n")
-                    f.write("\n".join(addresses))
+                if ipv4_list and ipv6_list:
+                    f.write("\n")  # Blank line separator between IPv4 and IPv6 blocks
+                if ipv6_list:
+                    f.write("\n".join(ipv6_list))
+                    f.write("\n")
 
-    def _transform_base(self, source_key: str, source_url: Optional[Union[str, list]] = None) -> Dict[str, Any]:
+    def _transform_base(self, source_key: str, source_url: Optional[Union[str, list]] = None) -> dict[str, Any]:
         """Base transformation method for all providers."""
         if source_url is None:
             source_url = self.sources[source_key]
@@ -268,19 +282,18 @@ class CloudIPRanges:
             "ipv6": [],
         }
 
-        if (
-            isinstance(source_url, list)
-            and source_url
-            and isinstance(source_url[0], str)
-            and (source_url[0].startswith("AS") or source_url[0].startswith("RADB::"))
-        ):
-            result["method"] = "asn_lookup"
+        # Note: ASN-based sources (AS*, RADB::*) set their method explicitly
+        # in fetch_and_save_asn_source (e.g., "bgp_announced" or "asn_lookup")
         return result
 
-    def _extract_cidrs_from_json(self, obj: Any) -> List[str]:
+    def _extract_cidrs_from_json(self, obj: Any) -> list[str]:
         """Best-effort extraction of CIDR strings from nested JSON-like structures."""
-        cidrs: List[str] = []
-        cidr_re = re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}/\d{1,2}\b|\b[0-9a-fA-F:]+/\d{1,3}\b")
+        cidrs: list[str] = []
+        ipv4_octet = r"(?:25[0-5]|2[0-4]\d|[01]?\d?\d)"
+        cidr_re = re.compile(
+            rf"\b{ipv4_octet}(?:\.{ipv4_octet}){{3}}/(?:3[0-2]|[12]?\d)\b"  # IPv4 CIDR
+            r"|\b[0-9a-fA-F:]+/\d{1,3}\b"  # IPv6 CIDR (less strict, validated later)
+        )
 
         def walk(v: Any, key_hint: str = "") -> None:
             if isinstance(v, str):
@@ -301,7 +314,7 @@ class CloudIPRanges:
         walk(obj, "")
         return cidrs
 
-    def _normalize_transformed_data(self, transformed_data: Dict[str, Any], source_key: str) -> Dict[str, Any]:
+    def _normalize_transformed_data(self, transformed_data: dict[str, Any], source_key: str) -> dict[str, Any]:
         # Preserve important metadata fields
         preserved_fields = {}
         for field in ["method", "coverage_notes", "source_updated_at", "source"]:
@@ -318,13 +331,14 @@ class CloudIPRanges:
             if validated_ip:
                 ipv4.add(validated_ip)
 
-        # Preserve details if present and valid
+        # Preserve details if present and valid, cross-checking against main IP set
         for d in transformed_data.get("details_ipv4", []):
             ip = d.get("address")
             if not ip:
                 continue
             validated_ip = validate_ip(ip)
-            if validated_ip:
+            # Only keep details for IPs that are in the validated ipv4 set
+            if validated_ip and validated_ip in ipv4:
                 nd = d.copy()
                 nd["address"] = validated_ip
                 details_ipv4.append(nd)
@@ -334,12 +348,14 @@ class CloudIPRanges:
             if validated_ip:
                 ipv6.add(validated_ip)
 
+        # Preserve details if present and valid, cross-checking against main IP set
         for d in transformed_data.get("details_ipv6", []):
             ip = d.get("address")
             if not ip:
                 continue
             validated_ip = validate_ip(ip)
-            if validated_ip:
+            # Only keep details for IPs that are in the validated ipv6 set
+            if validated_ip and validated_ip in ipv6:
                 nd = d.copy()
                 nd["address"] = validated_ip
                 details_ipv6.append(nd)
@@ -397,8 +413,8 @@ class CloudIPRanges:
         self._audit_transformed_data(transformed_data, source_key)
 
         json_filename = "{}.json".format(source_key.replace("_", "-"))
-        json_path = self.base_url / json_filename
-        existing_data_raw: Optional[Dict[str, Any]] = None
+        json_path = self.output_dir / json_filename
+        existing_data_raw: Optional[dict[str, Any]] = None
         data_changed = True
 
         if json_path.exists():
@@ -428,7 +444,7 @@ class CloudIPRanges:
             self.ip_merger.add_provider_data(transformed_data)
         return counts
 
-    def _audit_transformed_data(self, transformed_data: Dict[str, Any], source_key: str) -> None:
+    def _audit_transformed_data(self, transformed_data: dict[str, Any], source_key: str) -> None:
         """Raise on obviously dangerous/broken outputs."""
         invalid = []
         for ip in transformed_data.get("ipv4", []):
@@ -441,7 +457,7 @@ class CloudIPRanges:
         if invalid:
             raise RuntimeError(f"Audit failed for {source_key}: contains default route(s): {', '.join(invalid)}")
 
-    def _diff_summary(self, old: Dict[str, Any], new: Dict[str, Any]) -> Dict[str, Any]:
+    def _diff_summary(self, old: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
         old4 = set(old.get("ipv4", []) or [])
         old6 = set(old.get("ipv6", []) or [])
         new4 = set(new.get("ipv4", []) or [])
@@ -451,7 +467,7 @@ class CloudIPRanges:
             "ipv6": {"old": len(old6), "new": len(new6), "added": len(new6 - old6), "removed": len(old6 - new6)},
         }
 
-    def _enforce_max_delta(self, old: Dict[str, Any], new: Dict[str, Any], *, max_ratio: float, source_key: str) -> None:
+    def _enforce_max_delta(self, old: dict[str, Any], new: dict[str, Any], *, max_ratio: float, source_key: str) -> None:
         # Minimum absolute change below which the ratio check is skipped.
         # Small sources (e.g. 3 IPv6 prefixes) would fail on a single new prefix
         # even though the change is clearly legitimate.
@@ -475,14 +491,14 @@ class CloudIPRanges:
         if v4_fail or v6_fail:
             raise DeltaCheckError(f"Delta check failed for {source_key}: {json.dumps(s)}")
 
-    def _save_json(self, transformed_data: Dict[str, Any], filename: str) -> None:
+    def _save_json(self, transformed_data: dict[str, Any], filename: str) -> None:
         """Save data in JSON format."""
-        with open(self.base_url / filename, "w") as f:
+        with open(self.output_dir / filename, "w") as f:
             json.dump(transformed_data, f, indent=2)
 
-    def _save_csv(self, transformed_data: Dict[str, Any], filename: str) -> None:
+    def _save_csv(self, transformed_data: dict[str, Any], filename: str) -> None:
         """Save data in CSV format."""
-        with open(self.base_url / filename, "w") as f:
+        with open(self.output_dir / filename, "w") as f:
             writer = csv.writer(f)
             writer.writerow(["Type", "Address"])
             for ip in transformed_data["ipv4"]:
@@ -490,20 +506,24 @@ class CloudIPRanges:
             for ip in transformed_data["ipv6"]:
                 writer.writerow(["IPv6", ip])
 
-    def _save_txt(self, transformed_data: Dict[str, Any], filename: str) -> None:
+    def _save_txt(self, transformed_data: dict[str, Any], filename: str) -> None:
         """Save data in TXT format."""
-        with open(self.base_url / filename, "w") as f:
+        with open(self.output_dir / filename, "w") as f:
             for k in ("provider", "source", "last_update"):
                 vl = ", ".join(transformed_data[k]) if isinstance(transformed_data[k], list) else transformed_data[k]
                 f.write("# {}: {}\n".format(k, vl))
 
             f.write("\n")
-            f.write("\n".join(transformed_data["ipv4"]))
-            if transformed_data["ipv6"]:
+            if transformed_data["ipv4"]:
+                f.write("\n".join(transformed_data["ipv4"]))
                 f.write("\n")
+            if transformed_data["ipv4"] and transformed_data["ipv6"]:
+                f.write("\n")  # Blank line separator between IPv4 and IPv6 blocks
+            if transformed_data["ipv6"]:
                 f.write("\n".join(transformed_data["ipv6"]))
+                f.write("\n")
 
-    def _save_details_files(self, transformed_data: Dict[str, Any], base_name: str) -> bool:
+    def _save_details_files(self, transformed_data: dict[str, Any], base_name: str) -> bool:
         """Save detailed metadata files if available."""
         if not (transformed_data.get("details_ipv4") or transformed_data.get("details_ipv6")):
             return False
@@ -520,9 +540,9 @@ class CloudIPRanges:
 
         return details_written
 
-    def _save_json_details(self, transformed_data: Dict[str, Any], base_name: str) -> None:
+    def _save_json_details(self, transformed_data: dict[str, Any], base_name: str) -> None:
         """Save detailed metadata in JSON format."""
-        details_json_path = self.base_url / f"{base_name}-details.json"
+        details_json_path = self.output_dir / f"{base_name}-details.json"
         details_payload = {
             "provider": transformed_data.get("provider"),
             "provider_id": transformed_data.get("provider_id"),
@@ -538,12 +558,12 @@ class CloudIPRanges:
         with open(details_json_path, "w") as df:
             json.dump(details_payload, df, indent=2)
 
-    def _save_csv_details(self, transformed_data: Dict[str, Any], base_name: str) -> None:
+    def _save_csv_details(self, transformed_data: dict[str, Any], base_name: str) -> None:
         """Save detailed metadata in CSV format."""
-        details_csv_path = self.base_url / f"{base_name}-details.csv"
+        details_csv_path = self.output_dir / f"{base_name}-details.csv"
 
         # Collect all metadata keys
-        keys: Set[str] = set()
+        keys: set[str] = set()
         for d in transformed_data.get("details_ipv4", []):
             keys.update(k for k in d.keys() if k != "address")
         for d in transformed_data.get("details_ipv6", []):
@@ -558,7 +578,7 @@ class CloudIPRanges:
             for d in transformed_data.get("details_ipv6", []):
                 writer.writerow(["IPv6", d.get("address"), *[d.get(k) for k in ordered_keys]])
 
-    def _save_result(self, transformed_data: Dict[str, Any], source_key: str) -> tuple[int, int]:
+    def _save_result(self, transformed_data: dict[str, Any], source_key: str) -> tuple[int, int]:
         """Save transformed data in all configured output formats."""
         # Format writer methods mapping
         format_writers = {
@@ -590,7 +610,7 @@ class CloudIPRanges:
 
         return len(transformed_data["ipv4"]), len(transformed_data["ipv6"])
 
-    def _fetch_microsoft_365(self, source_key: str) -> Dict[str, Any]:
+    def _fetch_microsoft_365(self, source_key: str) -> dict[str, Any]:
         """Fetch Microsoft 365 data directly without pre-fetching documentation.
 
         Microsoft 365 has its own web service flow that generates a local UUID
@@ -602,7 +622,7 @@ class CloudIPRanges:
         # Call transform with empty response (it makes its own API calls)
         return transform(self, [], source_key)
 
-    def fetch_all(self, sources: Optional[Set[str]] = None) -> bool:
+    def fetch_all(self, sources: Optional[set[str]] = None) -> bool:
         error = False
         self.statistics = {}
         self._sources_with_changes = set()

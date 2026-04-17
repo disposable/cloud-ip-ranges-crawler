@@ -8,7 +8,7 @@ from src.cloud_ip_ranges import CloudIPRanges
 def test_save_result_with_txt_format(tmp_path: Path) -> None:
     """Test saving result in TXT format."""
     crawler = CloudIPRanges({"txt"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
 
     data = {
         "provider": "Test",
@@ -36,7 +36,7 @@ def test_save_result_with_txt_format(tmp_path: Path) -> None:
 def test_save_result_with_multiple_formats(tmp_path: Path) -> None:
     """Test saving result in multiple formats."""
     crawler = CloudIPRanges({"json", "csv", "txt"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
 
     data = {
         "provider": "Test",

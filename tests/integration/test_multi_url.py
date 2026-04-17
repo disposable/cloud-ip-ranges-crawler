@@ -116,7 +116,7 @@ def test_multi_url_end_to_end(skip_if_no_internet, rate_limit_delay):
         temp_path = Path(temp_dir)
 
         cipr = CloudIPRanges({"json"})
-        cipr.base_url = temp_path
+        cipr.output_dir = temp_path
 
         # Test OpenAI (multi-URL provider)
         provider = "openai"

@@ -43,6 +43,6 @@ def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]
                 continue
 
     except Exception as e:
-        raise ValueError(f"Failed to parse Cisco Webex HTML response: {e}")
+        raise ValueError(f"Failed to parse Cisco Webex HTML response: {e}") from e
 
     return result

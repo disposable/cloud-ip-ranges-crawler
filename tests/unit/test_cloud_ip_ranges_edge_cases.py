@@ -25,7 +25,7 @@ def test_cloud_ip_ranges_initialization_with_output_dir(tmp_path: Path) -> None:
     target_dir = tmp_path / "outputs"
     crawler = CloudIPRanges({"json"}, output_dir=target_dir)
 
-    assert crawler.base_url == target_dir
+    assert crawler.output_dir == target_dir
     assert target_dir.exists()
 
 
@@ -47,7 +47,7 @@ def test_transform_base_with_custom_source() -> None:
 def test_save_details_files_with_no_details() -> None:
     """Test _save_details_files when no details are available."""
     crawler = CloudIPRanges({"json"})
-    crawler.base_url = Path("/tmp")
+    crawler.output_dir = Path("/tmp")
 
     data = {"ipv4": ["8.8.8.0/24"], "ipv6": []}  # No details
 
@@ -104,7 +104,7 @@ def test_diff_summary_empty_data() -> None:
 def test_save_csv_details_with_empty_details() -> None:
     """Test _save_csv_details with empty details."""
     crawler = CloudIPRanges({"csv"})
-    crawler.base_url = Path("/tmp")
+    crawler.output_dir = Path("/tmp")
 
     # Call with proper transformed_data dict structure
     transformed_data = {"details_ipv4": [], "details_ipv6": []}

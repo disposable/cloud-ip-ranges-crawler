@@ -10,7 +10,7 @@ from tests.unit.conftest import FakeResponse
 def test_fetch_and_save_with_extra_sources(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test _fetch_and_save with extra sources beyond the main sources dict."""
     crawler = CloudIPRanges({"json"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
     crawler.sources = {"aws": ["https://example.com/test.json"]}
 
     def fake_get(url: str, timeout: int = 10):
@@ -36,7 +36,7 @@ def test_fetch_and_save_with_extra_sources(tmp_path: Path, monkeypatch: pytest.M
 def test_save_result_with_details_and_csv(tmp_path: Path) -> None:
     """Test saving result with details files and CSV format."""
     crawler = CloudIPRanges({"json", "csv"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
 
     data = {
         "provider": "Test",
@@ -95,7 +95,7 @@ def test_normalize_transformed_data_with_empty_details() -> None:
 def test_save_txt_format(tmp_path: Path) -> None:
     """Test saving data in TXT format."""
     crawler = CloudIPRanges({"txt"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
 
     data = {
         "provider": "Test Provider",

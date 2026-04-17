@@ -10,7 +10,7 @@ from src.cloud_ip_ranges import CloudIPRanges
 def test_save_result_with_only_if_changed_no_existing_file(tmp_path: Path) -> None:
     """Test saving with only_if_changed when no existing file exists."""
     crawler = CloudIPRanges({"json"}, only_if_changed=True)
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
 
     data = {
         "provider": "Test",
@@ -33,7 +33,7 @@ def test_save_result_with_only_if_changed_no_existing_file(tmp_path: Path) -> No
 def test_save_result_with_only_if_changed_unchanged(tmp_path: Path) -> None:
     """Test saving with only_if_changed when content is unchanged."""
     crawler = CloudIPRanges({"json"}, only_if_changed=True)
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
 
     data = {
         "provider": "Test",
@@ -69,7 +69,7 @@ def test_save_result_with_only_if_changed_unchanged(tmp_path: Path) -> None:
 def test_audit_transformed_data_passes(tmp_path: Path) -> None:
     """Test audit passes for valid data."""
     crawler = CloudIPRanges({"json"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
 
     data = {
         "provider": "Test",
@@ -91,7 +91,7 @@ def test_audit_transformed_data_passes(tmp_path: Path) -> None:
 def test_audit_transformed_data_fails_on_private_ip(tmp_path: Path) -> None:
     """Test audit fails for default route IPs."""
     crawler = CloudIPRanges({"json"})
-    crawler.base_url = tmp_path
+    crawler.output_dir = tmp_path
 
     data = {
         "provider": "Test",
@@ -132,12 +132,13 @@ def test_xml_find_text_function() -> None:
 
 
 def test_transform_base_with_asn_source() -> None:
-    """Test _transform_base with ASN source."""
+    """Test _transform_base with ASN source - method stays as published_list."""
     crawler = CloudIPRanges({"json"})
 
     result = crawler._transform_base("test", ["AS12345"])
 
-    assert result["method"] == "asn_lookup"
+    # ASN sources set their method explicitly in fetch_and_save_asn_source
+    assert result["method"] == "published_list"
     assert result["source"] == ["AS12345"]
 
 

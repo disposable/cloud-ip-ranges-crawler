@@ -68,7 +68,7 @@ def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]
                     if re.match(r"^[0-9]{1,3}(?:\.[0-9]{1,3}){3}/[0-9]{1,2}$", cidr):
                         result["ipv4"].append(cidr)
         except Exception:
-            raise ValueError("Failed to parse STACKIT response as JSON or text")
+            raise ValueError("Failed to parse STACKIT response as JSON or text") from None
 
     # If we couldn't find any IPs, raise an error
     if not result["ipv4"] and not result["ipv6"]:
