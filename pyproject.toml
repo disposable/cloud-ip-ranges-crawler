@@ -4,7 +4,7 @@ version = "0.1.1"
 description = "Automated collection of cloud provider IP ranges"
 requires-python = ">=3.10"
 dependencies = [
-    "cachetools>=7.1.1",
+    "cachetools>=7.1.4",
     "requests>=2.34.0",
     "urllib3>=2.7.0",
     "defusedxml>=0.7.1",
