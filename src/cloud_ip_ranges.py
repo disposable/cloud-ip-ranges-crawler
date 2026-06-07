@@ -48,9 +48,9 @@ class CloudIPRanges:
         "digitalocean": ["https://digitalocean.com/geo/google.csv"],
         "google_cloud": ["https://www.gstatic.com/ipranges/cloud.json", "https://www.gstatic.com/ipranges/goog.json"],
         "google_bot": [
-            "https://developers.google.com/static/search/apis/ipranges/googlebot.json",
-            "https://developers.google.com/search/apis/ipranges/special-crawlers.json",
-            "https://developers.google.com/search/apis/ipranges/user-triggered-fetchers.json",
+            "https://developers.google.com/static/crawling/ipranges/common-crawlers.json",
+            "https://developers.google.com/static/crawling/ipranges/special-crawlers.json",
+            "https://developers.google.com/static/crawling/ipranges/user-triggered-fetchers.json",
         ],
         "bing_bot": ["https://www.bing.com/toolbox/bingbot.json"],
         "oracle_cloud": ["https://docs.oracle.com/iaas/tools/public_ip_ranges.json"],

@@ -153,6 +153,6 @@ def test_sources_include_cloudiplookup_parity_endpoints() -> None:
     crawler = CloudIPRanges({"json"})
 
     assert "https://www.gstatic.com/ipranges/goog.json" in crawler.sources["google_cloud"]
-    assert "https://developers.google.com/search/apis/ipranges/special-crawlers.json" in crawler.sources["google_bot"]
-    assert "https://developers.google.com/search/apis/ipranges/user-triggered-fetchers.json" in crawler.sources["google_bot"]
+    assert "https://developers.google.com/static/crawling/ipranges/special-crawlers.json" in crawler.sources["google_bot"]
+    assert "https://developers.google.com/static/crawling/ipranges/user-triggered-fetchers.json" in crawler.sources["google_bot"]
     assert "https://api.cloudflare.com/client/v4/ips?networks=jdcloud" in crawler.sources["cloudflare"]
