@@ -25,7 +25,7 @@ dev = [
     "pre-commit>=4.6.0",
     "pyright>=1.1.410",
     "pytest>=9.0.3",
-    "ruff>=0.15.16",
+    "ruff>=0.15.20",
     "vulture>=2.14",
     "xenon>=0.9.3",
 ]
