@@ -8,7 +8,7 @@ dependencies = [
     "requests>=2.34.0",
     "urllib3>=2.7.0",
     "defusedxml>=0.7.1",
-    "cycletls @ https://github.com/smeinecke/cycletls_python/releases/download/v0.0.7/cycletls-0.0.7-py3-none-manylinux2014_x86_64.whl",
+    "cycletls>=0.0.7",
 ]
 
 [project.scripts]
@@ -16,6 +16,10 @@ cloud-ip-ranges = "cloud_ip_ranges:main"
 
 [tool.uv]
 package = true
+
+[[tool.uv.index]]
+name = "cycletls"
+url = "https://smeinecke.github.io/cycletls_python/simple/"
 
 [dependency-groups]
 dev = [
