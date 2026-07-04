@@ -20,6 +20,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from sources.asn import fetch_and_save_asn_source
+from sources.cycletls import fetch_and_save_cycletls_source
 from sources.http import fetch_and_save_http_source
 from sources.seed_cidr import fetch_and_save_seed_cidr_source
 from transforms.common import validate_ip
@@ -140,6 +141,18 @@ class CloudIPRanges:
         "infomaniak": ["https://prefixes.infomaniak.com/json"],
         "yandex_cloud": ["https://yandex.cloud/en/docs/security/ip-list"],
         "yandex": ["https://yandex.com/ips"],
+    }
+
+    # Providers that serve HTML and may be behind bot-blocking CDNs
+    cycletls_providers: ClassVar[set[str]] = {
+        "adyen",
+        "backblaze",
+        "branch",
+        "cisco_webex",
+        "gitlab",
+        "scaleway",
+        "yandex",
+        "yandex_cloud",
     }
 
     # Providers categorized as misc (user ISP traffic, not harmful crawlers)
@@ -409,6 +422,8 @@ class CloudIPRanges:
             transformed_data = fetch_and_save_seed_cidr_source(self, source_key, url)
         elif isinstance(url, list) and url and isinstance(url[0], str) and (url[0].startswith("AS") or url[0].startswith("RADB::")):
             transformed_data = fetch_and_save_asn_source(self, source_key, url)
+        elif source_key in self.cycletls_providers:
+            transformed_data = fetch_and_save_cycletls_source(self, source_key, url)
         else:
             transformed_data = fetch_and_save_http_source(self, source_key, url)
 

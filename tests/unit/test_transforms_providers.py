@@ -651,6 +651,7 @@ def test_yandex_cloud_transform_extracts_ipv4_and_ipv6(cipr) -> None:
     details_services_v6 = {d["service"] for d in res["details_ipv6"]}
     assert "Virtual Private Cloud" in details_services_v4
     assert "BareMetal" in details_services_v4
+    assert "SmartCaptcha" in details_services_v4
     assert "DSPM" in details_services_v6
     assert "Yandex Cloud Services" in details_services_v6
 

@@ -1,6 +1,6 @@
 import ipaddress
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 # Sections on the page that contain IP ranges (Cloud CDN is a link, not inline)
 _SECTIONS: Dict[str, str] = {
@@ -13,54 +13,51 @@ _SECTIONS: Dict[str, str] = {
 }
 
 
-# Match bare IPv4 or IPv4 CIDR
-_IPV4_RE = re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}(?:/\d{1,2})?\b")
-# Match IPv6 or IPv6 CIDR (must contain :: or at least one colon group)
-_IPV6_RE = re.compile(r"\b[0-9a-fA-F:]{4,}(?:/[0-9]{1,3})?\b")
-
-
 def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]:
     """Transform Yandex Cloud HTML documentation page to extract CIDR ranges."""
     result = cipr._transform_base(source_key)
-
     text = response[0].text
-    current_section: str | None = None
 
-    for line in text.splitlines():
-        line = line.strip()
-        if not line:
+    # Find all section heading positions (works with both rendered text and HTML)
+    section_positions: List[Tuple[int, str]] = []
+    for heading, service in _SECTIONS.items():
+        for m in re.finditer(re.escape(heading), text):
+            section_positions.append((m.start(), service))
+    section_positions.sort()
+
+    # Extract all CIDRs and bare IPs with their positions
+    cidr_items: List[Tuple[int, ipaddress.IPv4Network | ipaddress.IPv6Network]] = []
+    for m in re.finditer(r"[0-9a-fA-F:.]+(?:/[0-9]{1,3})?", text):
+        raw = m.group()
+        try:
+            if "/" in raw:
+                network = ipaddress.ip_network(raw, strict=False)
+            else:
+                addr = ipaddress.ip_address(raw)
+                prefix = "32" if isinstance(addr, ipaddress.IPv4Address) else "128"
+                network = ipaddress.ip_network(f"{raw}/{prefix}", strict=False)
+            cidr_items.append((m.start(), network))
+        except ValueError:
             continue
 
-        # Detect section heading
-        for heading, service in _SECTIONS.items():
-            if line == heading or line.startswith(heading):
-                current_section = service
+    # Assign each CIDR to the nearest preceding section
+    for pos, network in cidr_items:
+        section: str | None = None
+        for sec_pos, sec_name in section_positions:
+            if sec_pos < pos:
+                section = sec_name
+            else:
                 break
 
-        if current_section is None:
-            continue
-
-        # Skip metadata / helper lines that are not IPs
-        if line in ("IPv4", "IPv6"):
-            continue
-
-        candidates: List[str] = []
-        candidates.extend(_IPV4_RE.findall(line))
-        candidates.extend(_IPV6_RE.findall(line))
-
-        for raw in candidates:
-            try:
-                network = ipaddress.ip_network(raw, strict=False)
-            except ValueError:
-                continue
-
-            ip_str = str(network)
-            if isinstance(network, ipaddress.IPv4Network):
-                result["ipv4"].append(ip_str)
-                result.setdefault("details_ipv4", []).append({"address": ip_str, "service": current_section})
-            elif isinstance(network, ipaddress.IPv6Network):
-                result["ipv6"].append(ip_str)
-                result.setdefault("details_ipv6", []).append({"address": ip_str, "service": current_section})
+        ip_str = str(network)
+        if isinstance(network, ipaddress.IPv4Network):
+            result["ipv4"].append(ip_str)
+            if section:
+                result.setdefault("details_ipv4", []).append({"address": ip_str, "service": section})
+        elif isinstance(network, ipaddress.IPv6Network):
+            result["ipv6"].append(ip_str)
+            if section:
+                result.setdefault("details_ipv6", []).append({"address": ip_str, "service": section})
 
     if not result["ipv4"] and not result["ipv6"]:
         raise ValueError("Failed to parse Yandex Cloud HTML response")
