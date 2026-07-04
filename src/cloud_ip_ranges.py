@@ -152,7 +152,11 @@ class CloudIPRanges:
         "gitlab",
         "scaleway",
         "yandex",
-        "yandex_cloud",
+    }
+
+    # Sources that need custom headers to bypass bot detection
+    custom_headers: ClassVar[dict[str, dict[str, str]]] = {
+        "yandex_cloud": {"Accept": "text/markdown"},
     }
 
     # Providers categorized as misc (user ISP traffic, not harmful crawlers)
@@ -425,7 +429,8 @@ class CloudIPRanges:
         elif source_key in self.cycletls_providers:
             transformed_data = fetch_and_save_cycletls_source(self, source_key, url)
         else:
-            transformed_data = fetch_and_save_http_source(self, source_key, url)
+            headers = self.custom_headers.get(source_key)
+            transformed_data = fetch_and_save_http_source(self, source_key, url, headers=headers)
 
         # Always perform basic safety audit
         self._audit_transformed_data(transformed_data, source_key)
