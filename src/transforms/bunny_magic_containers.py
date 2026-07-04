@@ -11,8 +11,8 @@ def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]
         if not ip:
             continue
         if ":" in ip:
-            result["ipv6"].append(ip)
+            result["ipv6"].append(f"{ip}/128")
         else:
-            result["ipv4"].append(ip)
+            result["ipv4"].append(f"{ip}/32")
 
     return result
