@@ -1,5 +1,10 @@
 from typing import Any, Dict, List
 
+# TODO: STACKIT is disabled from the active sources registry because
+# https://iaas.api.eu01.stackit.cloud/v1/networks/public-ip-ranges currently
+# returns HTTP 403 without authentication. Re-enable once an unauthenticated,
+# stable public ranges endpoint is available.
+
 
 def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]:
     """Transform STACKIT IP ranges API response."""

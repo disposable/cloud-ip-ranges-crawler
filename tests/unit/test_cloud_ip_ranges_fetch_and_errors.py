@@ -71,7 +71,7 @@ def test_fetch_and_save_routes_http_when_seed_detection_fails(tmp_path: Path, mo
 
     called = {}
 
-    def fake_http(cipr, source_key: str, url):
+    def fake_http(cipr, source_key: str, url, headers=None):
         called["http"] = True
         return _sample_transformed(url[0])
 

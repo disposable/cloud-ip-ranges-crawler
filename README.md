@@ -29,10 +29,14 @@ See `src/sources/` for the latest definitions; new providers usually only requir
 - **Google Bot / Bing Bot** - Search crawler IPs (includes special crawlers + user-triggered fetchers feeds)
 - **Oracle Cloud** - Region-aware IP lists
 - **Exoscale** - JSON feed with zone metadata
+- **Gcore CDN** - JSON public network list
+- **Gcore Cloud** - JSON egress IP ranges
+- **Bunny CDN** - Plain text IPv4 + IPv6 edge server lists
+- **Bunny Magic Containers** - Plain text node IP list
+- **Equinix Metal** - Geofeed CSV
 - **Scaleway** - Network documentation HTML scrape
 - **Backblaze** - IP address documentation HTML scrape
 - **Cisco Webex** - Media/meetings network requirements HTML scrape
-- **STACKIT** - API endpoint with JSON/text fallback
 - **Apple Private Relay** - Public egress exit CSV for iCloud Private Relay
 - **Ahrefs**, **Sentry**, **Datadog**, **Branch**, **Perplexity**, **OpenAI**, **Telegram**, **Atlassian**, **Intercom**, **Zendesk**
 - **Linode**, **Vultr**, **Starlink**, **Fastly**, **Akamai**, **Zscaler**

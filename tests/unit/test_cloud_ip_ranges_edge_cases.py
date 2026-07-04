@@ -176,3 +176,9 @@ def test_sources_include_cloudiplookup_parity_endpoints() -> None:
     assert "https://developers.google.com/static/crawling/ipranges/special-crawlers.json" in crawler.sources["google_bot"]
     assert "https://developers.google.com/static/crawling/ipranges/user-triggered-fetchers.json" in crawler.sources["google_bot"]
     assert "https://api.cloudflare.com/client/v4/ips?networks=jdcloud" in crawler.sources["cloudflare"]
+
+
+def test_stackit_not_in_active_sources() -> None:
+    """STACKIT is disabled pending an unauthenticated public ranges endpoint."""
+    crawler = CloudIPRanges({"json"})
+    assert "stackit" not in crawler.sources

@@ -1,0 +1,51 @@
+from unittest.mock import Mock
+
+from src.transforms.gcore_cdn import transform
+
+
+class TestGcoreCdnTransform:
+    def test_transform_json_addresses(self):
+        """Test Gcore CDN JSON with addresses array."""
+        cipr = Mock()
+        cipr._transform_base.return_value = {"ipv4": [], "ipv6": []}
+
+        response = [Mock()]
+        response[0].json.return_value = {
+            "addresses": [
+                "80.15.251.30/31",
+                "82.148.98.40/29",
+                "2a01:1:2::/48",
+            ]
+        }
+
+        result = transform(cipr, response, "gcore_cdn")
+
+        assert len(result["ipv4"]) == 2
+        assert len(result["ipv6"]) == 1
+        assert "80.15.251.30/31" in result["ipv4"]
+        assert "82.148.98.40/29" in result["ipv4"]
+        assert "2a01:1:2::/48" in result["ipv6"]
+
+    def test_transform_empty_addresses(self):
+        """Test Gcore CDN with empty addresses."""
+        cipr = Mock()
+        cipr._transform_base.return_value = {"ipv4": [], "ipv6": []}
+
+        response = [Mock()]
+        response[0].json.return_value = {"addresses": []}
+
+        result = transform(cipr, response, "gcore_cdn")
+
+        assert result["ipv4"] == []
+        assert result["ipv6"] == []
+
+    def test_transform_provider_name(self):
+        """Test that provider name is set correctly."""
+        cipr = Mock()
+        cipr._transform_base.return_value = {"ipv4": [], "ipv6": []}
+
+        response = [Mock()]
+        response[0].json.return_value = {"addresses": ["1.2.3.0/24"]}
+
+        result = transform(cipr, response, "gcore_cdn")
+        assert result["provider"] == "Gcore CDN"

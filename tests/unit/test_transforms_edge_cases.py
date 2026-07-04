@@ -13,7 +13,7 @@ def test_fetch_and_save_with_extra_sources(tmp_path: Path, monkeypatch: pytest.M
     crawler.output_dir = tmp_path
     crawler.sources = {"aws": ["https://example.com/test.json"]}
 
-    def fake_get(url: str, timeout: int = 10):
+    def fake_get(url: str, timeout: int = 10, headers=None):
         # Return proper AWS JSON structure
         return FakeResponse(
             json_data={
