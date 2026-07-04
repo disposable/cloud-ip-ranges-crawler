@@ -8,7 +8,7 @@ dependencies = [
     "requests>=2.34.0",
     "urllib3>=2.7.0",
     "defusedxml>=0.7.1",
-    "cycletls @ git+https://github.com/smeinecke/cycletls_python.git",
+    "cycletls @ https://github.com/smeinecke/cycletls_python/releases/download/v0.0.7/cycletls-0.0.7-py3-none-manylinux2014_x86_64.whl",
 ]
 
 [project.scripts]

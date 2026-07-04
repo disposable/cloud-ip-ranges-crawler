@@ -274,7 +274,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "cachetools", specifier = ">=7.1.4" },
-    { name = "cycletls", git = "https://github.com/smeinecke/cycletls_python.git" },
+    { name = "cycletls", url = "https://github.com/smeinecke/cycletls_python/releases/download/v0.0.7/cycletls-0.0.7-py3-none-manylinux2014_x86_64.whl" },
     { name = "defusedxml", specifier = ">=0.7.1" },
     { name = "requests", specifier = ">=2.34.0" },
     { name = "urllib3", specifier = ">=2.7.0" },
@@ -421,8 +421,8 @@ toml = [
 
 [[package]]
 name = "cycletls"
-version = "0.0.6"
-source = { git = "https://github.com/smeinecke/cycletls_python.git#c745f8ecc229b2c95464e67c6695ac6e9df748c3" }
+version = "0.0.7"
+source = { url = "https://github.com/smeinecke/cycletls_python/releases/download/v0.0.7/cycletls-0.0.7-py3-none-manylinux2014_x86_64.whl" }
 dependencies = [
     { name = "cffi" },
     { name = "orjson" },
@@ -431,6 +431,49 @@ dependencies = [
     { name = "websocket-client" },
     { name = "websockets" },
 ]
+wheels = [
+    { url = "https://github.com/smeinecke/cycletls_python/releases/download/v0.0.7/cycletls-0.0.7-py3-none-manylinux2014_x86_64.whl", hash = "sha256:44eab62b0f3004752f17d74d9fa208e87c3b303e4cd7688925ca7a4d088be287" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiohttp", marker = "extra == 'benchmark'", specifier = ">=3.8.0" },
+    { name = "brotli", marker = "extra == 'dev'", specifier = ">=1.0.0" },
+    { name = "build", marker = "extra == 'dev'", specifier = ">=1.0.0" },
+    { name = "cffi", specifier = ">=1.15.0" },
+    { name = "curl-cffi", marker = "extra == 'benchmark'", specifier = ">=0.5.0" },
+    { name = "furo", marker = "extra == 'docs'", specifier = ">=2023.0.0" },
+    { name = "hrequests", marker = "extra == 'benchmark'", specifier = ">=0.7.0" },
+    { name = "httpx", marker = "extra == 'benchmark'", specifier = ">=0.24.0" },
+    { name = "matplotlib", marker = "extra == 'benchmark'", specifier = ">=3.7.0" },
+    { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=2.0.0" },
+    { name = "niquests", marker = "extra == 'benchmark'", specifier = ">=3.0.0" },
+    { name = "orjson", specifier = ">=3.9.0" },
+    { name = "ormsgpack", specifier = ">=1.5.0" },
+    { name = "pandas", marker = "extra == 'benchmark'", specifier = ">=2.0.0" },
+    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.0" },
+    { name = "primp", marker = "extra == 'benchmark'", specifier = ">=0.6.0" },
+    { name = "pycurl", marker = "extra == 'benchmark'", specifier = ">=7.45.0" },
+    { name = "pydantic", specifier = ">=2.0.0" },
+    { name = "pyright", marker = "extra == 'dev'", specifier = ">=1.1.390" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.18.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.0.0" },
+    { name = "pytest-rerunfailures", marker = "extra == 'dev'", specifier = ">=14.0" },
+    { name = "pytest-xdist", marker = "extra == 'dev'", specifier = ">=3.0.0" },
+    { name = "requests", marker = "extra == 'benchmark'", specifier = ">=2.31.0" },
+    { name = "requests", marker = "extra == 'docs'", specifier = ">=2.31.0" },
+    { name = "rnet", marker = "extra == 'benchmark'", specifier = ">=0.0.1" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8.0" },
+    { name = "sphinx", marker = "extra == 'docs'", specifier = ">=7.0.0,<9.0.0" },
+    { name = "sphinx-autodoc-typehints", marker = "extra == 'docs'", specifier = ">=1.23.0" },
+    { name = "sphinx-copybutton", marker = "extra == 'docs'", specifier = ">=0.5.0" },
+    { name = "tls-client", marker = "extra == 'benchmark'", specifier = ">=0.2.0" },
+    { name = "uvloop", marker = "sys_platform != 'win32' and extra == 'benchmark'", specifier = ">=0.17.0" },
+    { name = "websocket-client", specifier = ">=1.0.0" },
+    { name = "websockets", specifier = ">=10.0" },
+]
+provides-extras = ["benchmark", "dev", "docs"]
 
 [[package]]
 name = "defusedxml"
