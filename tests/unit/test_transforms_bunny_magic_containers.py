@@ -1,11 +1,28 @@
+import json
 from unittest.mock import Mock
 
 from src.transforms.bunny_magic_containers import transform
 
 
 class TestBunnyMagicContainersTransform:
+    def test_transform_json_array(self):
+        """Test Bunny Magic Containers with JSON array response."""
+        cipr = Mock()
+        cipr._transform_base.return_value = {"ipv4": [], "ipv6": []}
+
+        response = [Mock()]
+        response[0].text = json.dumps(
+            ["104.166.147.46", "109.61.83.105", "109.61.83.248"]
+        )
+
+        result = transform(cipr, response, "bunny_magic_containers")
+
+        assert len(result["ipv4"]) == 3
+        assert "104.166.147.46/32" in result["ipv4"]
+        assert "109.61.83.105/32" in result["ipv4"]
+
     def test_transform_plain_text(self):
-        """Test Bunny Magic Containers with plain text IP list."""
+        """Test Bunny Magic Containers with plain text IP list fallback."""
         cipr = Mock()
         cipr._transform_base.return_value = {"ipv4": [], "ipv6": []}
 
@@ -38,7 +55,7 @@ class TestBunnyMagicContainersTransform:
         cipr._transform_base.return_value = {"ipv4": [], "ipv6": []}
 
         response = [Mock()]
-        response[0].text = "1.2.3.4"
+        response[0].text = '["1.2.3.4"]'
 
         result = transform(cipr, response, "bunny_magic_containers")
         assert result["provider"] == "Bunny Magic Containers"
@@ -49,7 +66,7 @@ class TestBunnyMagicContainersTransform:
         cipr._transform_base.return_value = {"ipv4": [], "ipv6": []}
 
         response = [Mock()]
-        response[0].text = "2a01:1:2::3\n2a01:1:2::4"
+        response[0].text = json.dumps(["2a01:1:2::3", "2a01:1:2::4"])
 
         result = transform(cipr, response, "bunny_magic_containers")
 

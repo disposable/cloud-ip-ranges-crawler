@@ -1,3 +1,4 @@
+import json
 from typing import Any, Dict, List
 
 
@@ -6,8 +7,16 @@ def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]
     result["provider"] = "Bunny Magic Containers"
     text = response[0].text or ""
 
-    for line in text.splitlines():
-        ip = line.strip()
+    # The API may return a JSON array or a plain text list
+    try:
+        ips = json.loads(text)
+        if not isinstance(ips, list):
+            ips = []
+    except (json.JSONDecodeError, ValueError):
+        ips = text.splitlines()
+
+    for ip in ips:
+        ip = ip.strip()
         if not ip:
             continue
         if ":" in ip:
