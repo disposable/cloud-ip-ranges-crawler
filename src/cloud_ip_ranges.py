@@ -507,16 +507,20 @@ class CloudIPRanges:
         removed6 = old6 - new6
         return {
             "ipv4": {
-                "old": len(old4), "new": len(new4),
-                "added": len(added4), "removed": len(removed4),
+                "old": len(old4),
+                "new": len(new4),
+                "added": len(added4),
+                "removed": len(removed4),
                 "old_addrs": self._cidr_address_count(list(old4)),
                 "new_addrs": self._cidr_address_count(list(new4)),
                 "added_addrs": self._cidr_address_count(list(added4)),
                 "removed_addrs": self._cidr_address_count(list(removed4)),
             },
             "ipv6": {
-                "old": len(old6), "new": len(new6),
-                "added": len(added6), "removed": len(removed6),
+                "old": len(old6),
+                "new": len(new6),
+                "added": len(added6),
+                "removed": len(removed6),
                 "old_addrs": self._cidr_address_count(list(old6)),
                 "new_addrs": self._cidr_address_count(list(new6)),
                 "added_addrs": self._cidr_address_count(list(added6)),
