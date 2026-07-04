@@ -582,6 +582,79 @@ def test_sentry_transform_whitespace_only(cipr) -> None:
     assert "34.123.33.225/32" in res["ipv4"]
 
 
+def test_infomaniak_transform_uses_all_category(cipr) -> None:
+    r = FakeResponse(
+        json_data={
+            "ksuite": {"ipv4": ["45.157.188.0/25"], "ipv6": ["2001:1600:0:aaaa::/64"]},
+            "vps": {"ipv4": ["83.166.136.128/25"], "ipv6": ["2001:1600:3:1a::/64"]},
+            "public-cloud": {"ipv4": ["37.156.40.0/22"], "ipv6": ["2001:1600:10:100::/64"]},
+            "all": {"ipv4": ["37.156.40.0/21", "45.157.188.0/22"], "ipv6": ["2001:1600::/29"]},
+        }
+    )
+    res = _transform_response(cipr, [r], "infomaniak", is_asn=False)
+    assert res["provider"] == "Infomaniak"
+    assert "37.156.40.0/21" in res["ipv4"]
+    assert "45.157.188.0/22" in res["ipv4"]
+    assert "2001:1600::/29" in res["ipv6"]
+    # Should use the "all" category, not the more specific sub-categories
+    assert "45.157.188.0/25" not in res["ipv4"]
+    assert "83.166.136.128/25" not in res["ipv4"]
+
+
+def test_infomaniak_transform_fallback_without_all(cipr) -> None:
+    r = FakeResponse(
+        json_data={
+            "ksuite": {"ipv4": ["45.157.188.0/25"], "ipv6": ["2001:1600:0:aaaa::/64"]},
+            "vps": {"ipv4": ["83.166.136.128/25"], "ipv6": ["2001:1600:3:1a::/64"]},
+        }
+    )
+    res = _transform_response(cipr, [r], "infomaniak", is_asn=False)
+    assert res["provider"] == "Infomaniak"
+    assert "45.157.188.0/25" in res["ipv4"]
+    assert "83.166.136.128/25" in res["ipv4"]
+    assert "2001:1600:0:aaaa::/64" in res["ipv6"]
+    assert "2001:1600:3:1a::/64" in res["ipv6"]
+
+
+def test_infomaniak_transform_invalid_json(cipr) -> None:
+    r = FakeResponse(text="not json")
+    with pytest.raises(ValueError, match="Failed to parse Infomaniak"):
+        _transform_response(cipr, [r], "infomaniak", is_asn=False)
+
+
+def test_yandex_transform_extracts_ipv4_and_ipv6(cipr) -> None:
+    r = _load_raw(SAMPLES_DIR / "yandex_0.raw")
+    res = _transform_response(cipr, [r], "yandex", is_asn=False)
+    assert res["provider"] == "Yandex"
+    assert _has_valid_ipv4(res)
+    assert _has_valid_ipv6(res)
+    assert "5.45.192.0/18" in res["ipv4"]
+    assert "213.180.192.0/19" in res["ipv4"]
+    assert "2a02:6b8::/29" in res["ipv6"]
+
+
+def test_yandex_cloud_transform_extracts_ipv4_and_ipv6(cipr) -> None:
+    r = _load_raw(SAMPLES_DIR / "yandex_cloud_0.raw")
+    res = _transform_response(cipr, [r], "yandex_cloud", is_asn=False)
+    assert res["provider"] == "Yandex Cloud"
+    assert _has_valid_ipv4(res)
+    assert _has_valid_ipv6(res)
+    assert "31.44.8.0/21" in res["ipv4"]
+    assert "51.250.0.0/17" in res["ipv4"]
+    assert "89.223.20.0/24" in res["ipv4"]
+    assert "2a02:6b8::/32" in res["ipv6"]
+    assert "2a0d:d6c0::/29" in res["ipv6"]
+    # Verify details are populated and cross-checked against main IP sets
+    assert res.get("details_ipv4")
+    assert res.get("details_ipv6")
+    details_services_v4 = {d["service"] for d in res["details_ipv4"]}
+    details_services_v6 = {d["service"] for d in res["details_ipv6"]}
+    assert "Virtual Private Cloud" in details_services_v4
+    assert "BareMetal" in details_services_v4
+    assert "DSPM" in details_services_v6
+    assert "Yandex Cloud Services" in details_services_v6
+
+
 def test_vercel_rdap_transform_discovers_org_nets(cipr, monkeypatch: pytest.MonkeyPatch) -> None:
     rdap_seed = FakeResponse(
         json_data={

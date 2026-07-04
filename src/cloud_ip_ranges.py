@@ -137,6 +137,9 @@ class CloudIPRanges:
         "open_telekom_cloud": ["AS6878"],
         "wasabi": ["AS395717"],
         "kamatera": ["AS36007"],
+        "infomaniak": ["https://prefixes.infomaniak.com/json"],
+        "yandex_cloud": ["https://yandex.cloud/en/docs/security/ip-list"],
+        "yandex": ["https://yandex.com/ips"],
     }
 
     # Providers categorized as misc (user ISP traffic, not harmful crawlers)

@@ -1,0 +1,165 @@
+Search
+International
+Discuss with expert
+Try it for free
+Services
+Solutions
+Why Yandex Cloud
+Pricing
+Customer Stories
+Documentation
+Blog
+Security in Yandex Cloud
+Key security principles
+Division of responsibility for security
+Compliance
+Security measures on the Yandex Cloud side
+Security tools available to cloud service users
+Best practices for securing your cloud infrastructure
+Cloud infrastructure security standard, version 1.4.2
+Yandex 360 protection and safe use standard, version 1.0.0
+Tutorials
+Guides
+User support policy during vulnerability scanning
+Security bulletins
+Public IP address ranges
+In this article:
+IP addresses of Yandex Cloud resources available to customers
+Virtual Private Cloud
+BareMetal
+Cloud CDN
+SmartCaptcha
+Smart Web Security
+Security Deck
+IP addresses used by Yandex Cloud for its services
+Public IP address ranges in Yandex Cloud
+Written by
+Yandex Cloud
+Updated at June 26, 2026
+View in Markdown
+
+For Yandex Cloud network resources, two types of public IP addresses are used:
+
+Yandex Cloud resource IP addresses available to the customers, e.g., IP addresses of Compute Cloud VMs and database hosts.
+
+IP addresses used by Yandex Cloud to enable its services, e.g., to record audit logs in Audit Trails.
+
+IP addresses of Yandex Cloud resources available to customers
+IP addresses of Yandex Cloud resources available to customers
+Virtual Private Cloud
+Virtual Private Cloud
+IPv4
+31.44.8.0/21
+37.230.168.0/23
+37.230.172.0/22
+37.230.188.0/22
+45.133.96.0/22
+46.21.244.0/22
+46.243.210.0/23
+51.250.0.0/17
+62.84.112.0/20
+81.26.176.0/20
+84.201.128.0/18
+84.252.128.0/20
+89.169.128.0/18
+89.232.188.0/22
+92.255.1.0/24
+92.255.3.0/24
+93.77.160.0/19
+94.131.80.0/20
+103.76.52.0/22
+111.88.144.0/20
+111.88.240.0/20
+130.193.32.0/19
+153.51.32.0/19
+158.160.0.0/16
+178.154.192.0/18
+178.170.222.0/24
+185.206.164.0/22
+193.32.216.0/22
+213.130.80.0/21
+213.165.192.0/19
+217.28.224.0/20
+217.198.168.0/21
+
+For example, the resources assigned such IP address ranges are:
+
+Compute Cloud VMs
+DB hosts
+NAT instances
+Network Load Balancer and Application Load Balancer load balancers
+BareMetal
+BareMetal
+IPv4
+89.223.20.0/24
+92.255.58.0/23
+94.126.204.0/22
+94.139.248.0/22
+185.184.128.0/22
+185.216.194.0/23
+Cloud CDN
+Cloud CDN
+
+List of public Yandex Cloud CDN IP addresses
+
+SmartCaptcha
+SmartCaptcha
+
+For SmartCaptcha to run correctly, enable access to the following IPs:
+
+IPv4	IPv6
+84.201.151.229	2a0d:d6c1::1a:0:0:0:20e
+
+They serve to ensure an API request sent to /validate runs correctly.
+
+These IP addresses cannot be assigned to user resources. They serve to ensure an API request sent to /validate works correctly.
+
+Smart Web Security
+Smart Web Security
+
+For Smart Web Security to run correctly, enable access to the following IPs:
+
+IPv4
+46.243.212.0/24
+194.247.51.0/24
+
+Access to these addresses is required for traffic to flow from the SWS proxy server to target resources.
+
+Security Deck
+Security Deck
+DSPM
+DSPM
+
+For the DSPM module to function correctly when controlling Object Storage bucket access using policies, you must allow access to the specified IP addresses in the policy settings:
+
+IPv6
+2a02:6b8:c0e:500:0:f898::/112
+2a02:6b8:c02:900:0:f898::/112
+2a02:6b8:c41:1300:0:f898::/112
+IP addresses used by Yandex Cloud for its services
+IP addresses used by Yandex Cloud for its services
+
+The following IP address ranges are assigned to the resources that support Yandex Cloud operation:
+
+IPv6
+2a02:6b8::/32
+2a0d:d6c0::/29
+
+These IP address ranges are not available to users.
+
+See also
+See also
+SmartCaptcha public IP addresses
+IP address ranges used by Yandex
+Was the article helpful?
+Yes
+No
+Previous
+Security bulletins
+International
+© 2026 Direct Cursus Technology L.L.C.
+Yandex uses cookies
+They ensure the smooth operation of all Yandex sites and services. For more information, please read our Cookie Policy
+Allow all
+Allow essential cookies
+Settings
