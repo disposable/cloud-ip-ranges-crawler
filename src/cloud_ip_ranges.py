@@ -480,14 +480,40 @@ class CloudIPRanges:
         if invalid:
             raise RuntimeError(f"Audit failed for {source_key}: contains default route(s): {', '.join(invalid)}")
 
+    def _cidr_address_count(self, prefixes: list[str]) -> int:
+        """Return total number of addresses covered by a list of CIDR prefixes."""
+        total = 0
+        for p in prefixes:
+            network = ipaddress.ip_network(p, strict=False)
+            total += network.num_addresses
+        return total
+
     def _diff_summary(self, old: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
         old4 = set(old.get("ipv4", []) or [])
         old6 = set(old.get("ipv6", []) or [])
         new4 = set(new.get("ipv4", []) or [])
         new6 = set(new.get("ipv6", []) or [])
+        added4 = new4 - old4
+        removed4 = old4 - new4
+        added6 = new6 - old6
+        removed6 = old6 - new6
         return {
-            "ipv4": {"old": len(old4), "new": len(new4), "added": len(new4 - old4), "removed": len(old4 - new4)},
-            "ipv6": {"old": len(old6), "new": len(new6), "added": len(new6 - old6), "removed": len(old6 - new6)},
+            "ipv4": {
+                "old": len(old4), "new": len(new4),
+                "added": len(added4), "removed": len(removed4),
+                "old_addrs": self._cidr_address_count(list(old4)),
+                "new_addrs": self._cidr_address_count(list(new4)),
+                "added_addrs": self._cidr_address_count(list(added4)),
+                "removed_addrs": self._cidr_address_count(list(removed4)),
+            },
+            "ipv6": {
+                "old": len(old6), "new": len(new6),
+                "added": len(added6), "removed": len(removed6),
+                "old_addrs": self._cidr_address_count(list(old6)),
+                "new_addrs": self._cidr_address_count(list(new6)),
+                "added_addrs": self._cidr_address_count(list(added6)),
+                "removed_addrs": self._cidr_address_count(list(removed6)),
+            },
         }
 
     def _enforce_max_delta(self, old: dict[str, Any], new: dict[str, Any], *, max_ratio: float, source_key: str) -> None:
@@ -502,9 +528,12 @@ class CloudIPRanges:
             return abs(new_n - old_n) / float(old_n)
 
         s = self._diff_summary(old, new)
-        r4 = ratio(s["ipv4"]["old"], s["ipv4"]["new"])
-        r6 = ratio(s["ipv6"]["old"], s["ipv6"]["new"])
+        # Use actual address counts for ratio to avoid false positives when
+        # subnets are merged/split without changing total IP coverage.
+        r4 = ratio(s["ipv4"]["old_addrs"], s["ipv4"]["new_addrs"])
+        r6 = ratio(s["ipv6"]["old_addrs"], s["ipv6"]["new_addrs"])
 
+        # Keep prefix-based absolute check as a small-source exemption.
         abs4 = s["ipv4"]["added"] + s["ipv4"]["removed"]
         abs6 = s["ipv6"]["added"] + s["ipv6"]["removed"]
 

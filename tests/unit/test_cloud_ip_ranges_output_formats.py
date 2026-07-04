@@ -94,10 +94,18 @@ def test_diff_summary_with_changes() -> None:
     assert summary["ipv4"]["new"] == 2
     assert summary["ipv4"]["added"] == 1
     assert summary["ipv4"]["removed"] == 0
+    assert summary["ipv4"]["old_addrs"] == 256
+    assert summary["ipv4"]["new_addrs"] == 512
+    assert summary["ipv4"]["added_addrs"] == 256
+    assert summary["ipv4"]["removed_addrs"] == 0
     assert summary["ipv6"]["old"] == 1
     assert summary["ipv6"]["new"] == 2
     assert summary["ipv6"]["added"] == 1
     assert summary["ipv6"]["removed"] == 0
+    assert summary["ipv6"]["old_addrs"] == 2 ** 96
+    assert summary["ipv6"]["new_addrs"] == 2 ** 97
+    assert summary["ipv6"]["added_addrs"] == 2 ** 96
+    assert summary["ipv6"]["removed_addrs"] == 0
 
 
 def test_xml_find_text_with_namespace() -> None:

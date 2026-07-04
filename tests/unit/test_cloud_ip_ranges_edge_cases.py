@@ -95,10 +95,30 @@ def test_diff_summary_empty_data() -> None:
     assert summary["ipv4"]["new"] == 0
     assert summary["ipv4"]["added"] == 0
     assert summary["ipv4"]["removed"] == 0
+    assert summary["ipv4"]["old_addrs"] == 0
+    assert summary["ipv4"]["new_addrs"] == 0
+    assert summary["ipv4"]["added_addrs"] == 0
+    assert summary["ipv4"]["removed_addrs"] == 0
     assert summary["ipv6"]["old"] == 0
     assert summary["ipv6"]["new"] == 0
     assert summary["ipv6"]["added"] == 0
     assert summary["ipv6"]["removed"] == 0
+    assert summary["ipv6"]["old_addrs"] == 0
+    assert summary["ipv6"]["new_addrs"] == 0
+    assert summary["ipv6"]["added_addrs"] == 0
+    assert summary["ipv6"]["removed_addrs"] == 0
+
+
+def test_enforce_max_delta_allows_subnet_merge() -> None:
+    """Guardrail should not block when subnets are merged without IP loss."""
+    crawler = CloudIPRanges({"json"})
+
+    # 4 /24s = 1024 addresses, merge into 2 /23s = 1024 addresses
+    old = {"ipv4": ["10.0.0.0/24", "10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"], "ipv6": []}
+    new = {"ipv4": ["10.0.0.0/23", "10.0.2.0/23"], "ipv6": []}
+
+    # Prefix count dropped 50%, but IP count unchanged -> should not raise
+    crawler._enforce_max_delta(old, new, max_ratio=0.3, source_key="test")
 
 
 def test_save_csv_details_with_empty_details() -> None:
