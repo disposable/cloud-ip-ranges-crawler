@@ -57,14 +57,10 @@ def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]
             ip_str = str(network)
             if isinstance(network, ipaddress.IPv4Network):
                 result["ipv4"].append(ip_str)
-                result.setdefault("details_ipv4", []).append(
-                    {"address": ip_str, "service": current_section}
-                )
+                result.setdefault("details_ipv4", []).append({"address": ip_str, "service": current_section})
             elif isinstance(network, ipaddress.IPv6Network):
                 result["ipv6"].append(ip_str)
-                result.setdefault("details_ipv6", []).append(
-                    {"address": ip_str, "service": current_section}
-                )
+                result.setdefault("details_ipv6", []).append({"address": ip_str, "service": current_section})
 
     if not result["ipv4"] and not result["ipv6"]:
         raise ValueError("Failed to parse Yandex Cloud HTML response")
