@@ -11,9 +11,7 @@ class TestBunnyMagicContainersTransform:
         cipr._transform_base.return_value = {"ipv4": [], "ipv6": []}
 
         response = [Mock()]
-        response[0].text = json.dumps(
-            ["104.166.147.46", "109.61.83.105", "109.61.83.248"]
-        )
+        response[0].text = json.dumps(["104.166.147.46", "109.61.83.105", "109.61.83.248"])
 
         result = transform(cipr, response, "bunny_magic_containers")
 
