@@ -59,7 +59,7 @@ class CloudIPRanges:
             "https://bunnycdn.com/api/system/edgeserverlist/IPv6/plain",
         ],
         "bunny_magic_containers": ["https://api.bunny.net/mc/nodes/plain"],
-        "oracle_cloud": ["https://docs.oracle.com/iaas/tools/public_ip_ranges.json"],
+        "oracle_cloud": ["https://docs.oracle.com/en-us/iaas/tools/public_ip_ranges.json"],
         "ahrefs": ["https://api.ahrefs.com/v3/public/crawler-ips"],
         "linode": ["https://geoip.linode.com/"],
         "vultr": ["https://geofeed.constant.com/?json"],
