@@ -153,6 +153,22 @@ def test_enforce_max_delta_raises_when_ratio_exceeded() -> None:
         crawler._enforce_max_delta(old, new, max_ratio=0.2, source_key="test")
 
 
+def test_enforce_max_delta_uses_source_override() -> None:
+    """Per-source max-delta overrides should be honored."""
+    crawler = CloudIPRanges({"json"})
+    old_ipv4 = [f"198.51.100.{i}/32" for i in range(10)]
+    new_ipv4 = old_ipv4 + [f"203.0.113.{i}/32" for i in range(8)]  # 80% addition, >5 absolute
+    old = {"ipv4": old_ipv4, "ipv6": []}
+    new = {"ipv4": new_ipv4, "ipv6": []}
+
+    # Generic source with max 0.1 should fail for an 80% delta.
+    with pytest.raises(RuntimeError, match="Delta check failed"):
+        crawler._enforce_max_delta(old, new, max_ratio=0.1, source_key="test")
+
+    # Okta has a 0.9 override and should allow the same 80% delta.
+    crawler._enforce_max_delta(old, new, max_ratio=0.1, source_key="okta")
+
+
 def test_save_result_unknown_format_raises(tmp_path: Path) -> None:
     crawler = CloudIPRanges({"json"})
     crawler.output_dir = tmp_path

@@ -172,6 +172,13 @@ class CloudIPRanges:
         "starlink",
     }
 
+    # Per-source max-delta-ratio overrides. Some providers (e.g. Okta) publish
+    # volatile /32-based lists that can legitimately change by more than the
+    # global guardrail; a source-specific override avoids permanently stale data.
+    source_max_delta_ratios: ClassVar[dict[str, float]] = {
+        "okta": 0.9,
+    }
+
     def __init__(
         self,
         output_formats: set[str],
@@ -534,6 +541,10 @@ class CloudIPRanges:
         # even though the change is clearly legitimate.
         _MIN_ABS_CHANGE = 5
 
+        # Allow per-source overrides so providers with naturally volatile
+        # published lists are not stuck behind the global guardrail.
+        effective_max_ratio = self.source_max_delta_ratios.get(source_key, max_ratio)
+
         def ratio(old_n: int, new_n: int) -> float:
             if old_n == 0:
                 return float("inf") if new_n > 0 else 0.0
@@ -549,8 +560,8 @@ class CloudIPRanges:
         abs4 = s["ipv4"]["added"] + s["ipv4"]["removed"]
         abs6 = s["ipv6"]["added"] + s["ipv6"]["removed"]
 
-        v4_fail = r4 != float("inf") and r4 > max_ratio and abs4 > _MIN_ABS_CHANGE
-        v6_fail = r6 != float("inf") and r6 > max_ratio and abs6 > _MIN_ABS_CHANGE
+        v4_fail = r4 != float("inf") and r4 > effective_max_ratio and abs4 > _MIN_ABS_CHANGE
+        v6_fail = r6 != float("inf") and r6 > effective_max_ratio and abs6 > _MIN_ABS_CHANGE
 
         if v4_fail or v6_fail:
             raise DeltaCheckError(f"Delta check failed for {source_key}: {json.dumps(s)}")
