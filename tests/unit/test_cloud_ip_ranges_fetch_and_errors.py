@@ -143,9 +143,10 @@ def test_audit_transformed_data_detects_ipv6_default_route() -> None:
 
 
 def test_enforce_max_delta_raises_when_ratio_exceeded() -> None:
+    """Guardrail fires on significant address removal (data loss)."""
     crawler = CloudIPRanges({"json"})
     old_ipv4 = [f"198.51.100.{i}/32" for i in range(10)]
-    new_ipv4 = old_ipv4 + [f"203.0.113.{i}/32" for i in range(6)]  # >5 absolute additions
+    new_ipv4 = [f"198.51.100.{i}/32" for i in range(4)]  # >5 absolute removals, 60% of addrs
     old = {"ipv4": old_ipv4, "ipv6": []}
     new = {"ipv4": new_ipv4, "ipv6": []}
 
@@ -153,19 +154,32 @@ def test_enforce_max_delta_raises_when_ratio_exceeded() -> None:
         crawler._enforce_max_delta(old, new, max_ratio=0.2, source_key="test")
 
 
+def test_enforce_max_delta_allows_growth() -> None:
+    """Guardrail should not block legitimate extension (address growth)."""
+    crawler = CloudIPRanges({"json"})
+    old_ipv4 = [f"198.51.100.{i}/32" for i in range(10)]
+    new_ipv4 = old_ipv4 + [f"203.0.113.{i}/32" for i in range(6)]  # >5 absolute additions
+    old = {"ipv4": old_ipv4, "ipv6": []}
+    new = {"ipv4": new_ipv4, "ipv6": []}
+
+    # Large additions are accepted as "just extended".
+    crawler._enforce_max_delta(old, new, max_ratio=0.2, source_key="test")
+
+
 def test_enforce_max_delta_uses_source_override() -> None:
     """Per-source max-delta overrides should be honored."""
     crawler = CloudIPRanges({"json"})
     old_ipv4 = [f"198.51.100.{i}/32" for i in range(10)]
-    new_ipv4 = old_ipv4 + [f"203.0.113.{i}/32" for i in range(8)]  # 80% addition, >5 absolute
+    # 80% address removal, >5 absolute removals.
+    new_ipv4 = [f"198.51.100.{i}/32" for i in range(2)]
     old = {"ipv4": old_ipv4, "ipv6": []}
     new = {"ipv4": new_ipv4, "ipv6": []}
 
-    # Generic source with max 0.1 should fail for an 80% delta.
+    # Generic source with max 0.1 should fail for an 80% removal.
     with pytest.raises(RuntimeError, match="Delta check failed"):
         crawler._enforce_max_delta(old, new, max_ratio=0.1, source_key="test")
 
-    # Okta has a 0.9 override and should allow the same 80% delta.
+    # Okta has a 0.9 override and should allow the same 80% removal.
     crawler._enforce_max_delta(old, new, max_ratio=0.1, source_key="okta")
 
 
@@ -234,7 +248,9 @@ def test_suppress_retry_warnings_filter_drops_urllib3_retry_noise() -> None:
 
 __all__ = [
     "test_audit_transformed_data_detects_ipv6_default_route",
+    "test_enforce_max_delta_allows_growth",
     "test_enforce_max_delta_raises_when_ratio_exceeded",
+    "test_enforce_max_delta_uses_source_override",
     "test_fetch_all_handles_errors",
     "test_fetch_all_propagates_outer_errors",
     "test_fetch_and_save_only_if_changed_skips_save",
