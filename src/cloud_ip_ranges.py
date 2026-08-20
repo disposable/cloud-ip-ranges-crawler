@@ -562,18 +562,8 @@ class CloudIPRanges:
 
         # Guardrail should only block significant address removal (data loss).
         # Large additions ("just extended") are accepted as legitimate growth.
-        v4_fail = (
-            r4 != float("inf")
-            and r4 > effective_max_ratio
-            and abs4 > _MIN_ABS_CHANGE
-            and s["ipv4"]["new_addrs"] < s["ipv4"]["old_addrs"]
-        )
-        v6_fail = (
-            r6 != float("inf")
-            and r6 > effective_max_ratio
-            and abs6 > _MIN_ABS_CHANGE
-            and s["ipv6"]["new_addrs"] < s["ipv6"]["old_addrs"]
-        )
+        v4_fail = r4 != float("inf") and r4 > effective_max_ratio and abs4 > _MIN_ABS_CHANGE and s["ipv4"]["new_addrs"] < s["ipv4"]["old_addrs"]
+        v6_fail = r6 != float("inf") and r6 > effective_max_ratio and abs6 > _MIN_ABS_CHANGE and s["ipv6"]["new_addrs"] < s["ipv6"]["old_addrs"]
 
         if v4_fail or v6_fail:
             raise DeltaCheckError(f"Delta check failed for {source_key}: {json.dumps(s)}")
