@@ -699,6 +699,18 @@ class CloudIPRanges:
         # Call transform with empty response (it makes its own API calls)
         return transform(self, [], source_key)
 
+    def _load_existing_provider_data(self, source_key: str) -> dict[str, Any] | None:
+        """Load the previously saved data for a source, if it exists."""
+        filename = f"{source_key.replace('_', '-')}.json"
+        path = self.output_dir / filename
+        if not path.exists():
+            return None
+        try:
+            with open(path, "r") as f:
+                return json.load(f)
+        except Exception:
+            return None
+
     def fetch_all(self, sources: Optional[set[str]] = None) -> bool:
         error = False
         self.statistics = {}
@@ -719,6 +731,11 @@ class CloudIPRanges:
                     logging.error("Failed to fetch %s: %s", source, str(e))
                     logging.exception(e)
                     error = True
+                    # Keep the merged all-providers output consistent by reusing
+                    # previously saved data when a single provider is unreachable.
+                    if self.merge_all_providers:
+                        if existing := self._load_existing_provider_data(source):
+                            self.ip_merger.add_provider_data(existing)
 
         except Exception as e:
             logging.error("Error during IP range collection: %s", e)
@@ -779,6 +796,11 @@ def main() -> None:
         help="Suppress urllib3 retry warning lines (useful for CI commit logs)",
     )
     parser.add_argument("--misc", action="store_true", help="Only process misc providers (user ISP traffic like Starlink)")
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Exit with non-zero status if any individual source fails (default: continue on source failures)",
+    )
     args = parser.parse_args()
 
     log_level = logging.DEBUG if args.debug else logging.INFO
@@ -820,7 +842,7 @@ def main() -> None:
         # Default: exclude misc providers
         sources = set(cloud_ip_ranges.sources.keys()).difference(cloud_ip_ranges.misc_providers)
 
-    if not cloud_ip_ranges.fetch_all(sources):
+    if not cloud_ip_ranges.fetch_all(sources) and args.strict:
         sys.exit(1)
 
     if args.add_env_statistics:
