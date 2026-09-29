@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from src.cloud_ip_ranges import CloudIPRanges
+from cloud_ip_ranges import CloudIPRanges
 
 
 def test_cloud_ip_ranges_initialization() -> None:

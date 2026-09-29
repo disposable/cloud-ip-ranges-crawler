@@ -5,8 +5,8 @@ import requests
 import tempfile
 from pathlib import Path
 
-from src.cloud_ip_ranges import CloudIPRanges
-from src.transforms.registry import get_transform
+from cloud_ip_ranges import CloudIPRanges
+from transforms.registry import get_transform
 
 
 @pytest.mark.integration

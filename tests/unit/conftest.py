@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from src.cloud_ip_ranges import CloudIPRanges
+from cloud_ip_ranges import CloudIPRanges
 
 
 SAMPLES_DIR = Path(__file__).resolve().parent.parent / "samples"

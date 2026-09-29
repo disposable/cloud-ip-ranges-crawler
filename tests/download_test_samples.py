@@ -10,7 +10,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(script_dir)
 sys.path.append(parent_dir)
 
-from src.cloud_ip_ranges import CloudIPRanges
+from cloud_ip_ranges import CloudIPRanges
 
 
 def download_raw_samples():

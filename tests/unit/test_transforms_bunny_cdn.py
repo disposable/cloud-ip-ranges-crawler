@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from src.transforms.bunny_cdn import transform
+from transforms.bunny_cdn import transform
 
 
 class TestBunnyCdnTransform:

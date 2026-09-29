@@ -3,7 +3,7 @@
 from pathlib import Path
 import pytest
 
-from src.cloud_ip_ranges import CloudIPRanges
+from cloud_ip_ranges import CloudIPRanges
 from tests.unit.conftest import FakeResponse
 
 

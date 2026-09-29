@@ -5,8 +5,8 @@ from pathlib import Path
 import json
 from typing import Any, Dict, List
 
-from src.cloud_ip_ranges import CloudIPRanges
-from src.transforms import get_transform
+from cloud_ip_ranges import CloudIPRanges
+from transforms import get_transform
 
 from tests.unit.conftest import FakeResponse, SAMPLES_DIR, _load_raw, _has_valid_ipv4, _has_valid_ipv6
 
@@ -14,11 +14,11 @@ from tests.unit.conftest import FakeResponse, SAMPLES_DIR, _load_raw, _has_valid
 def _transform_response(cipr: CloudIPRanges, response: List[Any], source_key: str, is_asn: bool) -> Dict[str, Any]:
     """Helper function to replace the removed _transform_response method for tests."""
     if is_asn:
-        from src.sources.asn import transform_hackertarget
+        from sources.asn import transform_hackertarget
 
         transformed_data = transform_hackertarget(cipr, response, source_key)
     else:
-        from src.transforms.registry import get_transform
+        from transforms.registry import get_transform
 
         transform_fn = get_transform(source_key)
         transformed_data = transform_fn(cipr, response, source_key)
@@ -200,7 +200,7 @@ def test_fetch_and_save_asn_source_merges_multiple_asns(tmp_path: Path, monkeypa
 
 
 def test_fetch_and_save_radb_as_set_expands_to_asns(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from src.sources.asn import radb_whois_query
+    from sources.asn import radb_whois_query
 
     crawler = CloudIPRanges({"json"})
     crawler.output_dir = tmp_path
@@ -367,7 +367,7 @@ def test_transform_response_microsoft_azure(cipr: CloudIPRanges) -> None:
 
 
 def test_ripestat_announced_prefixes_transform(cipr: CloudIPRanges) -> None:
-    from src.sources.asn import transform_ripestat
+    from sources.asn import transform_ripestat
 
     r = FakeResponse(
         json_data={

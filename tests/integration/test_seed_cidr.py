@@ -5,9 +5,9 @@ import requests
 import tempfile
 from pathlib import Path
 
-from src.cloud_ip_ranges import CloudIPRanges
-from src.sources.seed_cidr import fetch_and_save_seed_cidr_source
-from src.transforms.seed_rdap_registry import transform
+from cloud_ip_ranges import CloudIPRanges
+from sources.seed_cidr import fetch_and_save_seed_cidr_source
+from transforms.seed_rdap_registry import transform
 
 
 @pytest.mark.integration

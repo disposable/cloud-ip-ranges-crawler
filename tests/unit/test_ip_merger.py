@@ -2,7 +2,7 @@
 
 import ipaddress
 
-from src.ip_merger import IPMerger
+from ip_merger import IPMerger
 
 
 def test_ip_merger_basic_functionality() -> None:

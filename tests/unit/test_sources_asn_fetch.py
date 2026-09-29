@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from src.sources.asn import fetch_and_save_asn_source
+from sources.asn import fetch_and_save_asn_source
 
 
 class _MockResponse:

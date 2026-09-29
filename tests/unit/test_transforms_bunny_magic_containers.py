@@ -1,7 +1,7 @@
 import json
 from unittest.mock import Mock
 
-from src.transforms.bunny_magic_containers import transform
+from transforms.bunny_magic_containers import transform
 
 
 class TestBunnyMagicContainersTransform:

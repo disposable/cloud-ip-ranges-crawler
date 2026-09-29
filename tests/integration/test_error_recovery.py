@@ -4,7 +4,7 @@ import pytest
 import requests
 from unittest.mock import patch, Mock
 
-from src.cloud_ip_ranges import CloudIPRanges
+from cloud_ip_ranges import CloudIPRanges
 
 
 @pytest.mark.integration
@@ -94,7 +94,7 @@ def test_malformed_data_handling(skip_if_no_internet, rate_limit_delay):
     CloudIPRanges({"json"})
 
     # Test with malformed IP range
-    from src.transforms.common import validate_ip
+    from transforms.common import validate_ip
 
     # Valid IP should pass
     result = validate_ip("192.168.1.0/24")

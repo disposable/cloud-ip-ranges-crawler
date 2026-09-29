@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from src.transforms.gcore_cloud import transform
+from transforms.gcore_cloud import transform
 
 
 class TestGcoreCloudTransform:

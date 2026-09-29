@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.cloud_ip_ranges import CloudIPRanges
+from cloud_ip_ranges import CloudIPRanges
 
 
 def pytest_configure(config):

@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from src.cloud_ip_ranges import CloudIPRanges
+from cloud_ip_ranges import CloudIPRanges
 
 
 def test_save_result_with_txt_format(tmp_path: Path) -> None:

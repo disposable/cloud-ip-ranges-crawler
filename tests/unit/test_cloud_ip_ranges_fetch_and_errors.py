@@ -9,8 +9,8 @@ from typing import Any
 
 import pytest
 
-import src.cloud_ip_ranges as cloud_module
-from src.cloud_ip_ranges import CloudIPRanges
+import cloud_ip_ranges as cloud_module
+from cloud_ip_ranges import CloudIPRanges
 
 
 def _sample_transformed(source: Any) -> dict[str, Any]:

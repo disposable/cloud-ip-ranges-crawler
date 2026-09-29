@@ -6,7 +6,7 @@ import json
 import requests
 from pathlib import Path
 
-from src.cloud_ip_ranges import CloudIPRanges
+from cloud_ip_ranges import CloudIPRanges
 
 
 @pytest.mark.integration

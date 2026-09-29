@@ -4,7 +4,7 @@ import os
 import pytest
 from pathlib import Path
 
-from src.cloud_ip_ranges import CloudIPRanges
+from cloud_ip_ranges import CloudIPRanges
 
 
 def test_save_result_with_only_if_changed_no_existing_file(tmp_path: Path) -> None:

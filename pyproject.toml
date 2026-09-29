@@ -36,6 +36,7 @@ dev = [
     "ruff>=0.15.20",
     "vulture>=2.14",
     "xenon>=0.9.3",
+    "hypothesis>=6.151",
 ]
 
 
@@ -65,7 +66,7 @@ addopts = [
     "--cov-report=term-missing",
     "--cov-report=xml",
 ]
-pythonpath = ["."]
+pythonpath = ["src"]
 markers = [
     "integration: marks tests as integration tests (require internet)",
 ]
@@ -82,7 +83,7 @@ do_not_mutate_patterns = [
 ]
 
 [tool.pyright]
-exclude = ["**/__pycache__", "**/node_modules", "**/dist", "**/build", "**/venv", "**/.venv", "**/docs", "**/tests"]
+exclude = ["**/__pycache__", "**/node_modules", "**/dist", "**/build", "**/venv", "**/.venv", "**/docs", "**/tests", "**/mutants"]
 
 [tool.bandit]
 exclude_dirs = [".venv", "tests", "docs"]

@@ -4,7 +4,7 @@ import pytest
 from pathlib import Path
 from typing import Any, Dict, List
 
-from src.cloud_ip_ranges import CloudIPRanges
+from cloud_ip_ranges import CloudIPRanges
 
 from tests.unit.conftest import FakeResponse, SAMPLES_DIR
 
@@ -12,11 +12,11 @@ from tests.unit.conftest import FakeResponse, SAMPLES_DIR
 def _transform_response(cipr: CloudIPRanges, response: List[Any], source_key: str, is_asn: bool) -> Dict[str, Any]:
     """Helper function to replace the removed _transform_response method for tests."""
     if is_asn:
-        from src.sources.asn import transform_hackertarget
+        from sources.asn import transform_hackertarget
 
         transformed_data = transform_hackertarget(cipr, response, source_key)
     else:
-        from src.transforms.registry import get_transform
+        from transforms.registry import get_transform
 
         transform_fn = get_transform(source_key)
         transformed_data = transform_fn(cipr, response, source_key)

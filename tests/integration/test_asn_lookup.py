@@ -3,8 +3,8 @@
 import pytest
 import requests
 
-from src.cloud_ip_ranges import CloudIPRanges
-from src.sources.asn import transform_hackertarget
+from cloud_ip_ranges import CloudIPRanges
+from sources.asn import transform_hackertarget
 
 
 @pytest.mark.integration
@@ -131,7 +131,7 @@ def test_upcloud_asn_lookup(skip_if_no_internet, rate_limit_delay):
     response.raise_for_status()
 
     # Transform and validate
-    from src.sources.asn import fetch_and_save_asn_source
+    from sources.asn import fetch_and_save_asn_source
 
     try:
         result = fetch_and_save_asn_source(cipr, "upcloud", [asn])

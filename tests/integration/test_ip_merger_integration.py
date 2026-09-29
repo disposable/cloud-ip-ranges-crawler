@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from src.cloud_ip_ranges import CloudIPRanges
-from src.ip_merger import IPMerger
+from cloud_ip_ranges import CloudIPRanges
+from ip_merger import IPMerger
 
 
 def test_cloud_ip_ranges_with_ipmerger_integration(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

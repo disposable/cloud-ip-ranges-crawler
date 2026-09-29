@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.sources import asn
+from sources import asn
 
 
 def setup_function(function):

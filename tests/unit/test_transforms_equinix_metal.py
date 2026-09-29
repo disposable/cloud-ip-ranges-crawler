@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from src.transforms.equinix_metal import transform
+from transforms.equinix_metal import transform
 
 
 class TestEquinixMetalTransform:

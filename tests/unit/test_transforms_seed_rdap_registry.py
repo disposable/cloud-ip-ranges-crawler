@@ -3,8 +3,8 @@
 import pytest
 from pathlib import Path
 
-from src.cloud_ip_ranges import CloudIPRanges
-from src.transforms.seed_rdap_registry import _xml_find_text, transform
+from cloud_ip_ranges import CloudIPRanges
+from transforms.seed_rdap_registry import _xml_find_text, transform
 
 from tests.unit.conftest import FakeResponse
 

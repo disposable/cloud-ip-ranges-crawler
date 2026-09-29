@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from src.transforms.gcore_cdn import transform
+from transforms.gcore_cdn import transform
 
 
 class TestGcoreCdnTransform:
