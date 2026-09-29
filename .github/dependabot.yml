@@ -2,9 +2,20 @@
 # https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 
 version: 2
+
+registries:
+  # Supplemental uv index hosting the cycletls package (declared as
+  # [[tool.uv.index]] in pyproject.toml). Without this entry the updater
+  # gets a 403 from the Pages host and cannot resolve dependencies.
+  cycletls-index:
+    type: python-index
+    url: https://smeinecke.github.io/cycletls_python/simple/
+    replaces-base: false
+
 updates:
   - package-ecosystem: "uv"
     directory: "/"
+    registries: "*"
     schedule:
       interval: "weekly"
     groups:
