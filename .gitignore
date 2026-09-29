@@ -187,3 +187,6 @@ cython_debug/
 # Mutation testing
 mutants/
 mutmut-results.txt
+
+# Atomic-write leftovers
+*.tmp

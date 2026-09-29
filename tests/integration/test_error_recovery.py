@@ -1,257 +1,200 @@
-"""Integration tests for error recovery and retry logic."""
+"""Integration tests for error recovery and retry logic.
+
+Fault injection through the real code paths — assertions verify externally
+observable effects (files, statistics, merged output), never just that a
+mock was called or that "no exception happened".
+"""
+
+import json
+from unittest.mock import Mock, patch
 
 import pytest
 import requests
-from unittest.mock import patch, Mock
 
 from cloud_ip_ranges import CloudIPRanges
+from transforms.common import validate_ip
+
+
+def _cipr_with_google(tmp_path, **kwargs):
+    cipr = CloudIPRanges({"json"}, **kwargs)
+    cipr.output_dir = tmp_path
+    cipr.sources = {"google_cloud": ["https://example.com/prefixes.json"]}
+    return cipr
+
+
+def _google_resp():
+    resp = Mock(spec=requests.Response)
+    resp.status_code = 200
+    resp.headers = {}
+    resp.text = "{}"
+    resp.raise_for_status.return_value = None
+    resp.json.return_value = {
+        "creationTime": "2024-01-01T00:00:00",
+        "prefixes": [{"ipv4Prefix": "8.8.4.0/24"}],
+    }
+    return resp
 
 
 @pytest.mark.integration
-def test_network_timeout_handling(skip_if_no_internet, rate_limit_delay):
-    """Test handling of network timeouts."""
-    import requests
-    from unittest.mock import patch
-
-    # Test timeout behavior directly
-    with patch("requests.Session.get") as mock_get:
-        mock_get.side_effect = requests.exceptions.Timeout("Request timed out")
-
-        with pytest.raises(requests.exceptions.Timeout):
-            requests.Session().get("https://example.com", timeout=1)
+def test_network_timeout_handling(tmp_path):
+    """A timeout must fail the source, not crash the run, and write no file."""
+    cipr = _cipr_with_google(tmp_path)
+    with patch.object(cipr.session, "get", side_effect=requests.exceptions.Timeout("timed out")):
+        assert cipr.fetch_all({"google_cloud"}) is False
+    assert not (tmp_path / "google-cloud.json").exists()
+    assert "google_cloud" not in cipr.statistics
 
 
 @pytest.mark.integration
-def test_http_error_handling(skip_if_no_internet, rate_limit_delay):
-    """Test handling of HTTP errors (4xx, 5xx)."""
-    import requests
-    from unittest.mock import patch
-
-    # Test HTTP error behavior directly
-    with patch("requests.Session.get") as mock_get:
-        mock_get.side_effect = requests.exceptions.HTTPError("404 Not Found")
-
-        with pytest.raises(requests.exceptions.HTTPError):
-            requests.Session().get("https://example.com", timeout=10)
+def test_http_error_handling(tmp_path):
+    """HTTP error status must fail the source with no partial output."""
+    cipr = _cipr_with_google(tmp_path)
+    resp = _google_resp()
+    resp.raise_for_status.side_effect = requests.exceptions.HTTPError("503")
+    with patch.object(cipr.session, "get", return_value=resp):
+        assert cipr.fetch_all({"google_cloud"}) is False
+    assert not (tmp_path / "google-cloud.json").exists()
 
 
 @pytest.mark.integration
-def test_connection_error_handling(skip_if_no_internet, rate_limit_delay):
-    """Test handling of connection errors."""
+def test_connection_error_handling(tmp_path):
+    """Connection failure must fail the source and leave the dir clean."""
+    cipr = _cipr_with_google(tmp_path)
+    with patch.object(cipr.session, "get", side_effect=requests.exceptions.ConnectionError()):
+        assert cipr.fetch_all({"google_cloud"}) is False
+    assert list(tmp_path.glob("*.json")) == []
+
+
+@pytest.mark.integration
+def test_provider_failure_recovery(tmp_path):
+    """A failed provider must not sink siblings; successful ones write files."""
     cipr = CloudIPRanges({"json"})
+    cipr.output_dir = tmp_path
+    cipr.sources = {"a_ok": ["u1"], "b_bad": ["u2"], "c_ok": ["u3"]}
 
-    # Test connection error
-    with patch.object(cipr.session, "get") as mock_get:
-        mock_get.side_effect = requests.exceptions.ConnectionError()
+    payload = {
+        "provider": "T",
+        "provider_id": "x",
+        "ipv4": ["8.8.8.0/24"],
+        "ipv6": [],
+        "details_ipv4": [],
+        "details_ipv6": [],
+        "last_update": "t",
+        "source": ["u"],
+    }
 
-        with pytest.raises(requests.exceptions.ConnectionError):
-            cipr.session.get("https://example.com")
+    def fake_fetch(key):
+        if key == "b_bad":
+            raise requests.exceptions.ConnectionError("down")
+        cipr._save_json(dict(payload, provider_id=key), f"{key}.json")
+        return (1, 0)
 
-
-@pytest.mark.integration
-def test_provider_failure_recovery(skip_if_no_internet, rate_limit_delay):
-    """Test recovery when individual providers fail."""
-    cipr = CloudIPRanges({"json"})
-
-    # Test that fetch_all continues even if some providers fail
-    # This tests the error handling in the main fetch loop
-
-    # Mock a provider to fail
-    with patch.object(cipr, "_fetch_and_save") as mock_fetch:
-        mock_fetch.side_effect = [
-            (10, 5),  # First provider succeeds
-            Exception("Network error"),  # Second provider fails
-            (8, 3),  # Third provider succeeds
-        ]
-
-        # Should not raise exception despite failures
+    with patch.object(cipr, "_fetch_and_save", side_effect=fake_fetch):
         result = cipr.fetch_all()
 
-        # Should return False due to errors, but not crash
-        assert result is False
+    assert result is False
+    assert "b_bad" not in cipr.statistics
+    assert set(cipr.statistics) == {"a_ok", "c_ok"}
+    # Observable side effects: the good providers' files exist and parse.
+    for ok in ("a_ok", "c_ok"):
+        assert json.loads((tmp_path / f"{ok}.json").read_text())["ipv4"] == ["8.8.8.0/24"]
 
 
 @pytest.mark.integration
-def test_invalid_json_handling(skip_if_no_internet, rate_limit_delay):
-    """Test handling of invalid JSON responses."""
-    cipr = CloudIPRanges({"json"})
+def test_invalid_json_handling(tmp_path):
+    """Malformed JSON body must fail the source and preserve the old file."""
+    cipr = _cipr_with_google(tmp_path)
+    existing = tmp_path / "google-cloud.json"
+    existing.write_text(json.dumps({"provider_id": "google_cloud", "ipv4": ["8.8.8.0/24"], "ipv6": []}))
+    before = existing.read_bytes()
 
-    # Test with invalid JSON
-    with patch.object(cipr.session, "get") as mock_get:
-        mock_response = Mock()
-        mock_response.raise_for_status.return_value = None
-        mock_response.json.side_effect = ValueError("Invalid JSON")
-        mock_response.text = "This is not valid JSON"
-        mock_get.return_value = mock_response
+    resp = _google_resp()
+    resp.json.side_effect = ValueError("Invalid JSON")
+    with patch.object(cipr.session, "get", return_value=resp):
+        assert cipr.fetch_all({"google_cloud"}) is False
 
-        with pytest.raises(ValueError):
-            mock_response.json()
+    assert existing.read_bytes() == before
 
 
 @pytest.mark.integration
-def test_malformed_data_handling(skip_if_no_internet, rate_limit_delay):
-    """Test handling of malformed IP ranges or data."""
-    CloudIPRanges({"json"})
-
-    # Test with malformed IP range
-    from transforms.common import validate_ip
-
-    # Valid IP should pass
-    result = validate_ip("192.168.1.0/24")
-    assert result is None, "Private IP should be filtered out"
-
-    # Valid public IP should pass
-    result = validate_ip("8.8.8.0/24")
-    assert result == "8.8.8.0/24", "Public IP should be returned"
-
-    # Invalid IP should fail
-    result = validate_ip("not-an-ip")
-    assert result is None, "Invalid IP should return None"
-
-    # Invalid IP should fail
-    assert validate_ip("999.999.999.999/24") is None
+def test_malformed_data_handling():
+    """validate_ip rejects malformed and non-public ranges, keeps public ones."""
+    assert validate_ip("192.168.1.0/24") is None  # private
+    assert validate_ip("8.8.8.0/24") == "8.8.8.0/24"
     assert validate_ip("not-an-ip") is None
+    assert validate_ip("999.999.999.999/24") is None
     assert validate_ip("192.168.1.0/33") is None
 
 
 @pytest.mark.integration
-def test_rate_limiting_behavior(skip_if_no_internet, rate_limit_delay):
-    """Test rate limiting behavior."""
-    import time
-
-    cipr = CloudIPRanges({"json"})
-
-    # Test that rate limiting delays are respected
-    start_time = time.time()
-
-    # Make multiple requests
-    for i in range(3):
-        try:
-            # Use a reliable endpoint
-            response = cipr.session.get("https://httpbin.org/status/200", timeout=5)
-            response.raise_for_status()
-        except:
-            pass  # Ignore errors for this test
-
-    end_time = time.time()
-
-    # Should have taken some time due to rate limiting
-    # This is a rough check - rate limiting should add delays
-    elapsed = end_time - start_time
-    assert elapsed >= 0, "Should have taken some time"
-
-
-@pytest.mark.integration
 def test_session_retry_configuration():
-    """Test that the session is configured with retry logic."""
+    """The session must have a retry-enabled adapter mounted for http(s)."""
     cipr = CloudIPRanges({"json"})
-
-    # Check that session has retry configuration
-    # The CloudIPRanges class should configure retries
-    assert hasattr(cipr.session, "adapters"), "Session should have adapters"
-
-    # Check adapter configuration - different adapters may have different retry implementations
-    adapters = list(cipr.session.adapters.values())
-    assert len(adapters) > 0, "Should have at least one adapter"
-
-    # The session should be configured for HTTP requests
-    assert cipr.session is not None, "Session should be initialized"
+    for prefix in ("http://", "https://"):
+        adapter = cipr.session.adapters[prefix]
+        retries = adapter.max_retries
+        assert retries.total > 0, f"{prefix} adapter has no retries configured"
 
 
 @pytest.mark.integration
-def test_partial_url_failure_multi_url(skip_if_no_internet, rate_limit_delay):
-    """Test handling when some URLs fail in multi-URL providers."""
+def test_partial_url_failure_multi_url(tmp_path):
+    """When one of a provider's URLs fails, no provider file may be written."""
     cipr = CloudIPRanges({"json"})
+    cipr.output_dir = tmp_path
+    cipr.sources = {"google_cloud": ["https://example.com/a.json", "https://example.com/b.json"]}
 
-    # Test with a provider that has multiple URLs
-    provider = "openai"
-    urls = cipr.sources[provider]
-
-    # Mock one URL to fail, others to succeed
-    original_get = cipr.session.get
-
-    def mock_get(url, **kwargs):
-        if url == urls[0]:
+    def flaky(url, **kwargs):
+        if url.endswith("/b.json"):
             raise requests.exceptions.ConnectionError("Simulated failure")
-        return original_get(url, **kwargs)
+        return _google_resp()
 
-    with patch.object(cipr.session, "get", side_effect=mock_get):
-        try:
-            # Should handle partial failures gracefully
-            cipr._fetch_and_save(provider)
-            # May succeed or fail depending on implementation
-        except Exception as e:
-            # Should fail gracefully, not crash
-            assert "ConnectionError" in str(e) or isinstance(e, Exception)
+    with patch.object(cipr.session, "get", side_effect=flaky):
+        with pytest.raises(RuntimeError, match="Failed to fetch"):
+            cipr._fetch_and_save("google_cloud")
+    assert not (tmp_path / "google-cloud.json").exists()
 
 
 @pytest.mark.integration
-def test_empty_response_handling(skip_if_no_internet, rate_limit_delay):
-    """Test handling of empty responses."""
-    cipr = CloudIPRanges({"json"})
-
-    # Test with empty response
-    with patch.object(cipr.session, "get") as mock_get:
-        mock_response = Mock()
-        mock_response.raise_for_status.return_value = None
-        mock_response.text = ""
-        mock_response.json.return_value = {}
-        mock_response.content = b""
-        mock_get.return_value = mock_response
-
-        # Should handle empty response gracefully
-        response = cipr.session.get("https://example.com")
-        assert response.text == ""
-        assert response.json() == {}
+def test_empty_response_handling(tmp_path):
+    """An empty body yields no prefixes — the source must fail cleanly."""
+    cipr = _cipr_with_google(tmp_path)
+    resp = _google_resp()
+    resp.json.return_value = {}
+    resp.text = ""
+    with patch.object(cipr.session, "get", return_value=resp):
+        assert cipr.fetch_all({"google_cloud"}) is False
+    assert not (tmp_path / "google-cloud.json").exists()
 
 
 @pytest.mark.integration
 def test_large_response_handling(skip_if_no_internet, rate_limit_delay):
-    """Test handling of large responses."""
+    """AWS publishes a large prefix list — fetch it end-to-end live."""
     cipr = CloudIPRanges({"json"})
-
-    # Test with a provider that might return large data
-    # AWS typically has a large IP range list
-    provider = "aws"
-
-    try:
-        result = cipr._fetch_and_save(provider)
-        assert result is not None
-
-        ipv4_count, ipv6_count = result
-        # AWS should have substantial IP ranges
-        assert ipv4_count > 100, "AWS should have many IPv4 ranges"
-
-    except Exception as e:
-        print(f"Warning: Could not test large response handling: {e}")
+    ipv4_count, _ = cipr._fetch_and_save("aws")
+    assert ipv4_count > 100, "AWS should have many IPv4 ranges"
 
 
 @pytest.mark.integration
-def test_concurrent_request_safety(skip_if_no_internet, rate_limit_delay):
-    """Test that concurrent requests are handled safely."""
+def test_concurrent_writes_are_safe(tmp_path):
+    """Concurrent saves to different provider files produce complete files."""
     import threading
 
     cipr = CloudIPRanges({"json"})
-    results = []
+    cipr.output_dir = tmp_path
     errors = []
 
-    def make_request():
+    def save(key):
         try:
-            response = cipr.session.get("https://httpbin.org/status/200", timeout=5)
-            results.append(response.status_code)
-        except Exception as e:
+            cipr._save_json({"provider_id": key, "ipv4": ["8.8.8.0/24"], "ipv6": []}, f"{key}.json")
+        except Exception as e:  # noqa: BLE001 - collect for assertion
             errors.append(e)
 
-    # Make multiple concurrent requests
-    threads = []
-    for i in range(3):
-        thread = threading.Thread(target=make_request)
-        threads.append(thread)
-        thread.start()
+    threads = [threading.Thread(target=save, args=(f"prov{i}",)) for i in range(5)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
 
-    # Wait for all threads to complete
-    for thread in threads:
-        thread.join()
-
-    # Should handle concurrent requests safely
-    assert len(errors) == 0 or len(results) > 0, "Should handle concurrent requests"
+    assert errors == []
+    for i in range(5):
+        assert json.loads((tmp_path / f"prov{i}.json").read_text())["ipv4"] == ["8.8.8.0/24"]

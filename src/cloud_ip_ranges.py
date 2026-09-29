@@ -1,4 +1,5 @@
 import argparse
+import contextlib
 import csv
 import ipaddress
 import json
@@ -283,11 +284,11 @@ class CloudIPRanges:
         merged_payload = self.ip_merger.get_merged_output()
 
         if "json" in self.output_formats:
-            with open(self.output_dir / "all-providers.json", "w") as f:
+            with self._atomic_writer(self.output_dir / "all-providers.json") as f:
                 json.dump(merged_payload, f, indent=2)
 
         if "csv" in self.output_formats:
-            with open(self.output_dir / "all-providers.csv", "w") as f:
+            with self._atomic_writer(self.output_dir / "all-providers.csv") as f:
                 writer = csv.writer(f)
                 writer.writerow(["Type", "Address", "Providers"])
                 for ip in merged_payload.get("ipv4", []):
@@ -299,7 +300,7 @@ class CloudIPRanges:
 
         if "txt" in self.output_formats:
             provider_ids = ", ".join(filter(None, (p.get("provider_id") for p in merged_payload.get("providers", []))))
-            with open(self.output_dir / "all-providers.txt", "w") as f:
+            with self._atomic_writer(self.output_dir / "all-providers.txt") as f:
                 f.write("# provider: All Providers\n")
                 f.write(f"# providers_count: {merged_payload.get('provider_count', 0)}\n")
                 f.write(f"# provider_ids: {provider_ids}\n")
@@ -588,14 +589,30 @@ class CloudIPRanges:
         if v4_fail or v6_fail:
             raise DeltaCheckError(f"Delta check failed for {source_key}: {json.dumps(s)}")
 
+    @contextlib.contextmanager
+    def _atomic_writer(self, path: Path):
+        """Write to a temp file then atomically rename into place.
+
+        A crash or exception mid-write must never leave a truncated provider
+        file: consumers (update_history.py) crash on malformed JSON.
+        """
+        tmp_path = path.with_name(path.name + ".tmp")
+        try:
+            with open(tmp_path, "w") as f:
+                yield f
+            os.replace(tmp_path, path)
+        except BaseException:
+            tmp_path.unlink(missing_ok=True)
+            raise
+
     def _save_json(self, transformed_data: dict[str, Any], filename: str) -> None:
         """Save data in JSON format."""
-        with open(self.output_dir / filename, "w") as f:
+        with self._atomic_writer(self.output_dir / filename) as f:
             json.dump(transformed_data, f, indent=2)
 
     def _save_csv(self, transformed_data: dict[str, Any], filename: str) -> None:
         """Save data in CSV format."""
-        with open(self.output_dir / filename, "w") as f:
+        with self._atomic_writer(self.output_dir / filename) as f:
             writer = csv.writer(f)
             writer.writerow(["Type", "Address"])
             for ip in transformed_data["ipv4"]:
@@ -605,7 +622,7 @@ class CloudIPRanges:
 
     def _save_txt(self, transformed_data: dict[str, Any], filename: str) -> None:
         """Save data in TXT format."""
-        with open(self.output_dir / filename, "w") as f:
+        with self._atomic_writer(self.output_dir / filename) as f:
             for k in ("provider", "source", "last_update"):
                 vl = ", ".join(transformed_data[k]) if isinstance(transformed_data[k], list) else transformed_data[k]
                 f.write("# {}: {}\n".format(k, vl))
@@ -652,7 +669,7 @@ class CloudIPRanges:
             "ipv4": transformed_data.get("details_ipv4", []),
             "ipv6": transformed_data.get("details_ipv6", []),
         }
-        with open(details_json_path, "w") as df:
+        with self._atomic_writer(details_json_path) as df:
             json.dump(details_payload, df, indent=2)
 
     def _save_csv_details(self, transformed_data: dict[str, Any], base_name: str) -> None:
@@ -667,7 +684,7 @@ class CloudIPRanges:
             keys.update(k for k in d.keys() if k != "address")
         ordered_keys = sorted(keys)
 
-        with open(details_csv_path, "w") as df:
+        with self._atomic_writer(details_csv_path) as df:
             writer = csv.writer(df)
             writer.writerow(["Type", "Address", *ordered_keys])
             for d in transformed_data.get("details_ipv4", []):
