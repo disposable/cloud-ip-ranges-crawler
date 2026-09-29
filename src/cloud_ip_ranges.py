@@ -255,6 +255,25 @@ class CloudIPRanges:
         comparable = data.copy()
         for key in ("last_update", "generated_at", "source_http"):
             comparable.pop(key, None)
+
+        # Retired CIDRs injected back into output files by scripts/update_history.py
+        # carry a "retired_at" marker in the details lists. Exclude them so change
+        # detection compares only the provider-published ranges — otherwise every
+        # provider inside the retirement window would look changed on every run.
+        retired: set[str] = set()
+        for det_key in ("details_ipv4", "details_ipv6"):
+            details = comparable.pop(det_key, None) or []
+            kept = []
+            for d in details:
+                if isinstance(d, dict) and "retired_at" in d:
+                    retired.add(d.get("address", ""))
+                else:
+                    kept.append(d)
+            if kept:
+                comparable[det_key] = kept
+        if retired:
+            comparable["ipv4"] = [ip for ip in comparable.get("ipv4", []) if ip not in retired]
+            comparable["ipv6"] = [ip for ip in comparable.get("ipv6", []) if ip not in retired]
         return comparable
 
     def _save_merged_outputs(self) -> None:
@@ -460,12 +479,13 @@ class CloudIPRanges:
                 existing_data_raw = json.load(f)
 
         if existing_data_raw is not None:
-            if self.max_delta_ratio is not None:
-                self._enforce_max_delta(existing_data_raw, transformed_data, max_ratio=self.max_delta_ratio, source_key=source_key)
-                logging.debug("Delta summary for %s: %s", source_key, json.dumps(self._diff_summary(existing_data_raw, transformed_data)))
-
             comparable_existing = self._comparable_payload(existing_data_raw)
             comparable_new = self._comparable_payload(transformed_data)
+
+            if self.max_delta_ratio is not None:
+                self._enforce_max_delta(comparable_existing, comparable_new, max_ratio=self.max_delta_ratio, source_key=source_key)
+                logging.debug("Delta summary for %s: %s", source_key, json.dumps(self._diff_summary(comparable_existing, comparable_new)))
+
             data_changed = comparable_existing != comparable_new
 
             if self.only_if_changed and not data_changed:
@@ -727,6 +747,11 @@ class CloudIPRanges:
                         self.statistics[source] = {"ipv4": ipv4_count, "ipv6": ipv6_count}
                 except DeltaCheckError as e:
                     logging.warning("Skipping %s due to delta guardrail: %s", source, str(e))
+                    # Same as a fetch failure: keep the merged output complete
+                    # by reusing the previously saved (guardrail-approved) data.
+                    if self.merge_all_providers:
+                        if existing := self._load_existing_provider_data(source):
+                            self.ip_merger.add_provider_data(existing)
                 except Exception as e:
                     logging.error("Failed to fetch %s: %s", source, str(e))
                     logging.exception(e)

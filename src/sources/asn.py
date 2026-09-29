@@ -89,7 +89,8 @@ def radb_resolve_as_set(as_set: str, *, max_depth: int = 5) -> Set[str]:
             if re.fullmatch(r"AS\d+", t):
                 out_asns.add(t)
                 continue
-            if t.startswith("AS-") or t.startswith("RS-"):
+            # Plain (AS-FOO/RS-FOO) and hierarchical (AS123:AS-FOO) set names
+            if re.fullmatch(r"(?:AS\d+:)?(?:AS|RS)-[\w-]+", t):
                 walk(t, depth + 1)
 
     walk(root, 0)
@@ -171,26 +172,36 @@ def fetch_and_save_asn_source(cipr: Any, source_key: str, url: List[str]) -> Dic
     transformed_data["coverage_notes"] = "BGP-announced prefixes for the ASN(s)"
 
     source_http: List[Dict[str, Any]] = []
-    asns: List[str]
-    radb_seed: str | None = None
-
-    if url[0].startswith("RADB::"):
-        radb_seed = url[0].split("::", 1)[1].strip()
-        resolved = sorted(radb_resolve_as_set(radb_seed))
-        if not resolved:
-            raise RuntimeError(f"RADB AS-SET {radb_seed} resolved to no ASNs")
-        asns = resolved
-    else:
-        asns = [x for x in url if isinstance(x, str) and x.startswith("AS")]
-        if not asns:
-            raise RuntimeError(f"ASN source for {source_key} has no ASNs")
-
     source_list: List[str] = []
-    if radb_seed is not None:
-        source_list.append(f"RADB::{radb_seed}")
+
+    # Lists may mix RADB AS-SETs and plain ASNs (e.g. alibaba) — resolve each
+    # entry independently so plain ASNs are not silently dropped.
+    asns: Set[str] = set()
+    for entry in url:
+        if not isinstance(entry, str):
+            continue
+        if entry.startswith("RADB::"):
+            seed = entry.split("::", 1)[1].strip()
+            try:
+                resolved = sorted(radb_resolve_as_set(seed))
+            except Exception as e:
+                logging.warning("RADB AS-SET %s lookup failed for %s: %s", seed, source_key, e)
+                continue
+            if not resolved:
+                logging.warning("RADB AS-SET %s resolved to no ASNs for %s", seed, source_key)
+                continue
+            asns.update(resolved)
+            source_list.append(f"RADB::{seed}")
+        elif re.fullmatch(r"AS\d+", entry.strip().upper()):
+            asns.add(entry.strip().upper())
+
+    if not asns:
+        raise RuntimeError(f"ASN source for {source_key} has no ASNs")
+
+    asns_list = sorted(asns, key=lambda a: int(a[2:]))
 
     used_hackertarget = False
-    for asn in asns:
+    for asn in asns_list:
         try:
             ripestat_url, r = cipr.ripestat_fetch(asn)
             source_http.append({

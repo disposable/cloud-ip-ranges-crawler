@@ -43,6 +43,9 @@ def fetch_and_save_cycletls_source(cipr: Any, source_key: str, url: List[str]) -
         for u in url:
             try:
                 resp = _fetch_with_retry(client, u, source_key)
+                status = getattr(resp, "status_code", 0) or 0
+                if status >= 400:
+                    raise RuntimeError(f"{source_key}: {u} returned HTTP {status}")
                 response.append(resp)
                 source_http.append({
                     "url": u,

@@ -28,7 +28,7 @@ def transform_csv_format(cipr: Any, response: List[Any], source_key: str) -> Dic
         if not line.strip() or line.startswith("#"):
             continue
 
-        ip = line.split(",")[0]
+        ip = line.split(",")[0].strip()
         if ":" in ip:
             result["ipv6"].append(ip)
         else:

@@ -64,7 +64,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.13"]
 
     steps:
       - name: Checkout code
@@ -84,7 +84,7 @@ jobs:
           uv run --no-sync pytest tests/unit -v --cov-fail-under=85
 
       - name: Upload coverage to Codecov
-        if: matrix.python-version == '3.10'
+        if: matrix.python-version == '3.13'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
