@@ -717,7 +717,7 @@ class CloudIPRanges:
         from transforms.microsoft_365 import transform
 
         # Call transform with empty response (it makes its own API calls)
-        return transform(self, [], source_key)
+        return self._normalize_transformed_data(transform(self, [], source_key), source_key)
 
     def _load_existing_provider_data(self, source_key: str) -> dict[str, Any] | None:
         """Load the previously saved data for a source, if it exists."""
