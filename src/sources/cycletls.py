@@ -11,14 +11,25 @@ _TIMEOUT_SECONDS = 30
 _MAX_RETRIES = 3
 _BACKOFF_BASE = 1.0
 
+# Retryable HTTP statuses, matching the requests adapter's status_forcelist.
+_RETRYABLE_STATUS_CODES = frozenset({429, 500, 502, 503, 504})
+
+
+class _RetryableHTTPStatus(Exception):
+    """HTTP status code that should be retried inside cycletls fetches."""
+
 
 def _fetch_with_retry(client: CycleTLS, url: str, source_key: str, max_retries: int = _MAX_RETRIES) -> Any:
-    """Fetch a single URL with retries on transient network/timeout errors."""
+    """Fetch a single URL with retries on transient errors and retryable HTTP statuses."""
     last_exception: Exception | None = None
     for attempt in range(1, max_retries + 1):
         try:
-            return client.get(url, timeout=_TIMEOUT_SECONDS)
-        except (ConnectionError, Timeout) as e:
+            resp = client.get(url, timeout=_TIMEOUT_SECONDS)
+            status = getattr(resp, "status_code", 0) or 0
+            if status in _RETRYABLE_STATUS_CODES:
+                raise _RetryableHTTPStatus(f"HTTP {status}")
+            return resp
+        except (ConnectionError, Timeout, _RetryableHTTPStatus) as e:
             last_exception = e
             logging.warning(
                 "Attempt %d/%d failed for %s (%s): %s",

@@ -81,7 +81,13 @@ def radb_resolve_as_set(as_set: str, *, max_depth: int = 5) -> Set[str]:
             return
         seen_sets.add(name)
 
-        txt = radb_whois_query(name)
+        try:
+            txt = radb_whois_query(name)
+        except Exception as e:
+            # Tolerate nested-set failures: keep ASNs already collected and let
+            # sibling members resolve instead of aborting the whole seed.
+            logging.warning("RADB whois lookup failed for %s: %s", name, e)
+            return
         for token in _radb_extract_members(txt):
             t = token.strip().upper()
             if not t:
@@ -180,7 +186,8 @@ def fetch_and_save_asn_source(cipr: Any, source_key: str, url: List[str]) -> Dic
     for entry in url:
         if not isinstance(entry, str):
             continue
-        if entry.startswith("RADB::"):
+        entry = entry.strip()
+        if entry.upper().startswith("RADB::"):
             seed = entry.split("::", 1)[1].strip()
             try:
                 resolved = sorted(radb_resolve_as_set(seed))

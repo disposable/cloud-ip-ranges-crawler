@@ -351,7 +351,7 @@ class CloudIPRanges:
 
         def walk(v: Any, key_hint: str = "") -> None:
             if isinstance(v, str):
-                if key_hint and not re.search(r"ip|cidr|prefix|range", key_hint, re.IGNORECASE):
+                if key_hint and not re.search(r"ip|cidr|prefix|range|addr", key_hint, re.IGNORECASE):
                     return
                 for m in cidr_re.findall(v):
                     cidrs.append(m)
@@ -435,7 +435,7 @@ class CloudIPRanges:
                 return el.text
         return None
 
-    def _fetch_and_save(self, source_key: str) -> Optional[tuple[int, int]]:
+    def _fetch_and_save(self, source_key: str) -> tuple[int, int]:
         """Fetch and save IP ranges for a specific source."""
         logging.debug("Fetching %s source", source_key)
         url = self.sources[source_key]
@@ -687,7 +687,7 @@ class CloudIPRanges:
         base_name = source_key.replace("_", "-")
 
         # Save main files in each format
-        for x, output_format in enumerate(self.output_formats):
+        for x, output_format in enumerate(sorted(self.output_formats)):
             filename = f"{base_name}.{output_format}"
 
             if output_format not in format_writers:
@@ -749,18 +749,20 @@ class CloudIPRanges:
                     logging.warning("Skipping %s due to delta guardrail: %s", source, str(e))
                     # Same as a fetch failure: keep the merged output complete
                     # by reusing the previously saved (guardrail-approved) data.
-                    if self.merge_all_providers:
-                        if existing := self._load_existing_provider_data(source):
+                    if existing := self._load_existing_provider_data(source):
+                        if self.merge_all_providers:
                             self.ip_merger.add_provider_data(existing)
+                        self.statistics[source] = {"ipv4": len(existing.get("ipv4", [])), "ipv6": len(existing.get("ipv6", []))}
                 except Exception as e:
                     logging.error("Failed to fetch %s: %s", source, str(e))
                     logging.exception(e)
                     error = True
                     # Keep the merged all-providers output consistent by reusing
                     # previously saved data when a single provider is unreachable.
-                    if self.merge_all_providers:
-                        if existing := self._load_existing_provider_data(source):
+                    if existing := self._load_existing_provider_data(source):
+                        if self.merge_all_providers:
                             self.ip_merger.add_provider_data(existing)
+                        self.statistics[source] = {"ipv4": len(existing.get("ipv4", [])), "ipv6": len(existing.get("ipv6", []))}
 
         except Exception as e:
             logging.error("Error during IP range collection: %s", e)
@@ -866,6 +868,9 @@ def main() -> None:
     else:
         # Default: exclude misc providers
         sources = set(cloud_ip_ranges.sources.keys()).difference(cloud_ip_ranges.misc_providers)
+
+    if not sources:
+        logging.warning("No sources selected after applying --misc filtering")
 
     if not cloud_ip_ranges.fetch_all(sources) and args.strict:
         sys.exit(1)
