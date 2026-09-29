@@ -183,3 +183,7 @@ cython_debug/
 # test json files
 /*.json
 /.windsurf
+
+# Mutation testing
+mutants/
+mutmut-results.txt

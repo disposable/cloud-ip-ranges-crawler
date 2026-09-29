@@ -1,7 +1,9 @@
-name: Python Code Checks
+name: Code Checks
 
 permissions:
   contents: read
+  checks: write
+  pull-requests: write
 
 on:
   pull_request:
@@ -9,73 +11,80 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
-    name: Validate Code
+  validate:
+    name: Validation
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: Cache Primes
+      - name: Cache uv
         id: cache-primes
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
-          path: |
-            ~/.cache/uv
-            ~/.cache/pip
-          key: uv-cache-${{ hashFiles('**/pyproject.toml') }}
+          path: ~/.cache/uv
+          key: uv-cache-${{ hashFiles('**/pyproject.toml', '**/uv.lock') }}
           restore-keys: |
             uv-cache-
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
       - name: Set up uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
 
-      - name: Install dependencies
-        run: |
-          uv sync
+      - name: Set up Python environment
+        run: uv sync
+
+      - name: Build wheel
+        run: uv build
 
       - name: Run Ruff (PEP 8 Formatting)
-        run: |
-          uv run make format
+        run: uv run make format
 
-      - name: Run Ruff (Linting + Docstrings)
-        run: |
-          uv run make check
+      - name: Run Ruff (Linting)
+        run: uv run make check
 
-      - name: Run vulture (Dead Code Detection)
-        run: |
-          uv run make vulture
+      - name: Run vulture (Dead Code)
+        run: uv run make vulture
 
-      - name: Run xenon (Cyclomatic Complexity)
-        run: |
-          uv run make complexity
+      - name: Run radon (Cyclomatic Complexity)
+        run: uv run make complexity
 
-      - name: Run bandit (Security Analysis)
-        run: |
-          uv run make bandit
+      - name: Run xenon (Complexity Enforcement)
+        run: uv run make xenon
+
+      - name: Run bandit (Security)
+        run: uv run make bandit
 
       - name: Run pyright (Type Checking)
-        run: |
-          uv run make pyright
+        run: uv run make pyright
+
+  test:
+    name: Unit Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Set up Python environment
+        run: uv sync --python ${{ matrix.python-version }}
 
       - name: Run pytest (Unit Tests)
         run: |
-          uv run make test-unit
-
-      - name: Run pytest (Integration Tests)
-        if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master'
-        run: |
-          uv run make test-integration
-        env:
-          INTEGRATION_TESTS: true
+          # --no-sync: the sync step above already built the venv for the
+          # matrix python. A bare `uv run` would re-resolve against
+          # .python-version, switching interpreter.
+          uv run --no-sync pytest tests/unit -v --cov-fail-under=85
 
       - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.10'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -83,9 +92,32 @@ jobs:
           fail_ci_if_error: false
           verbose: true
 
-      - name: Security Scan Summary
-        run: |
-          echo "## Security Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Bandit security scan passed" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ All dependencies up to date" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ No known vulnerabilities" >> $GITHUB_STEP_SUMMARY
+  integration:
+    name: Integration Tests (Live Sources)
+    runs-on: ubuntu-latest
+    needs: [validate, test]
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master'
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Cache uv
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/uv
+          key: uv-cache-${{ hashFiles('**/pyproject.toml', '**/uv.lock') }}
+          restore-keys: |
+            uv-cache-
+
+      - name: Set up Python environment
+        run: uv sync
+
+      - name: Run Integration Tests
+        env:
+          INTEGRATION_TESTS: "true"
+        run: uv run make test-integration

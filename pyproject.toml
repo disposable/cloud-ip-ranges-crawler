@@ -24,12 +24,15 @@ url = "https://smeinecke.github.io/cycletls_python/simple/"
 [dependency-groups]
 dev = [
     "bandit>=1.8.3",
-    "codecov>=2.1.13",
+    "build>=1.2.2",
     "coverage>=7.14.3",
+    "mutmut>=3.8",
     "pytest-cov>=6.0.0",
+    "pytest-timeout>=2.3",
     "pre-commit>=4.6.0",
     "pyright>=1.1.411",
     "pytest>=9.1.1",
+    "radon>=6.0",
     "ruff>=0.15.20",
     "vulture>=2.14",
     "xenon>=0.9.3",
@@ -57,11 +60,26 @@ ignore = ["F821"]  # Ignore specific docstring rules
 [tool.pytest.ini_options]
 addopts = [
     "--import-mode=importlib",
+    "--strict-markers",
     "--cov=src",
     "--cov-report=term-missing",
     "--cov-report=xml",
 ]
 pythonpath = ["."]
+markers = [
+    "integration: marks tests as integration tests (require internet)",
+]
+
+[tool.mutmut]
+source_paths = ["src/"]
+pytest_add_cli_args_test_selection = ["tests/unit"]
+pytest_add_cli_args = ["-x", "-q", "--no-cov", "--timeout=60"]
+mutate_only_covered_lines = true
+# Lines whose mutations can never change behaviour:
+#  - logging.* calls: observability only
+do_not_mutate_patterns = [
+    '^\s*logging\.',
+]
 
 [tool.pyright]
 exclude = ["**/__pycache__", "**/node_modules", "**/dist", "**/build", "**/venv", "**/.venv", "**/docs", "**/tests"]

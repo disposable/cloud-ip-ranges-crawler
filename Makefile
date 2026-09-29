@@ -1,57 +1,73 @@
 # Makefile
 
-.PHONY: all format check validate test test-unit test-integration test-all help
+.PHONY: all format reformat-ruff check fix-ruff fix vulture complexity xenon bandit pyright typecheck test test-unit test-cov test-integration test-all validate mutation clean build help
 
-# Default target: runs format and check
+# Default target: runs validation and unit tests
 all: validate test-unit
 
 # Format the code using ruff
 format:
-	ruff format --check --diff .
+	uv run ruff format --check --diff .
 
 reformat-ruff:
-	ruff format .
+	uv run ruff format .
 
 # Check the code using ruff
 check:
-	ruff check .
+	uv run ruff check .
 
 fix-ruff:
-	ruff check . --fix
+	uv run ruff check . --fix
 
 fix: reformat-ruff fix-ruff
 	@echo "Updated code."
 
 vulture:
-	vulture . --exclude .venv,migrations,tests --make-whitelist
+	uv run vulture . --exclude .venv,migrations,tests,mutants --make-whitelist
 
 complexity:
-	radon cc . -a -nc
+	uv run radon cc src -a -nc
 
 xenon:
-	xenon -b D -m B -a B .
+	uv run xenon -b D -m D -a C src
 
 bandit:
-	bandit -c pyproject.toml -r .
+	uv run bandit -c pyproject.toml -r src
 
-pyright:
-	pyright
+typecheck:
+	uv run pyright
+
+pyright: typecheck
 
 test:
-	pytest
+	uv run pytest
 
 test-unit:
-	pytest tests/unit/ --cov-fail-under=85
+	uv run pytest tests/unit/ --cov-fail-under=85
+
+test-cov:
+	uv run pytest tests/unit/ --cov-fail-under=85
 
 test-integration:
-	pytest -m integration
+	uv run pytest -m integration --timeout=300
 
 test-all:
-	pytest --tb=short
+	uv run pytest --tb=short --timeout=300
+
+# Mutation testing (mutates src/, runs the unit suite per mutant)
+mutation:
+	uv run mutmut run
+	uv run mutmut results
 
 # Validate the code (format + check)
-validate: format check complexity bandit pyright vulture
+validate: format check complexity xenon bandit pyright vulture
 	@echo "Validation passed. Your code is ready to push."
+
+clean:
+	rm -rf build dist src/*.egg-info *.egg-info
+
+build: clean
+	uv build
 
 # Help target
 help:
@@ -68,8 +84,11 @@ help:
 	@echo "  bandit        - Run security analysis"
 	@echo "  pyright       - Run type checking"
 	@echo "  test          - Run all tests"
-	@echo "  test-unit     - Run unit tests only"
+	@echo "  test-unit     - Run unit tests only (with coverage)"
 	@echo "  test-integration - Run integration tests only"
 	@echo "  test-all      - Run all tests with short traceback"
+	@echo "  mutation      - Run mutation testing (mutmut)"
 	@echo "  validate      - Run all validation checks"
+	@echo "  clean         - Remove build artifacts"
+	@echo "  build         - Build the package"
 	@echo "  help          - Show this help message"
