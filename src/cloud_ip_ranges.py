@@ -117,6 +117,7 @@ class CloudIPRanges:
             "https://config.zscaler.com/api/zscaler.net/hubs/cidr/json/recommended",
         ],
         "imperva": ["https://my.imperva.com/api/integration/v1/ips"],
+        "quic_cloud": ["https://quic.cloud/ips"],
         "fastly": ["https://api.fastly.com/public-ip-list"],
         "microsoft_azure": ["https://azservicetags.azurewebsites.net/"],
         "microsoft_365": ["https://learn.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-ip-web-service"],

@@ -745,3 +745,11 @@ def test_imperva_transform(cipr) -> None:
     assert res["provider"] == "Imperva"
     assert "199.83.128.0/21" in res["ipv4"]
     assert "2a02:e980::/29" in res["ipv6"]
+
+
+def test_quic_cloud_transform_br_separated_ips(cipr) -> None:
+    r = _load_raw(SAMPLES_DIR / "quic_cloud_0.raw")
+    res = _transform_response(cipr, [r], "quic_cloud", is_asn=False)
+    assert res["provider"] == "Quic Cloud"
+    assert _has_valid_ipv4(res)
+    assert any(ip.endswith("/32") for ip in res["ipv4"])
