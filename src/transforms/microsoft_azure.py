@@ -6,11 +6,16 @@ def transform(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]
     result = cipr._transform_base(source_key)
     result["details_ipv4"] = []
     result["details_ipv6"] = []
+    result["coverage_notes"] = (
+        "Azure Public Cloud service tags only. Sovereign clouds (Azure Government, China, Germany) are published as separate files and excluded."
+    )
 
     match = re.findall(r"<a href=\"([^\"]+)\"", response[0].text)
     downloads: List[Any] = []
     for u in match:
-        if not u.startswith("https://download.microsoft.com/"):
+        # The page also links sovereign-cloud files (AzureGovernment, China,
+        # Germany); only the Public cloud document belongs in this provider.
+        if not u.startswith("https://download.microsoft.com/") or "ServiceTags_Public" not in u:
             continue
 
         r = cipr.session.get(u, timeout=10)
