@@ -84,7 +84,8 @@ def test_bing_bot_transform(cipr) -> None:
 def test_openai_transform(cipr) -> None:
     r0 = _load_raw(SAMPLES_DIR / "openai_0.raw")
     r1 = _load_raw(SAMPLES_DIR / "openai_1.raw")
-    res = _transform_response(cipr, [r0, r1], "openai", is_asn=False)
+    r2 = _load_raw(SAMPLES_DIR / "openai_2.raw")
+    res = _transform_response(cipr, [r0, r1, r2], "openai", is_asn=False)
     assert res["provider"] == "Openai"
     assert _has_valid_ipv4(res) or _has_valid_ipv6(res)
 

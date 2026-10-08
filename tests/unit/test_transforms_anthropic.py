@@ -1,4 +1,4 @@
-"""OpenAI transform tests."""
+"""Anthropic transform tests."""
 
 from cloud_ip_ranges import CloudIPRanges
 from tests.unit.conftest import SAMPLES_DIR, _load_raw, _has_valid_ipv4, _has_valid_ipv6
@@ -19,13 +19,11 @@ def _transform_response(cipr: CloudIPRanges, response: list, source_key: str, is
     return cipr._normalize_transformed_data(transformed_data, source_key)
 
 
-class TestOpenAITransform:
-    def test_openai_transform(self, cipr) -> None:
-        """Test OpenAI transform with real sample data."""
-        r0 = _load_raw(SAMPLES_DIR / "openai_0.raw")
-        r1 = _load_raw(SAMPLES_DIR / "openai_1.raw")
-        r2 = _load_raw(SAMPLES_DIR / "openai_2.raw")
-        res = _transform_response(cipr, [r0, r1, r2], "openai", is_asn=False)
+class TestAnthropicTransform:
+    def test_anthropic_transform(self, cipr) -> None:
+        """Test Anthropic transform with real sample data."""
+        r0 = _load_raw(SAMPLES_DIR / "anthropic_0.raw")
+        res = _transform_response(cipr, [r0], "anthropic", is_asn=False)
 
-        assert res["provider"] == "Openai"
+        assert res["provider"] == "Anthropic"
         assert _has_valid_ipv4(res) or _has_valid_ipv6(res)
