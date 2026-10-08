@@ -21,18 +21,17 @@ def validate_ip(ip: str) -> Optional[str]:
 
 def transform_csv_format(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]:
     result = cipr._transform_base(source_key)
-    data = response[0].text
 
-    lines = data.splitlines()
-    for line in lines:
-        if not line.strip() or line.startswith("#"):
-            continue
+    for r in response:
+        for line in r.text.splitlines():
+            if not line.strip() or line.startswith("#"):
+                continue
 
-        ip = line.split(",")[0].strip()
-        if ":" in ip:
-            result["ipv6"].append(ip)
-        else:
-            result["ipv4"].append(ip)
+            ip = line.split(",")[0].strip()
+            if ":" in ip:
+                result["ipv6"].append(ip)
+            else:
+                result["ipv4"].append(ip)
 
     return result
 

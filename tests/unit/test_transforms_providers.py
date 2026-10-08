@@ -693,3 +693,55 @@ def test_vercel_rdap_transform_discovers_org_nets(cipr, monkeypatch: pytest.Monk
     assert res["provider"] == "Vercel"
     assert "76.76.21.0/24" in res["ipv4"]
     assert "198.169.1.0/24" in res["ipv4"]
+
+
+def test_zoom_transform_merges_service_files(cipr) -> None:
+    rs = [_load_raw(SAMPLES_DIR / f"zoom_{i}.raw") for i in range(11)]
+    res = _transform_response(cipr, rs, "zoom", is_asn=False)
+    assert res["provider"] == "Zoom"
+    assert _has_valid_ipv4(res)
+    # Present only in ZoomPhone.txt, not in the aggregate Zoom.txt
+    assert "115.117.119.96/27" in res["ipv4"]
+
+
+def test_uptimerobot_transform(cipr) -> None:
+    r = _load_raw(SAMPLES_DIR / "uptimerobot_0.raw")
+    res = _transform_response(cipr, [r], "uptimerobot", is_asn=False)
+    assert res["provider"] == "Uptimerobot"
+    assert _has_valid_ipv4(res)
+    assert _has_valid_ipv6(res)
+    assert any(ip.endswith("/32") for ip in res["ipv4"])
+
+
+def test_pingdom_transform(cipr) -> None:
+    r_v4 = _load_raw(SAMPLES_DIR / "pingdom_0.raw")
+    r_v6 = _load_raw(SAMPLES_DIR / "pingdom_1.raw")
+    res = _transform_response(cipr, [r_v4, r_v6], "pingdom", is_asn=False)
+    assert res["provider"] == "Pingdom"
+    assert _has_valid_ipv4(res)
+    assert _has_valid_ipv6(res)
+
+
+def test_statuscake_transform(cipr) -> None:
+    r = _load_raw(SAMPLES_DIR / "statuscake_0.raw")
+    res = _transform_response(cipr, [r], "statuscake", is_asn=False)
+    assert res["provider"] == "Statuscake"
+    assert _has_valid_ipv4(res)
+    assert _has_valid_ipv6(res)
+    assert res.get("details_ipv4")
+
+
+def test_clever_cloud_transform(cipr) -> None:
+    r = _load_raw(SAMPLES_DIR / "clever_cloud_0.raw")
+    res = _transform_response(cipr, [r], "clever_cloud", is_asn=False)
+    assert res["provider"] == "Clever Cloud"
+    # Only Clever-owned zones (par, parhds) publish outboundIPs
+    assert sorted(res["ipv4"]) == sorted(["91.208.207.0/24", "185.133.116.0/22", "46.252.181.0/24", "185.42.117.0/24"])
+
+
+def test_imperva_transform(cipr) -> None:
+    r = _load_raw(SAMPLES_DIR / "imperva_0.raw")
+    res = _transform_response(cipr, [r], "imperva", is_asn=False)
+    assert res["provider"] == "Imperva"
+    assert "199.83.128.0/21" in res["ipv4"]
+    assert "2a02:e980::/29" in res["ipv6"]
