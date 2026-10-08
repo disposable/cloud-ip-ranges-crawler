@@ -753,3 +753,53 @@ def test_quic_cloud_transform_br_separated_ips(cipr) -> None:
     assert res["provider"] == "Quic Cloud"
     assert _has_valid_ipv4(res)
     assert any(ip.endswith("/32") for ip in res["ipv4"])
+
+
+def test_travisci_transform(cipr) -> None:
+    r = _load_raw(SAMPLES_DIR / "travisci_0.raw")
+    res = _transform_response(cipr, [r], "travisci", is_asn=False)
+    assert res["provider"] == "Travisci"
+    assert _has_valid_ipv4(res)
+    assert "34.68.144.114/32" in res["ipv4"]
+
+
+def test_platform_sh_transform(cipr) -> None:
+    r = _load_raw(SAMPLES_DIR / "platform_sh_0.raw")
+    res = _transform_response(cipr, [r], "platform_sh", is_asn=False)
+    assert res["provider"] == "Platform Sh"
+    assert _has_valid_ipv4(res)
+    assert "104.196.203.234/32" in res["ipv4"]
+
+
+def test_sucuri_transform(cipr) -> None:
+    r = _load_raw(SAMPLES_DIR / "sucuri_0.raw")
+    res = _transform_response(cipr, [r], "sucuri", is_asn=False)
+    assert res["provider"] == "Sucuri"
+    assert "192.88.134.0/23" in res["ipv4"]
+    assert "2a02:fe80::/29" in res["ipv6"]
+
+
+def test_checkly_transform(cipr) -> None:
+    r_v4 = _load_raw(SAMPLES_DIR / "checkly_0.raw")
+    r_v6 = _load_raw(SAMPLES_DIR / "checkly_1.raw")
+    res = _transform_response(cipr, [r_v4, r_v6], "checkly", is_asn=False)
+    assert res["provider"] == "Checkly"
+    assert _has_valid_ipv4(res)
+    assert _has_valid_ipv6(res)
+
+
+def test_updown_transform(cipr) -> None:
+    r_v4 = _load_raw(SAMPLES_DIR / "updown_0.raw")
+    r_v6 = _load_raw(SAMPLES_DIR / "updown_1.raw")
+    res = _transform_response(cipr, [r_v4, r_v6], "updown", is_asn=False)
+    assert res["provider"] == "Updown"
+    assert "45.32.74.41/32" in res["ipv4"]
+    assert _has_valid_ipv6(res)
+
+
+def test_site24x7_transform(cipr) -> None:
+    r = _load_raw(SAMPLES_DIR / "site24x7_0.raw")
+    res = _transform_response(cipr, [r], "site24x7", is_asn=False)
+    assert res["provider"] == "Site24X7"
+    assert "47.104.233.122/32" in res["ipv4"]
+    assert res.get("details_ipv4")

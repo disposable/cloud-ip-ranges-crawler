@@ -1,0 +1,575 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+<!-- PDTQ-131 -->
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-N3RT7TD');</script>
+<!-- End Google Tag Manager -->
+  <!-- Add robots meta tag to allow indexing -->
+  <meta name="robots" content="index, follow">
+
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IP Addresses - Travis CI</title>
+<link rel="stylesheet" href="/assets/stylesheets/main.css">
+<link rel="alternate" type="application/rss+xml" title="Travis CI Build Environment Updates" href="https://docs.travis-ci.com/feed.build-env-updates.xml">
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js" defer></script>
+
+<script src="/assets/javascripts/main.js" type="text/javascript" charset="utf-8" defer></script>
+<script src="/assets/javascripts/prism-loader.js" type="text/javascript" charset="utf-8" defer></script>
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:site" content="@travisci" />
+<meta name="twitter:creator" content="@travisci" />
+<meta property="og:title" content="Travis CI Documentation" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content=/user/ip-addresses/ />
+<meta property="og:description" content="IP Addresses" />
+<meta property="og:image" content="/images/TravisCI-Full-Color.png" }} />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="642" />
+<meta property="og:image:height" content="201" />
+<meta property="og:image:alt" content="Travis CI logo" />
+
+<link rel="icon" href="/images/favicons/favicon-32x32.png" sizes="32x32">
+<link rel="icon" href="/images/favicons/favicon-192x192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="/images/favicons/favicon-180x180.png">
+<meta name="msapplication-TileImage" content="/images/favicons/favicon-270x270.png">
+
+
+
+  </head>
+  <body>
+<!-- PDTQ-131 -->
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-N3RT7TD"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+    <div class="wrapper">
+
+      <header class="top">
+  <div class="row topbar">
+    <h1 id="logo" class="logo">
+  <a href="https://travis-ci.com/" title="Travis CI">Travis</a>
+</h1>
+
+    <nav>
+      <ul id="navigation" class="navigation">
+        <li><a href="https://travis-ci.com/blog">Blog</a></li>
+        <li><a href="/">Docs</a></li>
+        <li class="searchbox-wrap">
+          <div class="searchtoggle">
+            <img class="searchtoggleicon" src="/images/ui/search.svg" alt="Search icon" />
+          </div>
+          <div class="searchbox">
+            <form>
+              <input type="text" id="st-search-input" class="searchbox-input" placeholder="Search the docs" />
+            </form>
+            <script type="text/javascript">
+              var Swiftype = window.Swiftype || {};
+                (function() {
+                  Swiftype.key = 'tXvDDzd4fNTBnLvxfEyx';
+
+                  Swiftype.searchSearchFields = {
+                    "page": ["title, body, tags"]
+                  };
+                  Swiftype.autocompleteSearchFields = {
+                    "page": ["title, body, tags"]
+                  };
+                  /** DO NOT EDIT BELOW THIS LINE **/
+                  var script = document.createElement('script'); script.type = 'text/javascript'; script.async = true;
+                  script.src = "//swiftype.com/embed.js";
+                  var entry = document.getElementsByTagName('script')[0];
+                  document.getElementsByTagName('script')[0].parentNode.insertBefore(script, entry);
+                }());
+            </script>
+          </div>
+        </li>
+        <li class="toggle"><button type="button" id="toggle-menu" class="button--teal">Menu</button></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+
+      <div id="content" class="row">
+
+        <div id="sidebar" class="sidebar">
+  <section class="sidebar-navigation">
+    <nav>
+      <h3>Getting Started</h3>
+      <ul>
+        <li><a href="/user/onboarding/">Travis CI Onboarding</a></li>
+        <li><a href="/user/for-beginners/">Core Concepts for Beginners</a></li>
+        <li><a href="/user/customizing-the-build/">Customizing the Build</a></li>
+        <li><a href="/user/speeding-up-the-build/">Speeding up the Build</a></li>
+        <li><a href="/user/build-custom-images/">Build Custom Images</a></li>
+        <li><a href="/user/docker/">Using Docker in your Build</a></li>
+        <li><a href="/user/gui-and-headless-browsers/">Headless Testing with Browsers</a></li>
+        <li><a href="/user/pull-requests/">Building Pull Requests</a></li>
+        <li><a href="/user/cron-jobs/">Cron Jobs</a></li>
+        <li><a href="/user/common-build-problems/">Common Build Problems</a></li>
+        <li><a href="https://github.com/travis-ci/travis#readme">Command Line Client</a></li>
+        <li><a href="/user/build-config-imports/">Build Config Imports</a></li>
+        <li><a href="/user/build-config-validation/">Build Config Validation</a></li>
+      </ul>
+
+      <h3>Tutorials</h3>
+      <ul>
+        <li class="is-overview"><a href="/user/tutorials/tutorials-overview/">Overview</a></li>
+        <li><a href="/user/tutorials/tutorial-c/">C/C++ Tutorial</a></li>
+        <li><a href="/user/tutorials/tutorial-java/">Java Tutorial</a></li>
+        <li><a href="/user/tutorials/tutorial-nodejs/">Node.js Tutorial</a></li>
+        <li><a href="/user/tutorials/tutorial-python/">Python Tutorial</a></li>
+        <li><a href="/user/tutorials/tutorial-ruby/">Ruby Tutorial</a></li>
+      </ul>
+
+      <h3>Jobs, Builds, Matrices, and Stages</h3>
+      <ul>
+        <li><a href="/user/job-lifecycle/">Job Lifecycle</a></li>
+        <li><a href="/user/build-matrix/">Build Matrix</a></li>
+        <li><a href="/user/build-stages/">Build Stages</a></li>
+        <li><a href="/user/conditional-builds-stages-jobs/">Conditional Builds, Stages, and Jobs</a></li>
+      </ul>
+
+      <h3>Installing Dependencies</h3>
+      <ul>
+        <li><a href="/user/installing-dependencies/">Installing Dependencies</a></li>
+        <li><a href="/user/private-dependencies/">Private Dependencies GitHub</a></li>
+        <li><a href="/user/private-dependencies-bb/">Private Dependencies Bitbucket</a></li>
+        <li><a href="/user/database-setup/">Setting up Services and Databases</a></li>
+        <li><a href="/user/caching/">Caching Dependencies</a></li>
+        <li><a href="/user/using-workspaces/">Caching Dependencies within a Build (Workspaces)</a></li>
+        <li><a href="/user/ssh-known-hosts/">Adding to SSH Known Hosts</a></li>
+      </ul>
+
+      <h3>Programming Languages</h3>
+      <ul>
+      
+        <li><a href="/user/languages/android/">Android</a></li>
+      
+        <li><a href="/user/languages/c/">C</a></li>
+      
+        <li><a href="/user/languages/csharp/">C#</a></li>
+      
+        <li><a href="/user/languages/cpp/">C++</a></li>
+      
+        <li><a href="/user/languages/clojure/">Clojure</a></li>
+      
+        <li><a href="/user/languages/crystal/">Crystal</a></li>
+      
+        <li><a href="/user/languages/d/">D</a></li>
+      
+        <li><a href="/user/languages/dart/">Dart</a></li>
+      
+        <li><a href="/user/languages/elixir/">Elixir</a></li>
+      
+        <li><a href="/user/languages/elm/">Elm</a></li>
+      
+        <li><a href="/user/languages/erlang/">Erlang</a></li>
+      
+        <li><a href="/user/languages/csharp/">F#</a></li>
+      
+        <li><a href="/user/languages/minimal-and-generic/">Generic</a></li>
+      
+        <li><a href="/user/languages/go/">Go</a></li>
+      
+        <li><a href="/user/languages/groovy/">Groovy</a></li>
+      
+        <li><a href="/user/languages/haskell/">Haskell</a></li>
+      
+        <li><a href="/user/languages/haxe/">Haxe</a></li>
+      
+        <li><a href="/user/languages/java/">Java</a></li>
+      
+        <li><a href="/user/languages/javascript-with-nodejs/">JavaScript <small>(with Node.js)</small></a></li>
+      
+        <li><a href="/user/languages/julia/">Julia</a></li>
+      
+        <li><a href="/user/languages/matlab/">MATLAB</a></li>
+      
+        <li><a href="/user/languages/minimal-and-generic/">Minimal</a></li>
+      
+        <li><a href="/user/languages/nix/">Nix</a></li>
+      
+        <li><a href="/user/languages/perl/">Perl</a></li>
+      
+        <li><a href="/user/languages/perl6/">Perl6</a></li>
+      
+        <li><a href="/user/languages/php/">PHP</a></li>
+      
+        <li><a href="/user/languages/python/">Python</a></li>
+      
+        <li><a href="/user/languages/r/">R</a></li>
+      
+        <li><a href="/user/languages/ruby/">Ruby</a></li>
+      
+        <li><a href="/user/languages/rust/">Rust</a></li>
+      
+        <li><a href="/user/languages/scala/">Scala</a></li>
+      
+        <li><a href="/user/languages/smalltalk/">Smalltalk</a></li>
+      
+        <li><a href="/user/languages/csharp/">Visual Basic</a></li>
+      
+        <li><a href="/user/languages/community-supported-languages/">Adding a language</a></li>
+      </ul>
+
+      <h3>Deployments and Uploads</h3>
+      <ul>
+        
+          <li class="is-overview"><a href="/user/deployment/">Overview</a></li>
+          
+        
+        
+          <li><a href="/user/deployment/anynines/">anynines</a></li>
+        
+          <li><a href="/user/deployment/atlas/">Atlas</a></li>
+        
+          <li><a href="/user/deployment/codedeploy/">AWS CodeDeploy</a></li>
+        
+          <li><a href="/user/deployment/elasticbeanstalk/">AWS Elastic Beanstalk</a></li>
+        
+          <li><a href="/user/deployment/lambda/">AWS Lambda</a></li>
+        
+          <li><a href="/user/deployment/opsworks/">AWS OpsWorks</a></li>
+        
+          <li><a href="/user/deployment/s3/">AWS S3</a></li>
+        
+          <li><a href="/user/deployment/azure-web-apps/">Azure Web Apps</a></li>
+        
+          <li><a href="/user/deployment/bintray/">bintray</a></li>
+        
+          <li><a href="/user/deployment/bitballoon/">BitBalloon</a></li>
+        
+          <li><a href="/user/deployment/bluemixcloudfoundry/">Bluemix CloudFoundry</a></li>
+        
+          <li><a href="/user/deployment/boxfuse/">Boxfuse</a></li>
+        
+          <li><a href="/user/deployment/catalyze/">Catalyze</a></li>
+        
+          <li><a href="/user/deployment/chefsupermarket/">Chef Supermarket</a></li>
+        
+          <li><a href="/user/deployment/cloud66/">Cloud 66</a></li>
+        
+          <li><a href="/user/deployment/cloudfoundry/">CloudFoundry</a></li>
+        
+          <li><a href="/user/deployment/cargo/">Cargo</a></li>
+        
+          <li><a href="/user/deployment/engineyard/">Engine Yard</a></li>
+        
+          <li><a href="/user/deployment/pages/">GitHub Pages</a></li>
+        
+          <li><a href="/user/deployment/releases/">GitHub Releases</a></li>
+        
+          <li><a href="/user/deployment/google-app-engine/">Google App Engine</a></li>
+        
+          <li><a href="/user/deployment/gcs/">Google Cloud Storage</a></li>
+        
+          <li><a href="/user/deployment/firebase/">Google Firebase</a></li>
+        
+          <li><a href="/user/deployment/hackage/">Hackage</a></li>
+        
+          <li><a href="/user/deployment/hephy/">Hephy</a></li>
+        
+          <li><a href="/user/deployment/heroku/">Heroku</a></li>
+        
+          <li><a href="/user/deployment/launchpad/">Launchpad</a></li>
+        
+          <li><a href="/user/deployment/npm/">npm</a></li>
+        
+          <li><a href="/user/deployment/openshift/">OpenShift</a></li>
+        
+          <li><a href="/user/deployment/packagecloud/">packagecloud.io</a></li>
+        
+          <li><a href="/user/deployment/puppetforge/">Puppet Forge</a></li>
+        
+          <li><a href="/user/deployment/pypi/">PyPI</a></li>
+        
+          <li><a href="/user/deployment/cloudfiles/">Rackspace Cloud Files</a></li>
+        
+          <li><a href="/user/deployment/rubygems/">RubyGems</a></li>
+        
+          <li><a href="/user/deployment/scalingo/">Scalingo</a></li>
+        
+          <li><a href="/user/deployment/script/">Script</a></li>
+        
+          <li><a href="/user/deployment/snaps/">Snap Store</a></li>
+        
+          <li><a href="/user/deployment/surge/">Surge.sh</a></li>
+        
+          <li><a href="/user/deployment/testfairy/">TestFairy</a></li>
+        
+          <li><a href="/user/deployment/transifex/">Transifex</a></li>
+        
+        <li><a href="/user/uploading-artifacts/">Uploading Build Artifacts</a></li>
+      </ul>
+
+      <h3>CI Environment Reference</h3>
+      <ul>
+        <li class="is-overview"><a href="/user/reference/overview/">Overview</a></li>
+        <li><a href="/user/reference/linux/">Ubuntu Linux CI Environment References</a></li>
+        <li><a href="/user/reference/windows/">Windows CI Environment Reference</a></li>
+        <li><a href="/user/reference/freebsd/">FreeBSD CI Environment Reference</a></li>
+        <li><a href="/user/multi-os/">Building on Multiple Operating Systems</a></li>
+        <li><a href="/user/multi-cpu-architectures/">Building on Multiple CPU Architectures</a></li>
+        <li><a href="/user/environment-variables/">Environment Variables</a></li>
+        <li><a href="/user/account-environment-variable/">Account Environment Variables</a></li>
+        <li><a href="/user/build-environment-updates/">Build Environment Updates</a></li>
+        <li><a href="/user/ip-addresses/">Build Machines IP Addresses</a></li>
+      </ul>
+
+      <h3>Security and Secure Software Supply Chain</h3>
+      <ul>
+        <li><a href="/user/encryption-keys/">Encrypting Sensitive Data</a></li>
+        <li><a href="/user/encrypting-files/">Encrypting Files</a></li>
+        <li><a href="/user/github-oauth-scopes/">GitHub Permissions used by Travis CI</a></li>
+        <li><a href="/user/bb-oauth-scopes/">Bitbucket Permissions used by Travis CI</a></li>
+        <li><a href="/user/assembla-oauth-scopes/">Assembla Permissions used by Travis CI</a></li>
+        <li><a href="/user/gl-oauth-scopes/">GitLab Permissions used by Travis CI</a></li>
+        <li><a href="/user/disable-job-logs/">Disable Job Logs Availability</a></li>
+        <li><a href="/user/best-practices-security/">Best Practices in Securing Your Data</a></li>
+        <li><a href="/user/securely-signing-software">Securely Signing Software</a></li>
+        <li><a href="/user/sbom">Software Bill of Materials</a></li>
+      </ul>
+
+      <h3>Integrations and Notifications</h3>
+      <ul>
+        <li><a href="/user/notifications/">Configuring Notifications</a></li>
+        <li><a href="/user/status-images/">Showing Build Status Images</a></li>
+        <li><a href="/user/code-climate/">Code Climate</a></li>
+        <li><a href="/user/deepsource/">DeepSource</a></li>
+        <li><a href="/user/coveralls/">Coveralls</a></li>
+        <li><a href="/user/coverity-scan/">Coverity Scan</a></li>
+        <li><a href="/user/browserstack/">BrowserStack</a></li>
+        <li><a href="/user/sauce-connect/">Sauce Labs</a></li>
+        <li><a href="/user/sonarcloud/">SonarCloud</a></li>
+        <li><a href="/user/sourceclear/">SourceClear</a></li>
+        <li><a href="/user/build-feeds/">Atom Feeds</a></li>
+        <li><a href="/user/cc-menu/">CCMenu / CCTray Feeds</a></li>
+        <li><a href="/user/integration/platformio/">Embedded Builds with PlatformIO</a></li>
+        <li><a href="/user/hashicorp-vault-integration">Hashicorp Vault</a></li>
+        <li><a href="/user/apps/">3rd Party Apps, Clients and Tools</a></li>
+      </ul>
+
+      <h3>Developer Program</h3>
+      <ul>
+        <li class="is-overview"><a href="/user/developer/">Overview</a></li>
+        <li><a href="https://developer.travis-ci.com/">API V3</a></li>
+        <li><a href="/user/triggering-builds/">Triggering Builds with API V3</a></li>
+        <li><a href="https://github.com/travis-ci/travis#ruby-library">The Ruby Library</a></li>
+      </ul>
+
+      <h3>Hosted Billing</h3>
+      <ul>
+        <li class="is-overview"><a href="/user/billing-overview/">Overview</a></li>
+        <li><a href="/user/billing-autorefill/">Auto-refill</a></li>
+        <li><a href="/user/plan-sharing/">Plan Sharing</a></li>
+        <li><a href="/user/billing-storage-addon/">Storage Add-on</a></li>
+        <li><a href="/user/billing-faq/">FAQ</a></li>
+      </ul>
+
+      <h3>Travis CI Enterprise</h3>
+      <ul>
+        <li><a href="/user/enterprise/">Enterprise Docs</a></li>
+      </ul>
+
+    </nav>
+  </section>
+
+  <section class="sidebar-notice">
+    <p>This documentation site is Open Source.
+      The <a href="https://github.com/travis-ci/docs-travis-ci-com">README in our Git repository</a> explains how to contribute.</p>
+    <p>Travis CI relies on Open Source <a href="https://app.travis-ci.com/licensing">licensing information</a>.</p>
+  </section>
+</div><!-- /#sidebar -->
+
+
+        <main id="main" class="main" data-swiftype-index='true'>
+          
+            <aside class="improve-page" data-swiftype-index='false'><a href="https://github.com/travis-ci/docs-travis-ci-com/edit/master/user/ip-addresses.md" target="_blank" title="Edit this page on GitHub" class="button-pen" data-proofer-ignore>Improve this page on GitHub</a></aside>
+            <h1 class="title">IP Addresses</h1>
+          
+
+          
+            
+          
+
+
+          
+            <div id="toc" class="toc">
+              <ul class="list-language">
+  <li><a href="#load-balancing">Load balancing</a></li>
+  <li><a href="#notification">Notification</a></li>
+</ul>
+
+            </div>
+          
+
+          <blockquote class="beta">
+  <p>
+    Travis CI will stop support for macOS starting March 31st, 2025.
+  </p>
+</blockquote>
+
+<p>Knowing the IP addresses of the build machines that Travis CI uses can be helpful
+when you need them safelisted to access your internal resources. Since builds
+run in a variety of different infrastructures, the IP ranges to safelist depend
+on the infrastructure your builds are running on.</p>
+
+<table class="ip-address-ranges">
+  <thead>
+    <tr>
+      <th style="text-align: left">Infrastructure</th>
+      <th style="text-align: left">NAT hostname</th>
+      <th style="text-align: left">Current DNS</th>
+      <th style="text-align: left">Last recorded IPs</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">Linux, Windows</td>
+      <td style="text-align: left">nat.gce-us-central1.travisci.net</td>
+      <td style="text-align: left"><a href="https://dnsjson.com/nat.gce-us-central1.travisci.net/A.json">A recs</a></td>
+      <td style="text-align: left"><code class="language-plaintext highlighter-rouge">34.66.25.221</code>, <code class="language-plaintext highlighter-rouge">34.66.50.208</code>, <code class="language-plaintext highlighter-rouge">34.66.178.120</code>, <code class="language-plaintext highlighter-rouge">34.66.200.49</code>, <code class="language-plaintext highlighter-rouge">34.68.144.114</code>, <code class="language-plaintext highlighter-rouge">34.122.173.211</code>, <code class="language-plaintext highlighter-rouge">34.122.208.80</code>, <code class="language-plaintext highlighter-rouge">35.184.226.236</code>, <code class="language-plaintext highlighter-rouge">35.188.1.99</code>, <code class="language-plaintext highlighter-rouge">35.188.15.155</code>, <code class="language-plaintext highlighter-rouge">35.188.73.34</code>, <code class="language-plaintext highlighter-rouge">35.192.10.37</code>, <code class="language-plaintext highlighter-rouge">35.192.85.2</code>, <code class="language-plaintext highlighter-rouge">35.192.91.101</code>, <code class="language-plaintext highlighter-rouge">35.192.136.167</code>, <code class="language-plaintext highlighter-rouge">35.192.187.174</code>, <code class="language-plaintext highlighter-rouge">35.193.7.13</code>, <code class="language-plaintext highlighter-rouge">35.193.14.140</code>, <code class="language-plaintext highlighter-rouge">35.193.184.18</code>, <code class="language-plaintext highlighter-rouge">35.202.145.110</code>, <code class="language-plaintext highlighter-rouge">35.202.245.105</code>, <code class="language-plaintext highlighter-rouge">35.222.7.205</code>, <code class="language-plaintext highlighter-rouge">35.224.112.202</code>, <code class="language-plaintext highlighter-rouge">104.154.113.151</code>, <code class="language-plaintext highlighter-rouge">104.154.120.187</code>, <code class="language-plaintext highlighter-rouge">104.154.182.187</code>, <code class="language-plaintext highlighter-rouge">104.197.122.201</code>, <code class="language-plaintext highlighter-rouge">104.198.131.58</code></td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Linux, Windows</td>
+      <td style="text-align: left">nat.gce-us-east1.travisci.net</td>
+      <td style="text-align: left"><a href="https://dnsjson.com/nat.gce-us-east1.travisci.net/A.json">A recs</a></td>
+      <td style="text-align: left"><code class="language-plaintext highlighter-rouge">34.73.34.132</code>, <code class="language-plaintext highlighter-rouge">34.73.65.1</code>, <code class="language-plaintext highlighter-rouge">34.73.66.97</code>, <code class="language-plaintext highlighter-rouge">34.74.16.120</code>, <code class="language-plaintext highlighter-rouge">34.74.79.111</code>, <code class="language-plaintext highlighter-rouge">34.74.91.53</code>, <code class="language-plaintext highlighter-rouge">34.74.253.255</code>, <code class="language-plaintext highlighter-rouge">35.185.97.135</code>, <code class="language-plaintext highlighter-rouge">35.196.72.151</code>, <code class="language-plaintext highlighter-rouge">35.196.82.30</code>, <code class="language-plaintext highlighter-rouge">35.196.99.99</code>, <code class="language-plaintext highlighter-rouge">35.196.158.85</code>, <code class="language-plaintext highlighter-rouge">35.227.58.83</code>, <code class="language-plaintext highlighter-rouge">35.227.97.188</code>, <code class="language-plaintext highlighter-rouge">35.229.115.143</code>, <code class="language-plaintext highlighter-rouge">35.231.58.0</code>, <code class="language-plaintext highlighter-rouge">35.237.8.208</code>, <code class="language-plaintext highlighter-rouge">35.237.56.208</code>, <code class="language-plaintext highlighter-rouge">35.237.212.185</code>, <code class="language-plaintext highlighter-rouge">104.196.53.161</code>, <code class="language-plaintext highlighter-rouge">104.196.57.92</code>, <code class="language-plaintext highlighter-rouge">104.196.213.122</code></td>
+    </tr>
+    <tr>
+      <td style="text-align: left">(all combined)</td>
+      <td style="text-align: left">nat.travisci.net</td>
+      <td style="text-align: left"><a href="https://dnsjson.com/nat.travisci.net/A.json">A recs</a></td>
+      <td style="text-align: left">(sum of all above)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Note that these ranges can change in the future, and the best way to keep an
+updated safelist is to use the current A records for the <strong>NAT hostname</strong> shown
+above, such as by using <code class="language-plaintext highlighter-rouge">dig</code>:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dig +short nat.travisci.net | <span class="nb">sort</span>
+</code></pre></div></div>
+
+<p>or using a service like <a href="https://dnsjson.com">dnsjson.com</a> to interact with
+JSON:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-s</span> https://dnsjson.com/nat.travisci.net/A.json | jq <span class="s1">'.results.records|sort'</span>
+</code></pre></div></div>
+
+<p>Note that the IP addresses used for <a href="/user/notifications/">notifications</a> are
+different.</p>
+
+<p>More details about our different infrastructures are available on the
+<a href="/user/reference/overview/#virtualization-environments">virtualization environments
+page</a>.</p>
+
+<h2 id="load-balancing">Load balancing <a href="#load-balancing" class="toc-anchor">#</a></h2>
+
+<p>Due to load balancing, connections from build machines to external resources are not guaranteed to come from the same IP address, even when sent from the same job.
+This may cause them to <a href="https://docs.travis-ci.com/user/common-build-problems/#ftpsmtpother-protocol-do-not-work">trigger security checks</a>, especially when using protocols that utilize multiple connections like FTP and VPN.
+If this occurs, reconfigure your servers to allow for connections from multiple IP addresses.</p>
+
+<h2 id="notification">Notification <a href="#notification" class="toc-anchor">#</a></h2>
+
+<p>We will announce changes to this set of IP addresses with a 24-hour notice period. We recommend you use the DNS record to keep track automatically, but if you require a manual notification, you can subscribe to the mailing list:</p>
+
+<!-- Begin Mailchimp Signup Form -->
+<link href="//cdn-images.mailchimp.com/embedcode/classic-10_7.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">
+	#mc_embed_signup{background:#fff; clear:left; font:14px Helvetica,Arial,sans-serif; }
+	/* Add your own Mailchimp form style overrides in your site stylesheet or in this style block.
+	   We recommend moving this block and the preceding CSS link to the HEAD of your HTML file. */
+</style>
+
+<div id="mc_embed_signup">
+<form action="https://travis-ci.us7.list-manage.com/subscribe/post?u=8ce724a4c9af4dace663cd39c&amp;id=8760e616bf" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="validate" target="_blank" novalidate="">
+    <div id="mc_embed_signup_scroll">
+
+<div class="mc-field-group">
+	<label for="mce-EMAIL">Email Address </label>
+	<input type="email" value="" name="EMAIL" class="required email" id="mce-EMAIL" />
+</div>
+	<div id="mce-responses" class="clear">
+		<div class="response" id="mce-error-response" style="display:none"></div>
+		<div class="response" id="mce-success-response" style="display:none"></div>
+	</div>    <!-- real people should not fill this in and expect good things - do not remove this or risk form bot signups-->
+    <div style="position: absolute; left: -5000px;" aria-hidden="true"><input type="text" name="b_8ce724a4c9af4dace663cd39c_8760e616bf" tabindex="-1" value="" /></div>
+    <div class="clear"><input type="submit" value="Subscribe" name="subscribe" id="mc-embedded-subscribe" class="button" /></div>
+    </div>
+</form>
+</div>
+<!--End mc_embed_signup-->
+
+
+        </main>
+      </div><!-- /#content -->
+
+      <footer class="footer">
+  <div class="layout-inner">
+    <div class="footer-elem">
+      <img src="/images/tci-logo.svg" alt="Travis CI Mascot" width="142px" height="45.381px" class="logo">
+    </div>
+
+    <div class="footer-elem"></div>
+
+    <div class="footer-elem">
+      <h3 class="footer-title">©Travis CI, GmbH</h3>
+      <address>Rigaer Straße 8<br>10247 Berlin, Germany</address>
+      <ul>
+        <li><a href="https://travisci.workable.com/" title="Jobs at Travis CI">Work with Travis CI</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-elem">
+      <h3 class="footer-title">Help</h3>
+      <ul>
+        <li><a href="https://docs.travis-ci.com" title="Travis CI Docs">Documentation</a></li>
+        <li><a href="https://changelog.travis-ci.com/">Changelog</a></li>
+        <li><a href="https://travis-ci.com/blog/" title="Travis CI Blog">Blog</a></li>
+        <li><a href="mailto:support@travis-ci.com" title="Email Travis CI support">Email</a></li>
+        <li><a href="https://twitter.com/travisci" title="Travis CI on Twitter">Twitter</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-elem">
+      <h3 class="footer-title">Company</h3>
+      <ul>
+        <li><a href="/imprint.html" title="Imprint">Imprint</a></li>
+        <li><a href="https://ideracorp.com/legal/TravisCI">Legal</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-elem">
+      <h3 class="footer-title">Travis CI Status</h3>
+      <ul>
+        <li><div class="status-circle none">Status:</div>
+          <a href="https://www.traviscistatus.com/">Travis CI Status</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</footer>
+
+<script>
+ fetch('https://pnpcptp8xh9k.statuspage.io/api/v2/status.json').then(function(response) {
+   return response.json();
+ }).then(function(data) {
+   if (data.status && data.status.indicator) {
+     document.querySelector('.status-circle').classList.add(data.status.indicator);
+   }
+ });
+</script>
+
+    </div><!-- /.wrapper -->
+  </body>
+</html

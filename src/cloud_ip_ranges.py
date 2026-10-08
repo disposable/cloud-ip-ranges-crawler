@@ -84,6 +84,7 @@ class CloudIPRanges:
         "okta": ["https://s3.amazonaws.com/okta-ip-ranges/ip_ranges.json"],
         "zendesk": ["https://support.zendesk.com/ips"],
         "circleci": ["https://circleci.com/docs/ip-ranges-list.json"],
+        "travisci": ["https://docs.travis-ci.com/user/ip-addresses/"],
         "hcp_terraform": ["https://app.terraform.io/api/meta/ip-ranges"],
         "new_relic_synthetics": ["https://nr-synthetics-assets.s3.amazonaws.com/nat-ip-dnsname/production/ip-ranges.json"],
         "uptimerobot": ["https://uptimerobot.com/inc/files/ips/IPv4andIPv6.txt"],
@@ -92,6 +93,17 @@ class CloudIPRanges:
             "https://my.pingdom.com/probes/ipv6",
         ],
         "statuscake": ["https://app.statuscake.com/Workfloor/Locations.php?format=json"],
+        "checkly": [
+            "https://api.checklyhq.com/v1/static-ips",
+            "https://api.checklyhq.com/v1/static-ipv6s",
+        ],
+        "updown": [
+            "https://updown.io/api/nodes/ipv4",
+            "https://updown.io/api/nodes/ipv6",
+        ],
+        "site24x7": [
+            "https://creatorapp.zohopublic.in/mesite24x7/location-manager/json/IP_Address_View/C80EnP71mW2fDd60GaDgnPbVwMS8AGmP85vrN27EZ1CnCjPwnm0zPB5EX4Ct4q9n3rUnUgYwgwX0BW3KFtxnBqHt60Sz1Pgntgru?src=content"
+        ],
         "grafana_cloud": [
             "https://grafana.com/api/hosted-alerts/source-ips",
             "https://grafana.com/api/hosted-grafana/source-ips",
@@ -117,6 +129,7 @@ class CloudIPRanges:
             "https://config.zscaler.com/api/zscaler.net/hubs/cidr/json/recommended",
         ],
         "imperva": ["https://my.imperva.com/api/integration/v1/ips"],
+        "sucuri": ["https://docs.sucuri.net/website-firewall/sucuri-firewall-troubleshooting-guide/"],
         "quic_cloud": ["https://quic.cloud/ips"],
         "fastly": ["https://api.fastly.com/public-ip-list"],
         "microsoft_azure": ["https://azservicetags.azurewebsites.net/"],
@@ -129,6 +142,7 @@ class CloudIPRanges:
         "equinix_metal": ["https://geofeed.equinixmetal.com/"],
         "exoscale": ["https://exoscale-prefixes.sos-ch-dk-2.exo.io/exoscale_prefixes.json"],
         "clever_cloud": ["https://api.clever-cloud.com/v4/products/zones"],
+        "platform_sh": ["https://docs.platform.sh/development/public-ips.html"],
         "scaleway": ["https://www.scaleway.com/en/docs/account/reference-content/scaleway-network-information/"],
         "backblaze": ["https://www.backblaze.com/computer-backup/docs/backblaze-ip-addresses"],
         "cisco_webex": [

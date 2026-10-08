@@ -36,6 +36,24 @@ def transform_csv_format(cipr: Any, response: List[Any], source_key: str) -> Dic
     return result
 
 
+def transform_json_ip_list(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]:
+    result = cipr._transform_base(source_key)
+
+    for r in response:
+        data = r.json()
+        if not isinstance(data, list):
+            continue
+        for item in data:
+            if not isinstance(item, str):
+                continue
+            if ":" in item:
+                result["ipv6"].append(item)
+            else:
+                result["ipv4"].append(item)
+
+    return result
+
+
 def transform_google_style(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]:
     result = cipr._transform_base(source_key)
     result["details_ipv4"] = []
