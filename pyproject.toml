@@ -73,6 +73,11 @@ markers = [
 
 [tool.mutmut]
 source_paths = ["src/"]
+# fork runs stats + clean tests via pytest.main() twice in the same process;
+# the second run trips hypothesis's HealthCheck.differing_executors on
+# class-based @given tests. forkserver runs every pytest invocation in a
+# fresh process.
+process_isolation = "forkserver"
 pytest_add_cli_args_test_selection = ["tests/unit"]
 pytest_add_cli_args = ["-x", "-q", "--no-cov", "--timeout=60"]
 mutate_only_covered_lines = true
