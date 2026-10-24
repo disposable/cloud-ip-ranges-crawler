@@ -16,6 +16,7 @@ Providers are defined in `CloudIPRanges.sources`, split between:
 1. **Published lists** - AWS, Azure, Cloudflare, GitHub, Stripe, etc.
 2. **ASN expansion** - RIPEstat + RADB AS-SET lookups when vendors lack allowlists.
 3. **RDAP lookups** - Registry-owned netblocks for providers such as Vercel.
+4. **Community mirror** - VPN providers without usable public lists (e.g. ProtonVPN, ExpressVPN, CyberGhost, IPVanish) are sourced from [qdm12/gluetun-servers](https://github.com/qdm12/gluetun-servers), the maintained server-list backend of the [Gluetun](https://github.com/qdm12/gluetun) project. Thanks to the Gluetun community for publishing fresh server data.
 
 See `src/sources/` for the latest definitions; new providers usually only require a small transform module.
 
