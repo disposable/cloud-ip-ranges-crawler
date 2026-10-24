@@ -493,6 +493,12 @@ class CloudIPRanges:
             "AS140979",
         ],
         "gsl_networks": ["AS137409"],
+        "mullvad": ["https://api.mullvad.net/www/relays/all/"],
+        "nordvpn": ["https://api.nordvpn.com/v1/servers?limit=50000"],
+        "private_internet_access": ["https://serverlist.piaservers.net/vpninfo/servers/v6"],
+        "ivpn": ["https://api.ivpn.net/v4/servers.json"],
+        "airvpn": ["https://airvpn.org/api/status/"],
+        "tor": ["https://check.torproject.org/torbulkexitlist"],
         "infomaniak": ["https://prefixes.infomaniak.com/json"],
         "yandex_cloud": ["https://yandex.cloud/en/docs/security/ip-list"],
         "yandex": ["https://yandex.com/ips"],
@@ -526,6 +532,12 @@ class CloudIPRanges:
         "gsl_networks",
         "stormycloud",
         "host_universal",
+        "mullvad",
+        "nordvpn",
+        "private_internet_access",
+        "ivpn",
+        "airvpn",
+        "tor",
     }
 
     # Per-source max-delta-ratio overrides. Some providers (e.g. Okta) publish
@@ -534,6 +546,12 @@ class CloudIPRanges:
     source_max_delta_ratios: ClassVar[dict[str, float]] = {
         "okta": 0.9,
         "cloudflare_warp": 0.9,
+        "mullvad": 0.9,
+        "nordvpn": 0.9,
+        "private_internet_access": 0.9,
+        "ivpn": 0.9,
+        "airvpn": 0.9,
+        "tor": 0.9,
     }
 
     def __init__(
