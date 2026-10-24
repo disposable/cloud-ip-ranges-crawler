@@ -498,6 +498,8 @@ class CloudIPRanges:
         "private_internet_access": ["https://serverlist.piaservers.net/vpninfo/servers/v6"],
         "ivpn": ["https://api.ivpn.net/v4/servers.json"],
         "airvpn": ["https://airvpn.org/api/status/"],
+        "windscribe": ["https://assets.windscribe.com/serverlist/mob-v2/1/1111111111"],
+        "surfshark": ["https://api.surfshark.com/v4/server/clusters/all"],
         "tor": ["https://check.torproject.org/torbulkexitlist"],
         "infomaniak": ["https://prefixes.infomaniak.com/json"],
         "yandex_cloud": ["https://yandex.cloud/en/docs/security/ip-list"],
@@ -537,6 +539,8 @@ class CloudIPRanges:
         "private_internet_access",
         "ivpn",
         "airvpn",
+        "windscribe",
+        "surfshark",
         "tor",
     }
 
@@ -551,6 +555,8 @@ class CloudIPRanges:
         "private_internet_access": 0.9,
         "ivpn": 0.9,
         "airvpn": 0.9,
+        "windscribe": 0.9,
+        "surfshark": 0.9,
         "tor": 0.9,
     }
 
