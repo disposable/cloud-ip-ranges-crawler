@@ -54,6 +54,26 @@ def transform_json_ip_list(cipr: Any, response: List[Any], source_key: str) -> D
     return result
 
 
+def transform_gluetun_servers(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]:
+    """Transform gluetun-servers repo JSON (servers[].ips[]) into IP ranges.
+
+    Shared by VPN providers that do not publish a usable server list; the
+    upstream qdm12/gluetun-servers repo is refreshed monthly by their updater.
+    """
+    result = cipr._transform_base(source_key)
+
+    for r in response:
+        data = r.json()
+        for server in data.get("servers", []):
+            for ip in server.get("ips", []):
+                if ":" in ip:
+                    result["ipv6"].append(ip)
+                else:
+                    result["ipv4"].append(ip)
+
+    return result
+
+
 def transform_google_style(cipr: Any, response: List[Any], source_key: str) -> Dict[str, Any]:
     result = cipr._transform_base(source_key)
     result["details_ipv4"] = []
