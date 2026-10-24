@@ -44,6 +44,7 @@ class IPMerger:
         provider_summary = {
             "provider": transformed_data.get("provider"),
             "provider_id": transformed_data.get("provider_id"),
+            "category": transformed_data.get("category"),
             "method": transformed_data.get("method"),
             "source": transformed_data.get("source"),
             "last_update": transformed_data.get("last_update"),

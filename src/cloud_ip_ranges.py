@@ -492,6 +492,7 @@ class CloudIPRanges:
             "AS140886",
             "AS140979",
         ],
+        "gsl_networks": ["AS137409"],
         "infomaniak": ["https://prefixes.infomaniak.com/json"],
         "yandex_cloud": ["https://yandex.cloud/en/docs/security/ip-list"],
         "yandex": ["https://yandex.com/ips"],
@@ -517,6 +518,14 @@ class CloudIPRanges:
     misc_providers: ClassVar[set[str]] = {
         "starlink",
         "cloudflare_warp",
+    }
+
+    # Providers whose space is dominated by proxy/VPN/Tor-exit egress rather
+    # than plain hosting or crawler traffic
+    proxy_providers: ClassVar[set[str]] = {
+        "gsl_networks",
+        "stormycloud",
+        "host_universal",
     }
 
     # Per-source max-delta-ratio overrides. Some providers (e.g. Okta) publish
@@ -665,6 +674,14 @@ class CloudIPRanges:
                     f.write("\n".join(ipv6_list))
                     f.write("\n")
 
+    def _category_for(self, source_key: str) -> str:
+        """Return the provider category: misc, proxy or cloud (default)."""
+        if source_key in self.misc_providers:
+            return "misc"
+        if source_key in self.proxy_providers:
+            return "proxy"
+        return "cloud"
+
     def _transform_base(self, source_key: str, source_url: Optional[Union[str, list]] = None) -> dict[str, Any]:
         """Base transformation method for all providers."""
         if source_url is None:
@@ -674,6 +691,7 @@ class CloudIPRanges:
         result = {
             "provider": source_key.replace("_", " ").title(),
             "provider_id": source_key.replace("_", "-"),
+            "category": self._category_for(source_key),
             "method": "published_list",
             "coverage_notes": "",
             "generated_at": generated_at,
@@ -970,7 +988,9 @@ class CloudIPRanges:
     def _save_txt(self, transformed_data: dict[str, Any], filename: str) -> None:
         """Save data in TXT format."""
         with self._atomic_writer(self.output_dir / filename) as f:
-            for k in ("provider", "source", "last_update"):
+            for k in ("provider", "category", "source", "last_update"):
+                if k not in transformed_data:
+                    continue
                 vl = ", ".join(transformed_data[k]) if isinstance(transformed_data[k], list) else transformed_data[k]
                 f.write("# {}: {}\n".format(k, vl))
 
@@ -1007,6 +1027,7 @@ class CloudIPRanges:
         details_payload = {
             "provider": transformed_data.get("provider"),
             "provider_id": transformed_data.get("provider_id"),
+            "category": transformed_data.get("category"),
             "method": transformed_data.get("method"),
             "coverage_notes": transformed_data.get("coverage_notes"),
             "generated_at": transformed_data.get("generated_at"),
