@@ -75,6 +75,7 @@ class CloudIPRanges:
         "gcore_cdn": ["https://api.gcore.com/cdn/public-net-list"],
         "gcore_cloud": ["https://api.gcore.com/cloud/public/v1/ipranges/egress"],
         "apple_private_relay": ["https://mask-api.icloud.com/egress-ip-ranges.csv"],
+        "cloudflare_warp": ["https://api.cloudflare.com/local-ip-ranges.csv"],
         "apple_bot": ["https://search.developer.apple.com/applebot.json"],
         "starlink": ["https://geoip.starlinkisp.net/feed.csv"],
         "akamai": ["https://techdocs.akamai.com/property-manager/pdfs/akamai_ipv4_ipv6_CIDRs-txt.zip"],
@@ -169,7 +170,7 @@ class CloudIPRanges:
         "a2hosting": ["AS55293"],
         "godaddy": ["AS26496", "AS30083"],
         "dreamhost": ["AS26347"],
-        "alibaba": ["RADB::AS-ALIBABA-CN-NET", "AS134963"],
+        "alibaba": ["RADB::AS-ALIBABA-CN-NET", "AS134963", "AS37963"],
         "tencent": ["RADB::AS132203:AS-TENCENT"],
         "ucloud": ["AS135377", "AS59077"],
         "meta_crawler": ["RADB::AS-FACEBOOK"],
@@ -189,12 +190,24 @@ class CloudIPRanges:
         "open_telekom_cloud": ["AS6878"],
         "wasabi": ["AS395717"],
         "kamatera": ["AS36007"],
-        "contabo": ["AS51167"],
+        "contabo": ["AS51167", "AS141995", "AS40021"],
+        "myloc": ["AS24961"],
+        "frantech": ["AS53667"],
+        "veesp": ["AS42532", "AS43317"],
         "hostinger": ["AS47583"],
         "leaseweb": ["RADB::AS-LEASEWEB"],
         "netcup": ["AS214996"],
         "cachefly": ["AS30081"],
-        "cdn77": ["AS60068"],
+        "cdn77": ["AS60068", "AS212238"],
+        "performive": ["AS46562"],
+        "interdigi": ["AS151858"],
+        "ctrls": ["AS18229"],
+        "aeza": ["AS210644"],
+        "yotta": ["AS140641"],
+        "net2atlanta": ["AS20081"],
+        "m247": ["AS9009"],
+        "cognetcloud": ["AS401701"],
+        "liteserver": ["AS60404"],
         "namecheap": ["AS22612"],
         "liquid_web": ["AS32244"],
         "infomaniak": ["https://prefixes.infomaniak.com/json"],
@@ -221,6 +234,7 @@ class CloudIPRanges:
     # Providers categorized as misc (user ISP traffic, not harmful crawlers)
     misc_providers: ClassVar[set[str]] = {
         "starlink",
+        "cloudflare_warp",
     }
 
     # Per-source max-delta-ratio overrides. Some providers (e.g. Okta) publish
@@ -228,6 +242,7 @@ class CloudIPRanges:
     # global guardrail; a source-specific override avoids permanently stale data.
     source_max_delta_ratios: ClassVar[dict[str, float]] = {
         "okta": 0.9,
+        "cloudflare_warp": 0.9,
     }
 
     def __init__(
